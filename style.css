@@ -1,1 +1,150 @@
 *{box-sizing:border-box}body{margin:0;background:#080b12;color:#eef2f7;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{width:min(920px,94vw);margin:0 auto;padding:28px 0 50px}.topbar{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.eyebrow{letter-spacing:.22em;color:#8ea2c8;font-size:12px}.topbar h1{margin:4px 0 0;font-size:32px}.auth-state{font-size:13px;color:#aab7cc}.panel{background:#101621;border:1px solid #263247;border-radius:16px;padding:22px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,.18)}.hidden{display:none!important}h2{margin:0 0 10px;font-size:20px}.muted{color:#9aa8bd;font-size:14px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}input{width:100%;padding:13px 14px;border-radius:10px;border:1px solid #35435a;background:#0a0f18;color:#fff;font-size:15px}.actions,.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{border:0;border-radius:10px;padding:13px 16px;background:#dfe7f4;color:#0a0f18;font-weight:700;cursor:pointer}button:hover{filter:brightness(1.08)}button.secondary{background:#263247;color:#e9eef7}.small{padding:8px 12px;font-size:12px}.message{min-height:20px;color:#d6a85f}.level-row{display:flex;justify-content:space-between;align-items:center}.label{display:block;font-size:11px;letter-spacing:.12em;color:#8292ac}.level{font-size:42px;font-weight:800;margin-top:4px}.status-box{text-align:right}.status-box strong{display:block;margin-top:5px;font-size:14px}.xpbar{height:10px;background:#222c3d;border-radius:99px;overflow:hidden;margin-top:18px}.xpbar div{height:100%;width:0;background:#dfe7f4;transition:width .3s}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:20px}.stat{background:#0a0f18;border-radius:10px;padding:12px}.stat b{display:block;font-size:20px;margin-top:4px}.section-title{display:flex;justify-content:space-between;align-items:center}.quest-list{display:grid;gap:10px}.quest{display:flex;justify-content:space-between;align-items:center;gap:15px;background:#0a0f18;border:1px solid #202b3e;border-radius:12px;padding:14px}.quest h3{margin:0 0 4px;font-size:15px}.quest p{margin:0;color:#8f9db2;font-size:12px}.quest button{min-width:100px}.question{font-size:20px;font-weight:700;line-height:1.5;padding:18px 0}.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.progress{margin-top:15px;color:#8292ac}#record{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.record-item{background:#0a0f18;border-radius:10px;padding:13px}.record-item span{display:block;color:#8292ac;font-size:12px}.record-item b{display:block;margin-top:4px}footer{text-align:center;color:#59677c;font-size:12px;margin-top:30px}@media(max-width:650px){.form-grid,.actions,.choice-grid,.choices{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}#record{grid-template-columns:1fr}.topbar{align-items:start;flex-direction:column}}
+/* =========================
+   5분 집중 훈련
+========================= */
+
+#focusTrainingPanel {
+  margin: 16px 0;
+}
+
+.focus-training-box {
+  background: #101621;
+  border: 1px solid #263247;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
+}
+
+.focus-training-box h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.focus-training-box > div > p {
+  color: #9aa8bd;
+  line-height: 1.7;
+}
+
+.focus-training-box label {
+  display: block;
+  margin-top: 22px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #dfe7f4;
+}
+
+.focus-training-box label span {
+  color: #8292ac;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.focus-training-box select,
+.focus-training-box textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1px solid #35435a;
+  background: #0a0f18;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.focus-training-box textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.focus-training-box select:focus,
+.focus-training-box textarea:focus {
+  outline: none;
+  border-color: #8ea2c8;
+}
+
+.focus-training-box button {
+  margin-top: 18px;
+}
+
+#focusRunning {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.training-status {
+  display: inline-block;
+  padding: 8px 12px;
+  border: 1px solid #35435a;
+  border-radius: 999px;
+  color: #8ea2c8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+#focusTimer {
+  font-size: clamp(60px, 15vw, 110px);
+  font-weight: 800;
+  letter-spacing: .04em;
+  margin: 28px 0 18px;
+  line-height: 1;
+}
+
+.training-target {
+  background: #0a0f18;
+  border: 1px solid #202b3e;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 auto 20px;
+  max-width: 420px;
+  color: #9aa8bd;
+}
+
+.training-target strong {
+  display: block;
+  color: #eef2f7;
+  font-size: 18px;
+  margin-top: 6px;
+}
+
+#focusResult {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+#focusResult h2 {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+#focusResult > p:first-of-type {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+#focusCompleteButton {
+  width: 100%;
+  margin-top: 24px;
+}
+
+#focusMessage {
+  min-height: 22px;
+  text-align: center;
+  color: #d6a85f;
+  margin-top: 14px;
+}
+
+/* 모바일 */
+@media(max-width:650px) {
+
+  .focus-training-box {
+    padding: 20px;
+  }
+
+  #focusTimer {
+    font-size: 64px;
+  }
+
+}

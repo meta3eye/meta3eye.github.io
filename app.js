@@ -68,16 +68,110 @@ function render(){
   ].map(x=>`<div class="record-item"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
   loadQuests();
 }
-async function loadQuests(){
-  const {data,error}=await client.from("quest_defs").select("*").eq("active",true).lte("min_level",state.profile.level).order("min_level");
-  if(error){$("questList").textContent=error.message;return;}
-  $("questList").innerHTML=data.map(q=>`
-    <div class="quest">
-      <div><h3>${q.title}</h3><p>${q.grade}-RANK · 기본 EXP ${q.base_exp}</p></div>
-      <button data-code="${q.code}" data-exp="${q.base_exp}">수행</button>
-    </div>`).join("");
-  $("questList").querySelectorAll("button").forEach(b=>b.onclick=()=>completeQuest(b.dataset.code,Number(b.dataset.exp)));
+
+async function loadQuests() {
+
+  const { data, error } = await client
+    .from("quest_defs")
+    .select("*")
+    .eq("active", true)
+    .lte("min_level", state.profile.level)
+    .order("min_level");
+
+
+  if (error) {
+
+    $("questList").textContent = error.message;
+
+    return;
+  }
+
+
+  $("questList").innerHTML = data.map(q => {
+
+    // 5분 집중 훈련만 특별한 방식으로 처리
+    if (q.code === "focus_5") {
+
+      return `
+        <div class="quest">
+
+          <div>
+
+            <h3>${q.title}</h3>
+
+            <p>
+              ${q.grade}-RANK · 5분 실제 훈련 · 기본 EXP ${q.base_exp}
+            </p>
+
+          </div>
+
+          <button
+            class="focus-quest-button"
+          >
+            훈련 시작
+          </button>
+
+        </div>
+      `;
+    }
+
+
+    // 나머지 일반 퀘스트
+    return `
+      <div class="quest">
+
+        <div>
+
+          <h3>${q.title}</h3>
+
+          <p>
+            ${q.grade}-RANK · 기본 EXP ${q.base_exp}
+          </p>
+
+        </div>
+
+        <button
+          data-code="${q.code}"
+          data-exp="${q.base_exp}"
+        >
+          수행
+        </button>
+
+      </div>
+    `;
+
+  }).join("");
+
+
+  // 5분 집중 훈련 버튼 연결
+  document
+    .querySelector(".focus-quest-button")
+    ?.addEventListener(
+      "click",
+      openFocusTraining
+    );
+
+
+  // 나머지 일반 퀘스트 버튼 연결
+  $("questList")
+    .querySelectorAll("[data-code]")
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        completeQuest(
+          button.dataset.code,
+          Number(button.dataset.exp)
+        );
+
+      };
+
+    });
+
 }
+
+
+
 async function completeQuest(code,exp){
   const {data,error}=await client.rpc("complete_simple_quest",{p_quest_code:code,p_exp:exp});
   if(error){$("questNotice").textContent=error.message;return;}
@@ -375,3 +469,52 @@ document
 
     }
   );
+
+
+
+function openFocusTraining() {
+
+  // 기존 게임 화면 숨김
+  document
+    .getElementById("gamePanel")
+    .classList.add("hidden");
+
+
+  // 5분 집중 훈련 화면 표시
+  document
+    .getElementById("focusTrainingPanel")
+    .classList.remove("hidden");
+
+
+  // 시작 화면 표시
+  document
+    .getElementById("focusSetup")
+    .classList.remove("hidden");
+
+
+  // 타이머 화면 숨김
+  document
+    .getElementById("focusRunning")
+    .classList.add("hidden");
+
+
+  // 결과 화면 숨김
+  document
+    .getElementById("focusResult")
+    .classList.add("hidden");
+
+
+  // 타이머 초기화
+  focusSeconds = 300;
+
+  document
+    .getElementById("focusTimer")
+    .textContent = "05:00";
+
+
+  // 결과 메시지 초기화
+  document
+    .getElementById("focusMessage")
+    .textContent = "";
+
+}

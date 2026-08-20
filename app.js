@@ -114,3 +114,229 @@ $("assessmentStartBtn").onclick=startAssessment;
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();loadProfile();};
 client.auth.onAuthStateChange(()=>loadProfile());
 loadProfile();
+
+
+let focusTimerInterval = null;
+let focusSeconds = 300;
+let focusStarted = false;
+
+
+// 5분 집중 훈련 시작
+function startFocusTraining() {
+
+  const target = document.getElementById("focusTarget").value;
+
+  if (!target) {
+    alert("집중 대상을 선택하세요.");
+    return;
+  }
+
+  focusStarted = true;
+  focusSeconds = 300;
+
+  document.getElementById("selectedFocusTarget").textContent = target;
+
+  document.getElementById("focusSetup").classList.add("hidden");
+  document.getElementById("focusRunning").classList.remove("hidden");
+  document.getElementById("focusResult").classList.add("hidden");
+
+  updateFocusTimer();
+
+
+  focusTimerInterval = setInterval(() => {
+
+    focusSeconds--;
+
+    updateFocusTimer();
+
+
+    if (focusSeconds <= 0) {
+
+      clearInterval(focusTimerInterval);
+
+      focusTimerInterval = null;
+
+      finishFocusTraining();
+    }
+
+  }, 1000);
+}
+
+
+// 타이머 화면 업데이트
+function updateFocusTimer() {
+
+  const minutes = Math.floor(focusSeconds / 60);
+
+  const seconds = focusSeconds % 60;
+
+  const formattedMinutes =
+    String(minutes).padStart(2, "0");
+
+  const formattedSeconds =
+    String(seconds).padStart(2, "0");
+
+  document.getElementById("focusTimer").textContent =
+    formattedMinutes + ":" + formattedSeconds;
+}
+
+
+// 훈련 종료
+function finishFocusTraining() {
+
+  focusStarted = false;
+
+  document.getElementById("focusRunning").classList.add("hidden");
+
+  document.getElementById("focusResult").classList.remove("hidden");
+
+
+  // 종료 알림음
+  try {
+
+    const audioContext =
+      new (window.AudioContext || window.webkitAudioContext)();
+
+    const oscillator =
+      audioContext.createOscillator();
+
+    const gain =
+      audioContext.createGain();
+
+    oscillator.connect(gain);
+
+    gain.connect(audioContext.destination);
+
+    oscillator.frequency.value = 880;
+
+    gain.gain.value = 0.15;
+
+    oscillator.start();
+
+    setTimeout(() => {
+
+      oscillator.stop();
+
+      audioContext.close();
+
+    }, 700);
+
+  } catch (error) {
+
+    console.log("알림음 재생 실패", error);
+
+  }
+
+
+  alert("5분 집중 훈련이 종료되었습니다.");
+}
+
+
+// 집중 훈련 결과 저장
+async function completeFocusTraining() {
+
+  const quality =
+    document.getElementById("focusQuality").value;
+
+  const obstacle =
+    document.getElementById("focusObstacle").value;
+
+  const experience =
+    document.getElementById("focusExperience").value;
+
+  const memo =
+    document.getElementById("focusMemo").value;
+
+  const target =
+    document.getElementById("focusTarget").value;
+
+
+  if (!quality || !obstacle || !experience) {
+
+    document.getElementById("focusMessage").textContent =
+      "집중 상태, 방해 요소, 특별한 경험을 모두 선택하세요.";
+
+    return;
+  }
+
+
+  document.getElementById("focusMessage").textContent =
+    "훈련 기록을 저장하고 있습니다...";
+
+
+  const resultData = {
+
+    training_type: "5분 집중 훈련",
+
+    target: target,
+
+    focus_quality: quality,
+
+    obstacle: obstacle,
+
+    experience: experience,
+
+    memo: memo,
+
+    completed_at:
+      new Date().toISOString()
+
+  };
+
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "complete_focus_quest",
+    {
+      p_result: resultData
+    }
+  );
+
+
+  if (error) {
+
+    console.error(error);
+
+    document.getElementById("focusMessage").textContent =
+      "저장 실패: " + error.message;
+
+    return;
+  }
+
+
+  // 최신 플레이어 정보 반영
+  state.profile = data;
+
+
+  document.getElementById("focusMessage").textContent =
+    "훈련 기록이 저장되었습니다. EXP +10";
+
+
+  // 기존 게임 화면 다시 표시
+  setTimeout(() => {
+
+    document
+      .getElementById("focusTrainingPanel")
+      .classList.add("hidden");
+
+
+    document
+      .getElementById("gamePanel")
+      .classList.remove("hidden");
+
+
+    // 입력값 초기화
+    document.getElementById("focusQuality").value = "";
+    document.getElementById("focusObstacle").value = "";
+    document.getElementById("focusExperience").value = "";
+    document.getElementById("focusMemo").value = "";
+
+
+    // 기존 플레이어 화면 갱신
+    render();
+
+  }, 1000);
+
+}

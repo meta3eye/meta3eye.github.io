@@ -6,244 +6,493 @@
   <title>SPIRIT SYSTEM</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
   <main class="app">
+
     <header class="topbar">
       <div>
         <div class="eyebrow">SPIRIT SYSTEM</div>
         <h1>나 혼자 레벨업</h1>
       </div>
-      <div id="authState" class="auth-state">로그인 필요</div>
+
+      <div id="authState" class="auth-state">
+        로그인 필요
+      </div>
     </header>
 
+
+    <!-- 로그인 -->
     <section id="authPanel" class="panel">
+
       <h2>PLAYER 접속</h2>
-      <p class="muted">게임 기록은 계정에 연결되어 자동 저장됩니다.</p>
+
+      <p class="muted">
+        게임 기록은 계정에 연결되어 자동 저장됩니다.
+      </p>
+
       <div class="form-grid">
-        <input id="email" type="email" placeholder="이메일">
-        <input id="password" type="password" placeholder="비밀번호 (6자 이상)">
+        <input
+          id="email"
+          type="email"
+          placeholder="이메일"
+        >
+
+        <input
+          id="password"
+          type="password"
+          placeholder="비밀번호 (6자 이상)"
+        >
       </div>
+
       <div class="actions">
-        <button id="signUpBtn">신규 PLAYER 생성</button>
-        <button id="signInBtn" class="secondary">로그인</button>
+        <button id="signUpBtn">
+          신규 PLAYER 생성
+        </button>
+
+        <button
+          id="signInBtn"
+          class="secondary"
+        >
+          로그인
+        </button>
       </div>
+
       <p id="authMessage" class="message"></p>
+
     </section>
 
+
+    <!-- 시작 방법 선택 -->
     <section id="startPanel" class="panel hidden">
+
       <h2>각성 단계 선택</h2>
-      <p>처음 시작하는 플레이어는 LV.1부터 시작합니다. 원하면 초기 능력 측정을 통해 LV.1~30 범위의 시작 레벨을 받을 수 있습니다.</p>
+
+      <p>
+        처음 시작하는 플레이어는 LV.1부터 시작합니다.
+        원하면 초기 능력 측정을 통해
+        LV.1~30 범위의 시작 레벨을 받을 수 있습니다.
+      </p>
+
       <div class="choice-grid">
-        <button id="normalStartBtn">일반 시작<br><strong>LV.1</strong></button>
-        <button id="assessmentStartBtn">능력 측정<br><strong>INITIAL AWAKENING</strong></button>
+
+        <button id="normalStartBtn">
+          일반 시작
+          <br>
+          <strong>LV.1</strong>
+        </button>
+
+        <button id="assessmentStartBtn">
+          능력 측정
+          <br>
+          <strong>INITIAL AWAKENING</strong>
+        </button>
+
       </div>
+
     </section>
 
+
+    <!-- 능력 측정 -->
     <section id="assessmentPanel" class="panel hidden">
+
       <h2>INITIAL AWAKENING TEST</h2>
-      <p class="muted">현재 수행 결과를 기준으로 시작 레벨을 결정합니다. 결과는 LV.1~30으로 제한됩니다.</p>
-      <div id="assessmentQuestion" class="question"></div>
-      <div id="assessmentChoices" class="choices"></div>
-      <p id="assessmentProgress" class="progress"></p>
+
+      <p class="muted">
+        현재 수행 결과를 기준으로 시작 레벨을 결정합니다.
+        결과는 LV.1~30으로 제한됩니다.
+      </p>
+
+      <div
+        id="assessmentQuestion"
+        class="question"
+      ></div>
+
+      <div
+        id="assessmentChoices"
+        class="choices"
+      ></div>
+
+      <p
+        id="assessmentProgress"
+        class="progress"
+      ></p>
+
     </section>
 
+
+    <!-- 메인 게임 화면 -->
     <section id="gamePanel" class="hidden">
+
+      <!-- 플레이어 정보 -->
       <div class="player-card panel">
+
         <div class="level-row">
+
           <div>
-            <span class="label">CURRENT LEVEL</span>
-            <div id="levelValue" class="level">LV.1</div>
+            <span class="label">
+              CURRENT LEVEL
+            </span>
+
+            <div
+              id="levelValue"
+              class="level"
+            >
+              LV.1
+            </div>
           </div>
+
+
           <div class="status-box">
-            <span class="label">STATUS</span>
-            <strong id="statusValue">AWAKENED</strong>
+
+            <span class="label">
+              STATUS
+            </span>
+
+            <strong id="statusValue">
+              AWAKENED
+            </strong>
+
           </div>
+
         </div>
-        <div class="xpbar"><div id="xpFill"></div></div>
-        <div id="xpText" class="muted">EXP 0 / 100</div>
-        <div class="stats" id="stats"></div>
+
+
+        <div class="xpbar">
+          <div id="xpFill"></div>
+        </div>
+
+        <div
+          id="xpText"
+          class="muted"
+        >
+          EXP 0 / 100
+        </div>
+
+        <div
+          class="stats"
+          id="stats"
+        ></div>
+
       </div>
 
+
+      <!-- 일일 퀘스트 -->
       <div class="panel">
+
         <div class="section-title">
+
           <h2>DAILY QUEST</h2>
-          <span id="questNotice" class="muted"></span>
+
+          <span
+            id="questNotice"
+            class="muted"
+          ></span>
+
         </div>
-        <div id="questList" class="quest-list"></div>
+
+        <div
+          id="questList"
+          class="quest-list"
+        ></div>
+
       </div>
 
+
+      <!-- 플레이어 기록 -->
       <div class="panel">
+
         <div class="section-title">
+
           <h2>PLAYER RECORD</h2>
-          <button id="logoutBtn" class="secondary small">로그아웃</button>
+
+          <button
+            id="logoutBtn"
+            class="secondary small"
+          >
+            로그아웃
+          </button>
+
         </div>
+
         <div id="record"></div>
+
       </div>
+
     </section>
 
-    <footer>SPIRIT SYSTEM · 훈련 기록은 계정에 저장됩니다.</footer>
+
+    <!-- =========================
+         5분 집중 훈련
+    ========================== -->
+
+    <section
+      id="focusTrainingPanel"
+      class="hidden"
+    >
+
+      <div class="focus-training-box">
 
 
-<!-- 5분 집중 훈련 화면 -->
-<section id="focusTrainingPanel" class="hidden">
+        <!-- 훈련 설명 및 시작 -->
+        <div id="focusSetup">
 
-  <div class="focus-training-box">
+          <h2>5분 집중 훈련</h2>
 
-    <h2>5분 집중 훈련</h2>
-
-    <p>
-      하나의 대상에 집중하십시오.
-      생각이 흩어지는 것은 실패가 아닙니다.
-      알아차린 뒤 다시 집중하십시오.
-    </p>
-
-    <div id="focusSetup">
-
-      <label>집중 대상 선택</label>
-
-      <select id="focusTarget">
-        <option value="">집중 대상을 선택하세요</option>
-        <option value="호흡">호흡</option>
-        <option value="소리">소리</option>
-        <option value="특정 사물">특정 사물</option>
-        <option value="촛불 이미지">촛불 이미지</option>
-        <option value="자유 집중">자유 집중</option>
-      </select>
-
-      <button id="focusStartButton">
-        훈련 시작
-      </button>
-
-      <button id="focusBackButton">
-        돌아가기
-      </button>
-
-    </div>
+          <p>
+            하나의 대상에 집중하십시오.
+            생각이 흩어지는 것은 실패가 아닙니다.
+            알아차린 뒤 다시 집중하십시오.
+          </p>
 
 
-    <!-- 실제 훈련 중 -->
-    <div id="focusRunning" class="hidden">
+          <label for="focusTarget">
+            집중 대상 선택
+          </label>
 
-      <div class="training-status">
-        TRAINING IN PROGRESS
+          <select id="focusTarget">
+
+            <option value="">
+              집중 대상을 선택하세요
+            </option>
+
+            <option value="호흡">
+              호흡
+            </option>
+
+            <option value="소리">
+              소리
+            </option>
+
+            <option value="특정 사물">
+              특정 사물
+            </option>
+
+            <option value="촛불 이미지">
+              촛불 이미지
+            </option>
+
+            <option value="자유 집중">
+              자유 집중
+            </option>
+
+          </select>
+
+
+          <div class="actions">
+
+            <button id="focusStartButton">
+              훈련 시작
+            </button>
+
+            <button
+              id="focusBackButton"
+              class="secondary"
+            >
+              돌아가기
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- 실제 타이머 훈련 -->
+        <div
+          id="focusRunning"
+          class="hidden"
+        >
+
+          <div class="training-status">
+            TRAINING IN PROGRESS
+          </div>
+
+
+          <div id="focusTimer">
+            05:00
+          </div>
+
+
+          <div class="training-target">
+
+            집중 대상:
+
+            <strong
+              id="selectedFocusTarget"
+            ></strong>
+
+          </div>
+
+
+          <p class="muted">
+            타이머가 종료될 때까지 집중 훈련을 계속하십시오.
+          </p>
+
+        </div>
+
+
+        <!-- 훈련 종료 후 결과 -->
+        <div
+          id="focusResult"
+          class="hidden"
+        >
+
+          <h2>QUEST COMPLETE</h2>
+
+          <p>
+            5분 집중 훈련이 종료되었습니다.
+          </p>
+
+
+          <label for="focusQuality">
+            집중 상태는 어땠습니까?
+          </label>
+
+          <select id="focusQuality">
+
+            <option value="">
+              선택하세요
+            </option>
+
+            <option value="거의 집중하지 못했다">
+              거의 집중하지 못했다
+            </option>
+
+            <option value="자주 흐트러졌다">
+              자주 흐트러졌다
+            </option>
+
+            <option value="보통이었다">
+              보통이었다
+            </option>
+
+            <option value="상당히 집중했다">
+              상당히 집중했다
+            </option>
+
+            <option value="매우 깊게 집중했다">
+              매우 깊게 집중했다
+            </option>
+
+          </select>
+
+
+          <label for="focusObstacle">
+            가장 큰 방해 요소는 무엇입니까?
+          </label>
+
+          <select id="focusObstacle">
+
+            <option value="">
+              선택하세요
+            </option>
+
+            <option value="잡생각">
+              잡생각
+            </option>
+
+            <option value="졸음">
+              졸음
+            </option>
+
+            <option value="외부 소음">
+              외부 소음
+            </option>
+
+            <option value="신체 불편함">
+              신체 불편함
+            </option>
+
+            <option value="감정 변화">
+              감정 변화
+            </option>
+
+            <option value="특별한 방해 없음">
+              특별한 방해 없음
+            </option>
+
+          </select>
+
+
+          <label for="focusExperience">
+            특별한 경험이 있었습니까?
+          </label>
+
+          <select id="focusExperience">
+
+            <option value="">
+              선택하세요
+            </option>
+
+            <option value="특별한 것 없음">
+              특별한 것 없음
+            </option>
+
+            <option value="몸의 감각 변화">
+              몸의 감각 변화
+            </option>
+
+            <option value="이미지가 떠오름">
+              이미지가 떠오름
+            </option>
+
+            <option value="색이 느껴짐">
+              색이 느껴짐
+            </option>
+
+            <option value="소리가 느껴짐">
+              소리가 느껴짐
+            </option>
+
+            <option value="직감이 떠오름">
+              직감이 떠오름
+            </option>
+
+            <option value="기타">
+              기타
+            </option>
+
+          </select>
+
+
+          <label for="focusMemo">
+            오늘의 관찰 기록
+            <span>(선택 사항)</span>
+          </label>
+
+
+          <textarea
+            id="focusMemo"
+            rows="5"
+            placeholder="훈련 중 느낀 점이나 특별한 경험을 기록하세요."
+          ></textarea>
+
+
+          <button id="focusCompleteButton">
+            훈련 기록 저장 및 EXP 받기
+          </button>
+
+
+          <p id="focusMessage"></p>
+
+        </div>
+
       </div>
 
-      <div id="focusTimer">
-        05:00
-      </div>
-
-      <div class="training-target">
-        집중 대상:
-        <strong id="selectedFocusTarget"></strong>
-      </div>
-
-      <p>
-        타이머가 종료될 때까지 집중 훈련을 계속하십시오.
-      </p>
-
-    </div>
+    </section>
 
 
-    <!-- 훈련 종료 후 -->
-    <div id="focusResult" class="hidden">
+    <footer>
+      SPIRIT SYSTEM · 훈련 기록은 계정에 저장됩니다.
+    </footer>
 
-      <h2>QUEST COMPLETE</h2>
-
-      <p>
-        5분 집중 훈련이 종료되었습니다.
-      </p>
-
-
-      <label>집중 상태는 어땠습니까?</label>
-
-      <select id="focusQuality">
-        <option value="">선택하세요</option>
-        <option value="거의 집중하지 못했다">
-          거의 집중하지 못했다
-        </option>
-        <option value="자주 흐트러졌다">
-          자주 흐트러졌다
-        </option>
-        <option value="보통이었다">
-          보통이었다
-        </option>
-        <option value="상당히 집중했다">
-          상당히 집중했다
-        </option>
-        <option value="매우 깊게 집중했다">
-          매우 깊게 집중했다
-        </option>
-      </select>
-
-
-      <label>가장 큰 방해 요소는 무엇입니까?</label>
-
-      <select id="focusObstacle">
-        <option value="">선택하세요</option>
-        <option value="잡생각">잡생각</option>
-        <option value="졸음">졸음</option>
-        <option value="외부 소음">외부 소음</option>
-        <option value="신체 불편함">신체 불편함</option>
-        <option value="감정 변화">감정 변화</option>
-        <option value="특별한 방해 없음">
-          특별한 방해 없음
-        </option>
-      </select>
-
-
-      <label>특별한 경험이 있었습니까?</label>
-
-      <select id="focusExperience">
-        <option value="">선택하세요</option>
-        <option value="특별한 것 없음">
-          특별한 것 없음
-        </option>
-        <option value="몸의 감각 변화">
-          몸의 감각 변화
-        </option>
-        <option value="이미지가 떠오름">
-          이미지가 떠오름
-        </option>
-        <option value="색이 느껴짐">
-          색이 느껴짐
-        </option>
-        <option value="소리가 느껴짐">
-          소리가 느껴짐
-        </option>
-        <option value="직감이 떠오름">
-          직감이 떠오름
-        </option>
-        <option value="기타">기타</option>
-      </select>
-
-
-      <label>
-        오늘의 관찰 기록
-        <span>(선택 사항)</span>
-      </label>
-
-      <textarea
-        id="focusMemo"
-        rows="5"
-        placeholder="훈련 중 느낀 점이나 특별한 경험을 기록하세요."
-      ></textarea>
-
-
-      <button id="focusCompleteButton">
-        훈련 기록 저장 및 EXP 받기
-      </button>
-
-      <p id="focusMessage"></p>
-
-    </div>
-
-  </div>
-
-</section>
-    
   </main>
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
+
 </body>
 </html>

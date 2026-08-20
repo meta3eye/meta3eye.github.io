@@ -340,3 +340,38 @@ async function completeFocusTraining() {
   }, 1000);
 
 }
+
+
+document
+  .getElementById("focusStartButton")
+  .addEventListener(
+    "click",
+    startFocusTraining
+  );
+
+
+document
+  .getElementById("focusCompleteButton")
+  .addEventListener(
+    "click",
+    completeFocusTraining
+  );
+
+
+document
+  .getElementById("focusBackButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      document
+        .getElementById("focusTrainingPanel")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("gamePanel")
+        .classList.remove("hidden");
+
+    }
+  );

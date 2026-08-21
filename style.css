@@ -260,3 +260,20 @@
   }
 
 }
+
+
+.quest-count {
+  margin-top: 7px !important;
+  color: #8292ac !important;
+  font-size: 12px !important;
+}
+
+.quest button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.quest button:disabled:hover {
+  filter: none;
+}

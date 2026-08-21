@@ -55,8 +55,13 @@ async function createProfile(level=1, stats=null){
 }
 function render(){
   const p=state.profile;if(!p)return;
+  $("rankValue").textContent =
+  `${p.rank || "D"}-RANK`;
   $("levelValue").textContent=`LV.${p.level}`;
   $("statusValue").textContent=p.status;
+
+
+  
   const need=xpNeeded(p.level), pct=Math.min(100,(p.exp/need)*100);
   $("xpFill").style.width=`${pct}%`;
   $("xpText").textContent=`EXP ${p.exp} / ${need}`;

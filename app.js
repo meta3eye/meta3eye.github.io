@@ -73,8 +73,11 @@ if (p.level_test_available) {
   $("record").innerHTML=[
     ["최고 레벨",`LV.${p.highest_level}`],["연속 훈련",`${p.streak_days}일`],
     ["상태",p.status],["생성일",new Date(p.created_at).toLocaleDateString("ko-KR")]
-  ].map(x=>`<div class="record-item"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+  ].map(x=>`<div class="record-item"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");  
   loadQuests();
+
+renderAwakeningSystem();
+  
 }
 
 /* =========================

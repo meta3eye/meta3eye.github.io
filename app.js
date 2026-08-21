@@ -380,6 +380,185 @@ async function renderAwakeningSystem() {
 
 }
 
+/* =========================
+   NEXT UNLOCK SYSTEM
+========================= */
+
+function getNextUnlock(
+  rank,
+  level
+) {
+
+  const currentRank =
+    rank || "D";
+
+
+  const unlocks = {
+
+    D: [
+      {
+        level: 5,
+        title: "훈련 기록 분석",
+        description:
+          "훈련 기록을 통해 초기 성장 패턴이 분석됩니다."
+      },
+
+      {
+        level: 10,
+        title: "첫 번째 능력 분석",
+        description:
+          "특정 능력 계열의 성장 가능성이 표시됩니다."
+      },
+
+      {
+        level: 20,
+        title: "잠재 경로 감지",
+        description:
+          "현재 가장 강하게 성장하고 있는 능력 경로를 확인할 수 있습니다."
+      },
+
+      {
+        level: 30,
+        title: "직관 훈련 해금",
+        description:
+          "새로운 정답형 훈련이 해금됩니다."
+      },
+
+      {
+        level: 50,
+        title: "AWAKENING ANALYSIS",
+        description:
+          "주요 성장 경로가 본격적으로 분석됩니다."
+      },
+
+      {
+        level: 100,
+        title: "D-RANK PROMOTION TEST",
+        description:
+          "C-RANK 진입을 위한 승급 시험에 도전할 수 있습니다."
+      }
+    ],
+
+    C: [
+      {
+        level: 10,
+        title: "고급 직관 훈련",
+        description:
+          "제한된 정보에서 선택하는 훈련이 강화됩니다."
+      },
+
+      {
+        level: 50,
+        title: "SPECIALIZATION DETECTION",
+        description:
+          "특정 능력 계열의 세부 특화 가능성이 분석됩니다."
+      },
+
+      {
+        level: 100,
+        title: "C-RANK PROMOTION TEST",
+        description:
+          "B-RANK 승급 시험이 준비됩니다."
+      }
+    ],
+
+    B: [
+      {
+        level: 30,
+        title: "BLIND TEST",
+        description:
+          "정답을 사전에 알 수 없는 검증형 테스트가 강화됩니다."
+      },
+
+      {
+        level: 100,
+        title: "B-RANK PROMOTION TEST",
+        description:
+          "A-RANK 진입을 위한 고난도 시험입니다."
+      }
+    ],
+
+    A: [
+      {
+        level: 50,
+        title: "ADVANCED VERIFICATION",
+        description:
+          "복수 능력을 동시에 검증하는 고난도 테스트가 열립니다."
+      },
+
+      {
+        level: 100,
+        title: "A-RANK PROMOTION TEST",
+        description:
+          "최고 랭크 진입 시험에 도전할 수 있습니다."
+      }
+    ],
+
+    S: [
+      {
+        level: 100,
+        title: "MASTER RECORD",
+        description:
+          "S-RANK 최종 성장 기록이 완성됩니다."
+      }
+    ]
+
+  };
+
+
+  const list =
+    unlocks[currentRank] || [];
+
+
+  const next =
+    list.find(
+      item =>
+        item.level > level
+    );
+
+
+  if (next) {
+    return next;
+  }
+
+
+  return {
+    level: 100,
+    title: "UNKNOWN",
+    description:
+      "다음 성장 데이터가 아직 분석되지 않았습니다."
+  };
+
+}
+
+
+function renderNextUnlock() {
+
+  const p =
+    state.profile;
+
+
+  if (!p) {
+    return;
+  }
+
+
+  const next =
+    getNextUnlock(
+      p.rank,
+      p.level
+    );
+
+
+  $("nextUnlockTitle").textContent =
+    `LV.${next.level} · ${next.title}`;
+
+
+  $("nextUnlockDescription").textContent =
+    next.description;
+
+}
+
 const QUEST_LIMITS = {
   focus_5: 3,
   sense_observation: 3,
@@ -1544,3 +1723,4 @@ document
 
     }
   );
+

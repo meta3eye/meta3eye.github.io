@@ -483,6 +483,281 @@
     </section>
 
 
+<!-- =========================
+     감각 관찰 훈련
+========================= -->
+
+<section
+  id="senseTrainingPanel"
+  class="hidden"
+>
+
+  <div class="sense-training-box">
+
+
+    <!-- 시작 설정 -->
+    <div id="senseSetup">
+
+      <h2>감각 관찰</h2>
+
+      <p>
+        평소에는 지나치던 감각을 의식적으로 관찰하십시오.
+        좋은 결과를 만들려고 하지 말고,
+        실제로 느껴지는 것을 그대로 관찰하십시오.
+      </p>
+
+
+      <label for="senseTarget">
+        관찰 대상 선택
+      </label>
+
+      <select id="senseTarget">
+
+        <option value="">
+          관찰 대상을 선택하세요
+        </option>
+
+        <option value="주변의 소리">
+          주변의 소리
+        </option>
+
+        <option value="몸의 감각">
+          몸의 감각
+        </option>
+
+        <option value="눈앞의 사물">
+          눈앞의 사물
+        </option>
+
+        <option value="냄새">
+          냄새
+        </option>
+
+        <option value="촉감">
+          촉감
+        </option>
+
+        <option value="자유 관찰">
+          자유 관찰
+        </option>
+
+      </select>
+
+
+      <label for="senseDuration">
+        훈련 시간
+      </label>
+
+      <select id="senseDuration">
+
+        <option value="">
+          시간을 선택하세요
+        </option>
+
+        <option value="180">
+          3분 · EXP 5
+        </option>
+
+        <option value="300">
+          5분 · EXP 10
+        </option>
+
+        <option value="600">
+          10분 · EXP 20
+        </option>
+
+      </select>
+
+
+      <label for="senseSound">
+        종료 알림음
+      </label>
+
+      <select id="senseSound">
+
+        <option value="bell">
+          기본 종소리
+        </option>
+
+        <option value="high">
+          높은 알림음
+        </option>
+
+        <option value="low">
+          낮은 알림음
+        </option>
+
+        <option value="double">
+          두 번 알림
+        </option>
+
+        <option value="silent">
+          무음
+        </option>
+
+      </select>
+
+
+      <div class="actions">
+
+        <button id="senseStartButton">
+          관찰 시작
+        </button>
+
+        <button
+          id="senseBackButton"
+          class="secondary"
+        >
+          돌아가기
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- 실제 관찰 중 -->
+    <div
+      id="senseRunning"
+      class="hidden"
+    >
+
+      <div class="training-status">
+        SENSE OBSERVATION IN PROGRESS
+      </div>
+
+      <div id="senseTimer">
+        05:00
+      </div>
+
+      <div class="training-target">
+
+        관찰 대상:
+
+        <strong id="selectedSenseTarget"></strong>
+
+      </div>
+
+      <p class="muted">
+        판단하지 말고, 느껴지는 감각을 관찰하십시오.
+      </p>
+
+    </div>
+
+
+    <!-- 관찰 종료 후 -->
+    <div
+      id="senseResult"
+      class="hidden"
+    >
+
+      <h2>OBSERVATION COMPLETE</h2>
+
+      <p>
+        관찰 중 경험한 내용을 기록하십시오.
+      </p>
+
+
+      <label for="senseDiscovery">
+        가장 먼저 알아차린 것은 무엇입니까?
+      </label>
+
+      <select id="senseDiscovery">
+
+        <option value="">
+          선택하세요
+        </option>
+
+        <option value="평소 느끼지 못했던 감각">
+          평소 느끼지 못했던 감각
+        </option>
+
+        <option value="몸의 미세한 변화">
+          몸의 미세한 변화
+        </option>
+
+        <option value="새로운 소리나 자극">
+          새로운 소리나 자극
+        </option>
+
+        <option value="감정의 변화">
+          감정의 변화
+        </option>
+
+        <option value="특별한 변화 없음">
+          특별한 변화 없음
+        </option>
+
+        <option value="기타">
+          기타
+        </option>
+
+      </select>
+
+
+      <label for="senseDifficulty">
+        관찰 중 가장 어려웠던 것은 무엇입니까?
+      </label>
+
+      <select id="senseDifficulty">
+
+        <option value="">
+          선택하세요
+        </option>
+
+        <option value="집중 유지">
+          집중 유지
+        </option>
+
+        <option value="잡생각">
+          잡생각
+        </option>
+
+        <option value="졸음">
+          졸음
+        </option>
+
+        <option value="외부 자극">
+          외부 자극
+        </option>
+
+        <option value="무엇을 관찰해야 할지 모르겠음">
+          무엇을 관찰해야 할지 모르겠음
+        </option>
+
+        <option value="특별한 어려움 없음">
+          특별한 어려움 없음
+        </option>
+
+      </select>
+
+
+      <label for="senseMemo">
+        관찰 기록
+        <span>(선택 사항)</span>
+      </label>
+
+      <textarea
+        id="senseMemo"
+        rows="5"
+        placeholder="관찰 중 느낀 감각이나 변화를 기록하세요."
+      ></textarea>
+
+
+      <button id="senseCompleteButton">
+        관찰 기록 저장 및 EXP 받기
+      </button>
+
+      <p id="senseMessage"></p>
+
+    </div>
+
+  </div>
+
+</section>
+
+    
+
     <footer>
       SPIRIT SYSTEM · 훈련 기록은 계정에 저장됩니다.
     </footer>

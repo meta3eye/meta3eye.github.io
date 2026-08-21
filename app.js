@@ -568,6 +568,90 @@ const QUEST_LIMITS = {
   life_death: 3
 };
 
+/* =========================
+   RANK PROMOTION SYSTEM
+========================= */
+
+const RANK_ORDER = [
+  "D",
+  "C",
+  "B",
+  "A",
+  "S"
+];
+
+
+function getNextRank(rank){
+
+  const index =
+    RANK_ORDER.indexOf(rank || "D");
+
+  if(index < 0){
+    return "C";
+  }
+
+  if(index >= RANK_ORDER.length - 1){
+    return null;
+  }
+
+  return RANK_ORDER[index + 1];
+
+}
+
+
+function renderRankPromotion(){
+
+  const p =
+    state.profile;
+
+  if(!p){
+    return;
+  }
+
+
+  const currentRank =
+    p.rank || "D";
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  const panel =
+    $("rankTestPanel");
+
+
+  if(!panel){
+    return;
+  }
+
+
+  /*
+    S-RANK는 최종 랭크이므로
+    승급시험을 표시하지 않는다.
+  */
+
+  if(
+    !nextRank ||
+    p.level < 100
+  ){
+
+    panel.classList.add("hidden");
+
+    return;
+  }
+
+
+  $("promotionCurrentRank").textContent =
+    `${currentRank}-RANK`;
+
+
+  $("promotionNextRank").textContent =
+    `${nextRank}-RANK`;
+
+
+  panel.classList.remove("hidden");
+
+}
 
 function getTodayStart() {
 

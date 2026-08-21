@@ -77,7 +77,300 @@ if (p.level_test_available) {
   loadQuests();
 }
 
+/* =========================
+   AWAKENING SYSTEM
+========================= */
 
+const AWAKENING_PATHS = {
+  sensory: {
+    name: "SENSORY PATH",
+    label: "감지형"
+  },
+
+  intuitive: {
+    name: "INTUITIVE PATH",
+    label: "직관형"
+  },
+
+  focus: {
+    name: "FOCUS PATH",
+    label: "집중형"
+  },
+
+  interpreter: {
+    name: "INTERPRETATION PATH",
+    label: "해석형"
+  },
+
+  control: {
+    name: "CONTROL PATH",
+    label: "통제형"
+  }
+};
+
+
+const QUEST_AWAKENING_EFFECT = {
+  focus_5: {
+    focus: 12,
+    control: 4
+  },
+
+  sense_observation: {
+    sensory: 12,
+    focus: 3
+  },
+
+  intuition_choice: {
+    intuitive: 12
+  },
+
+  emotion_guess: {
+    interpreter: 8,
+    intuitive: 5
+  },
+
+  life_death: {
+    sensory: 10,
+    intuitive: 10
+  }
+};
+
+
+async function calculateAwakeningPaths() {
+
+  if (!state.user) {
+    return {
+      sensory: 0,
+      intuitive: 0,
+      focus: 0,
+      interpreter: 0,
+      control: 0
+    };
+  }
+
+
+  const { data, error } =
+    await client
+      .from("quest_logs")
+      .select("quest_code")
+      .eq(
+        "user_id",
+        state.user.id
+      );
+
+
+  if (error) {
+
+    console.error(
+      "Awakening analysis error:",
+      error
+    );
+
+    return {
+      sensory: 0,
+      intuitive: 0,
+      focus: 0,
+      interpreter: 0,
+      control: 0
+    };
+  }
+
+
+  const paths = {
+    sensory: 0,
+    intuitive: 0,
+    focus: 0,
+    interpreter: 0,
+    control: 0
+  };
+
+
+  for (const log of data || []) {
+
+    const effect =
+      QUEST_AWAKENING_EFFECT[
+        log.quest_code
+      ];
+
+    if (!effect) {
+      continue;
+    }
+
+
+    for (const key in effect) {
+
+      paths[key] +=
+        effect[key];
+
+    }
+
+  }
+
+
+  return paths;
+
+}
+
+
+function getPrimaryAwakening(
+  paths
+) {
+
+  const entries =
+    Object.entries(paths)
+      .sort(
+        (a, b) =>
+          b[1] - a[1]
+      );
+
+
+  const top =
+    entries[0];
+
+
+  const second =
+    entries[1];
+
+
+  if (!top || top[1] < 30) {
+
+    return {
+      type: "UNKNOWN",
+      description:
+        "아직 충분한 훈련 데이터가 없습니다. 여러 유형의 훈련을 계속하십시오."
+    };
+
+  }
+
+
+  const difference =
+    top[1] - second[1];
+
+
+  if (
+    top[1] >= 100 &&
+    difference >= 25
+  ) {
+
+    return {
+      type:
+        AWAKENING_PATHS[
+          top[0]
+        ].name,
+
+      description:
+        "특정 성장 경로에서 반복적으로 높은 성장 패턴이 감지되고 있습니다."
+    };
+
+  }
+
+
+  return {
+    type:
+      AWAKENING_PATHS[
+        top[0]
+      ].name,
+
+    description:
+      "특정 능력 계열에서 성장 가능성이 높게 나타나고 있습니다. 추가 훈련과 검증이 필요합니다."
+  };
+
+}
+
+
+async function renderAwakeningSystem() {
+
+  const paths =
+    await calculateAwakeningPaths();
+
+
+  const analysis =
+    getPrimaryAwakening(paths);
+
+
+  $("primaryTypeValue").textContent =
+    analysis.type;
+
+
+  $("awakeningDescription").textContent =
+    analysis.description;
+
+
+  const total =
+    Object.values(paths)
+      .reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      );
+
+
+  $("awakeningStatus").textContent =
+    total === 0
+      ? "DATA REQUIRED"
+      : "ANALYZING";
+
+
+  const maxValue =
+    Math.max(
+      ...Object.values(paths),
+      1
+    );
+
+
+  const sortedPaths =
+    Object.entries(paths)
+      .sort(
+        (a, b) =>
+          b[1] - a[1]
+      );
+
+
+  $("potentialPaths").innerHTML =
+    sortedPaths
+      .map(
+        ([key, value]) => {
+
+          const path =
+            AWAKENING_PATHS[key];
+
+
+          const percentage =
+            Math.min(
+              100,
+              Math.round(
+                value / maxValue * 100
+              )
+            );
+
+
+          return `
+            <div class="potential-path">
+
+              <div class="potential-path-name">
+                ${path.name}
+              </div>
+
+              <div class="potential-path-value">
+                ${value}
+              </div>
+
+              <div class="potential-bar">
+                <div
+                  style="
+                    width:${percentage}%
+                  "
+                ></div>
+              </div>
+
+            </div>
+          `;
+
+        }
+      )
+      .join("");
+
+}
 
 const QUEST_LIMITS = {
   focus_5: 3,

@@ -82,6 +82,7 @@ if (p.level_test_available) {
   loadQuests();
 renderNextUnlock();
 renderAwakeningSystem();
+renderRankPromotion();
   
 }
 

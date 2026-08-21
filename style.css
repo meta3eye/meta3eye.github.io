@@ -148,3 +148,115 @@
   }
 
 }
+
+
+/* =========================
+   감각 관찰 훈련
+========================= */
+
+#senseTrainingPanel {
+  margin: 16px 0;
+}
+
+.sense-training-box {
+  background: #101621;
+  border: 1px solid #263247;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
+}
+
+.sense-training-box h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.sense-training-box > div > p {
+  color: #9aa8bd;
+  line-height: 1.7;
+}
+
+.sense-training-box label {
+  display: block;
+  margin-top: 22px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #dfe7f4;
+}
+
+.sense-training-box label span {
+  color: #8292ac;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.sense-training-box select,
+.sense-training-box textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1px solid #35435a;
+  background: #0a0f18;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.sense-training-box textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.sense-training-box select:focus,
+.sense-training-box textarea:focus {
+  outline: none;
+  border-color: #8ea2c8;
+}
+
+#senseRunning {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+#senseTimer {
+  font-size: clamp(60px, 15vw, 110px);
+  font-weight: 800;
+  letter-spacing: .04em;
+  margin: 28px 0 18px;
+  line-height: 1;
+}
+
+#senseResult {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+#senseResult h2 {
+  text-align: center;
+}
+
+#senseCompleteButton {
+  width: 100%;
+  margin-top: 24px;
+}
+
+#senseMessage {
+  min-height: 22px;
+  text-align: center;
+  color: #d6a85f;
+  margin-top: 14px;
+}
+
+@media(max-width:650px) {
+
+  .sense-training-box {
+    padding: 20px;
+  }
+
+  #senseTimer {
+    font-size: 64px;
+  }
+
+}

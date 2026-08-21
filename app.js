@@ -80,7 +80,7 @@ if (p.level_test_available) {
     ["상태",p.status],["생성일",new Date(p.created_at).toLocaleDateString("ko-KR")]
   ].map(x=>`<div class="record-item"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");  
   loadQuests();
-
+renderNextUnlock();
 renderAwakeningSystem();
   
 }

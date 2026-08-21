@@ -71,88 +71,303 @@ function render(){
 
 
 
+const QUEST_LIMITS = {
+  focus_5: 3,
+  sense_observation: 3,
+
+  intuition_choice: 5,
+  emotion_guess: 3,
+  life_death: 3
+};
+
+
+function getTodayStart() {
+
+  const now = new Date();
+
+  now.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  return now.toISOString();
+
+}
+
+
 async function loadQuests() {
 
-  const { data, error } = await client
-    .from("quest_defs")
-    .select("*")
-    .eq("active", true)
-    .lte("min_level", state.profile.level)
-    .order("min_level");
+  const playerLevel =
+    state.profile.level;
 
 
-  if (error) {
-    $("questList").textContent = error.message;
+  const { data: quests, error: questError } =
+    await client
+      .from("quest_defs")
+      .select("*")
+      .eq("active", true)
+      .lte("min_level", playerLevel)
+      .order("min_level");
+
+
+  if (questError) {
+
+    $("questList").textContent =
+      questError.message;
+
     return;
   }
 
 
-  $("questList").innerHTML = data.map(q => {
+  const { data: todayLogs, error: logError } =
+    await client
+      .from("quest_logs")
+      .select("quest_code")
+      .gte(
+        "completed_at",
+        getTodayStart()
+      );
 
-    // 5분 집중 훈련
-    if (q.code === "focus_5") {
 
-      return `
-        <div class="quest">
-          <div>
-            <h3>${q.title}</h3>
-            <p>
-              ${q.grade}-RANK · 5분 실제 훈련 · 기본 EXP ${q.base_exp}
-            </p>
+  if (logError) {
+
+    console.error(logError);
+
+  }
+
+
+  const todayCount = {};
+
+
+  for (
+    const log of
+    (todayLogs || [])
+  ) {
+
+    todayCount[log.quest_code] =
+      (
+        todayCount[log.quest_code] || 0
+      ) + 1;
+
+  }
+
+
+  const levelTestReady =
+    state.profile.level_test_available === true;
+
+
+  if (levelTestReady) {
+
+    $("questNotice").textContent =
+      `LV.${state.profile.pending_level} 승급 시험을 통과해야 훈련을 계속할 수 있습니다.`;
+
+  }
+
+  else {
+
+    $("questNotice").textContent = "";
+
+  }
+
+
+  $("questList").innerHTML =
+    quests.map(q => {
+
+
+      const maxCount =
+        QUEST_LIMITS[q.code] || 1;
+
+
+      const currentCount =
+        todayCount[q.code] || 0;
+
+
+      const limitReached =
+        currentCount >= maxCount;
+
+
+      const questLocked =
+        levelTestReady || limitReached;
+
+
+      let buttonText = "수행";
+
+
+      if (levelTestReady) {
+
+        buttonText =
+          "승급 시험 필요";
+
+      }
+
+      else if (limitReached) {
+
+        buttonText =
+          "오늘 완료";
+
+      }
+
+
+      // -------------------------
+      // 5분 집중 훈련
+      // -------------------------
+
+      if (q.code === "focus_5") {
+
+        return `
+
+          <div class="quest">
+
+            <div>
+
+              <h3>
+                ${q.title}
+              </h3>
+
+              <p>
+                ${q.grade}-RANK ·
+                실제 5분 훈련 ·
+                EXP ${q.base_exp}
+              </p>
+
+              <p class="quest-count">
+
+                오늘
+                ${currentCount}
+                /
+                ${maxCount}회
+
+              </p>
+
+            </div>
+
+
+            <button
+
+              class="focus-quest-button"
+
+              ${questLocked ? "disabled" : ""}
+
+            >
+
+              ${buttonText}
+
+            </button>
+
           </div>
 
-          <button
-            class="focus-quest-button"
-          >
-            훈련 시작
-          </button>
-        </div>
-      `;
-    }
+        `;
+
+      }
 
 
-    // 감각 관찰
-    if (q.code === "sense_observation") {
+      // -------------------------
+      // 감각 관찰
+      // -------------------------
 
-      return `
-        <div class="quest">
-          <div>
-            <h3>${q.title}</h3>
-            <p>
-              ${q.grade}-RANK · 실제 관찰 훈련 · 3~10분
-            </p>
+      if (q.code === "sense_observation") {
+
+        return `
+
+          <div class="quest">
+
+            <div>
+
+              <h3>
+                ${q.title}
+              </h3>
+
+              <p>
+                ${q.grade}-RANK ·
+                실제 관찰 훈련 ·
+                3~10분
+              </p>
+
+              <p class="quest-count">
+
+                오늘
+                ${currentCount}
+                /
+                ${maxCount}회
+
+              </p>
+
+            </div>
+
+
+            <button
+
+              class="sense-quest-button"
+
+              ${questLocked ? "disabled" : ""}
+
+            >
+
+              ${buttonText}
+
+            </button>
+
           </div>
 
+        `;
+
+      }
+
+
+      // -------------------------
+      // 나머지 퀘스트
+      // -------------------------
+
+      return `
+
+        <div class="quest">
+
+          <div>
+
+            <h3>
+              ${q.title}
+            </h3>
+
+            <p>
+
+              ${q.grade}-RANK ·
+              기본 EXP ${q.base_exp}
+
+            </p>
+
+            <p class="quest-count">
+
+              오늘
+              ${currentCount}
+              /
+              ${maxCount}회
+
+            </p>
+
+          </div>
+
+
           <button
-            class="sense-quest-button"
+
+            data-code="${q.code}"
+
+            data-exp="${q.base_exp}"
+
+            ${questLocked ? "disabled" : ""}
+
           >
-            관찰 시작
+
+            ${buttonText}
+
           </button>
+
         </div>
+
       `;
-    }
 
-
-    // 나머지 일반 퀘스트
-    return `
-      <div class="quest">
-        <div>
-          <h3>${q.title}</h3>
-          <p>
-            ${q.grade}-RANK · 기본 EXP ${q.base_exp}
-          </p>
-        </div>
-
-        <button
-          data-code="${q.code}"
-          data-exp="${q.base_exp}"
-        >
-          수행
-        </button>
-      </div>
-    `;
-
-  }).join("");
+    }).join("");
 
 
   document
@@ -178,8 +393,13 @@ async function loadQuests() {
       button.onclick = () => {
 
         completeQuest(
+
           button.dataset.code,
-          Number(button.dataset.exp)
+
+          Number(
+            button.dataset.exp
+          )
+
         );
 
       };
@@ -187,7 +407,6 @@ async function loadQuests() {
     });
 
 }
-
 
 
 async function completeQuest(code,exp){

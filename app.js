@@ -69,6 +69,8 @@ function render(){
   loadQuests();
 }
 
+
+
 async function loadQuests() {
 
   const { data, error } = await client
@@ -80,29 +82,23 @@ async function loadQuests() {
 
 
   if (error) {
-
     $("questList").textContent = error.message;
-
     return;
   }
 
 
   $("questList").innerHTML = data.map(q => {
 
-    // 5분 집중 훈련만 특별한 방식으로 처리
+    // 5분 집중 훈련
     if (q.code === "focus_5") {
 
       return `
         <div class="quest">
-
           <div>
-
             <h3>${q.title}</h3>
-
             <p>
               ${q.grade}-RANK · 5분 실제 훈련 · 기본 EXP ${q.base_exp}
             </p>
-
           </div>
 
           <button
@@ -110,7 +106,28 @@ async function loadQuests() {
           >
             훈련 시작
           </button>
+        </div>
+      `;
+    }
 
+
+    // 감각 관찰
+    if (q.code === "sense_observation") {
+
+      return `
+        <div class="quest">
+          <div>
+            <h3>${q.title}</h3>
+            <p>
+              ${q.grade}-RANK · 실제 관찰 훈련 · 3~10분
+            </p>
+          </div>
+
+          <button
+            class="sense-quest-button"
+          >
+            관찰 시작
+          </button>
         </div>
       `;
     }
@@ -119,15 +136,11 @@ async function loadQuests() {
     // 나머지 일반 퀘스트
     return `
       <div class="quest">
-
         <div>
-
           <h3>${q.title}</h3>
-
           <p>
             ${q.grade}-RANK · 기본 EXP ${q.base_exp}
           </p>
-
         </div>
 
         <button
@@ -136,14 +149,12 @@ async function loadQuests() {
         >
           수행
         </button>
-
       </div>
     `;
 
   }).join("");
 
 
-  // 5분 집중 훈련 버튼 연결
   document
     .querySelector(".focus-quest-button")
     ?.addEventListener(
@@ -152,7 +163,14 @@ async function loadQuests() {
     );
 
 
-  // 나머지 일반 퀘스트 버튼 연결
+  document
+    .querySelector(".sense-quest-button")
+    ?.addEventListener(
+      "click",
+      openSenseTraining
+    );
+
+
   $("questList")
     .querySelectorAll("[data-code]")
     .forEach(button => {
@@ -518,3 +536,483 @@ function openFocusTraining() {
     .textContent = "";
 
 }
+
+
+
+/* =========================
+   감각 관찰 훈련
+========================= */
+
+let senseTimerInterval = null;
+let senseSeconds = 300;
+let selectedSenseExp = 10;
+
+
+function openSenseTraining() {
+
+  if (senseTimerInterval) {
+    clearInterval(senseTimerInterval);
+    senseTimerInterval = null;
+  }
+
+  document
+    .getElementById("gamePanel")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseTrainingPanel")
+    .classList.remove("hidden");
+
+
+  document
+    .getElementById("senseSetup")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("senseRunning")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseResult")
+    .classList.add("hidden");
+
+
+  document
+    .getElementById("senseMessage")
+    .textContent = "";
+
+
+  document
+    .getElementById("senseTimer")
+    .textContent = "05:00";
+
+}
+
+
+function startSenseTraining() {
+
+  const target =
+    document.getElementById("senseTarget").value;
+
+  const duration =
+    Number(
+      document.getElementById("senseDuration").value
+    );
+
+
+  if (!target) {
+    alert("관찰 대상을 선택하세요.");
+    return;
+  }
+
+
+  if (!duration) {
+    alert("훈련 시간을 선택하세요.");
+    return;
+  }
+
+
+  if (senseTimerInterval) {
+    return;
+  }
+
+
+  senseSeconds = duration;
+
+
+  // 시간에 따른 EXP
+  if (duration === 180) {
+    selectedSenseExp = 5;
+  }
+
+  else if (duration === 300) {
+    selectedSenseExp = 10;
+  }
+
+  else if (duration === 600) {
+    selectedSenseExp = 20;
+  }
+
+
+  document
+    .getElementById("selectedSenseTarget")
+    .textContent = target;
+
+
+  document
+    .getElementById("senseSetup")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseRunning")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("senseResult")
+    .classList.add("hidden");
+
+
+  updateSenseTimer();
+
+
+  senseTimerInterval = setInterval(() => {
+
+    senseSeconds--;
+
+    updateSenseTimer();
+
+
+    if (senseSeconds <= 0) {
+
+      clearInterval(senseTimerInterval);
+
+      senseTimerInterval = null;
+
+      finishSenseTraining();
+
+    }
+
+  }, 1000);
+
+}
+
+
+function updateSenseTimer() {
+
+  const minutes =
+    Math.floor(senseSeconds / 60);
+
+  const seconds =
+    senseSeconds % 60;
+
+
+  document
+    .getElementById("senseTimer")
+    .textContent =
+      String(minutes).padStart(2, "0")
+      + ":"
+      + String(seconds).padStart(2, "0");
+
+}
+
+
+function finishSenseTraining() {
+
+  document
+    .getElementById("senseRunning")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseResult")
+    .classList.remove("hidden");
+
+
+  playSelectedSenseSound();
+
+}
+
+
+function playSelectedSenseSound() {
+
+  const sound =
+    document.getElementById("senseSound").value;
+
+
+  if (sound === "silent") {
+    return;
+  }
+
+
+  try {
+
+    const audioContext =
+      new (
+        window.AudioContext
+        || window.webkitAudioContext
+      )();
+
+
+    const gain =
+      audioContext.createGain();
+
+    gain.connect(audioContext.destination);
+
+    gain.gain.value = 0.15;
+
+
+    let frequency = 660;
+    let duration = 0.6;
+
+
+    if (sound === "high") {
+      frequency = 1100;
+    }
+
+    else if (sound === "low") {
+      frequency = 440;
+    }
+
+    else if (sound === "bell") {
+      frequency = 880;
+    }
+
+
+    function playTone(
+      freq,
+      startTime,
+      toneDuration
+    ) {
+
+      const oscillator =
+        audioContext.createOscillator();
+
+      oscillator.frequency.value = freq;
+
+      oscillator.connect(gain);
+
+      oscillator.start(startTime);
+
+      oscillator.stop(
+        startTime + toneDuration
+      );
+
+    }
+
+
+    if (sound === "double") {
+
+      const now =
+        audioContext.currentTime;
+
+      playTone(
+        880,
+        now,
+        0.25
+      );
+
+      playTone(
+        880,
+        now + 0.4,
+        0.25
+      );
+
+
+      setTimeout(() => {
+        audioContext.close();
+      }, 1000);
+
+    }
+
+    else {
+
+      const oscillator =
+        audioContext.createOscillator();
+
+      oscillator.frequency.value =
+        frequency;
+
+      oscillator.connect(gain);
+
+      oscillator.start();
+
+      oscillator.stop(
+        audioContext.currentTime
+        + duration
+      );
+
+
+      setTimeout(() => {
+        audioContext.close();
+      }, 1000);
+
+    }
+
+  }
+
+  catch (error) {
+    console.log(
+      "알림음 재생 실패",
+      error
+    );
+  }
+
+}
+
+
+async function completeSenseTraining() {
+
+  const target =
+    document.getElementById("senseTarget").value;
+
+  const duration =
+    Number(
+      document.getElementById("senseDuration").value
+    );
+
+  const discovery =
+    document.getElementById("senseDiscovery").value;
+
+  const difficulty =
+    document.getElementById("senseDifficulty").value;
+
+  const memo =
+    document.getElementById("senseMemo").value;
+
+
+  if (!discovery || !difficulty) {
+
+    document
+      .getElementById("senseMessage")
+      .textContent =
+        "관찰 결과와 어려웠던 점을 선택하세요.";
+
+    return;
+  }
+
+
+  document
+    .getElementById("senseCompleteButton")
+    .disabled = true;
+
+  document
+    .getElementById("senseMessage")
+    .textContent =
+      "훈련 기록을 저장하고 있습니다...";
+
+
+  const resultData = {
+
+    training_type:
+      "감각 관찰",
+
+    target: target,
+
+    duration_seconds:
+      duration,
+
+    discovery:
+      discovery,
+
+    difficulty:
+      difficulty,
+
+    memo:
+      memo,
+
+    completed_at:
+      new Date().toISOString()
+
+  };
+
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "complete_sense_observation_quest",
+    {
+      p_result: resultData,
+      p_exp: selectedSenseExp
+    }
+  );
+
+
+  document
+    .getElementById("senseCompleteButton")
+    .disabled = false;
+
+
+  if (error) {
+
+    console.error(error);
+
+    document
+      .getElementById("senseMessage")
+      .textContent =
+        "저장 실패: "
+        + error.message;
+
+    return;
+  }
+
+
+  state.profile = data;
+
+
+  document
+    .getElementById("senseMessage")
+    .textContent =
+      `훈련 기록이 저장되었습니다. EXP +${selectedSenseExp}`;
+
+
+  setTimeout(() => {
+
+    document
+      .getElementById("senseTrainingPanel")
+      .classList.add("hidden");
+
+
+    document
+      .getElementById("gamePanel")
+      .classList.remove("hidden");
+
+
+    document
+      .getElementById("senseDiscovery")
+      .value = "";
+
+    document
+      .getElementById("senseDifficulty")
+      .value = "";
+
+    document
+      .getElementById("senseMemo")
+      .value = "";
+
+
+    render();
+
+  }, 1000);
+
+}
+
+
+document
+  .getElementById("senseStartButton")
+  .addEventListener(
+    "click",
+    startSenseTraining
+  );
+
+
+document
+  .getElementById("senseCompleteButton")
+  .addEventListener(
+    "click",
+    completeSenseTraining
+  );
+
+
+document
+  .getElementById("senseBackButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (senseTimerInterval) {
+        clearInterval(senseTimerInterval);
+        senseTimerInterval = null;
+      }
+
+
+      document
+        .getElementById("senseTrainingPanel")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("gamePanel")
+        .classList.remove("hidden");
+
+    }
+  );

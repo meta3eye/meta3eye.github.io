@@ -277,3 +277,32 @@
 .quest button:disabled:hover {
   filter: none;
 }
+
+
+/* RANK SYSTEM */
+
+.rank {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-top: 5px;
+  margin-bottom: 18px;
+}
+
+.level-label {
+  margin-top: 8px;
+}
+
+.next-unlock {
+  margin-top: 18px;
+  padding: 14px;
+  background: #0a0f18;
+  border: 1px solid #263247;
+  border-radius: 12px;
+}
+
+.unlock-title {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 800;
+}

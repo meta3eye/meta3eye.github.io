@@ -439,3 +439,48 @@
   }
 
 }
+
+
+/* =========================
+   RANK TEST RUNNING
+========================= */
+
+.rank-test-running-info {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 12px;
+  background: #0a0f18;
+  border: 1px solid #263247;
+}
+
+.rank-test-running-info strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 18px;
+}
+
+.rank-test-question {
+  margin: 22px 0;
+  padding: 20px;
+  background: #0a0f18;
+  border-radius: 12px;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.rank-test-choices {
+  display: grid;
+  gap: 10px;
+}
+
+.rank-test-choice {
+  width: 100%;
+  text-align: left;
+  background: #101621;
+  color: #eef2f7;
+  border: 1px solid #263247;
+}
+
+.rank-test-choice:hover {
+  background: #182131;
+}

@@ -382,3 +382,60 @@
 .level-label {
   margin-top: 8px;
 }
+
+/* =========================
+   RANK PROMOTION TEST
+========================= */
+
+.rank-test-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin: 25px 0;
+}
+
+.rank-test-current,
+.rank-test-next {
+  text-align: center;
+  min-width: 110px;
+}
+
+.rank-test-current strong,
+.rank-test-next strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 24px;
+  letter-spacing: .08em;
+}
+
+.rank-test-arrow {
+  font-size: 28px;
+  color: #8292ac;
+}
+
+.rank-test-description {
+  margin: 20px 0;
+  line-height: 1.7;
+}
+
+.rank-test-description p {
+  margin: 8px 0;
+}
+
+#rankTestStartButton {
+  width: 100%;
+}
+
+@media(max-width:650px){
+
+  .rank-test-header {
+    gap: 14px;
+  }
+
+  .rank-test-current strong,
+  .rank-test-next strong {
+    font-size: 20px;
+  }
+
+}

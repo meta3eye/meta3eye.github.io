@@ -306,3 +306,65 @@
   font-size: 16px;
   font-weight: 800;
 }
+
+/* AWAKENING SYSTEM */
+
+.awakening-panel {
+  margin-top: 18px;
+  padding: 16px;
+  background: #0a0f18;
+  border: 1px solid #263247;
+  border-radius: 12px;
+}
+
+.awakening-type {
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+.awakening-type strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 24px;
+  letter-spacing: 0.08em;
+}
+
+.potential-paths {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.potential-path {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #101621;
+  border-radius: 10px;
+}
+
+.potential-path-name {
+  font-size: 13px;
+  color: #aab7cc;
+}
+
+.potential-path-value {
+  font-weight: 800;
+}
+
+.potential-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  background: #222c3d;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.potential-bar div {
+  height: 100%;
+  width: 0;
+  background: #dfe7f4;
+  transition: width .35s ease;
+}

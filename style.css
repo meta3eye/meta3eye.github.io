@@ -368,3 +368,17 @@
   background: #dfe7f4;
   transition: width .35s ease;
 }
+
+/* RANK SYSTEM */
+
+.rank {
+  margin-top: 4px;
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.level-label {
+  margin-top: 8px;
+}

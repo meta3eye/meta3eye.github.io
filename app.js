@@ -60,6 +60,14 @@ function render(){
   const need=xpNeeded(p.level), pct=Math.min(100,(p.exp/need)*100);
   $("xpFill").style.width=`${pct}%`;
   $("xpText").textContent=`EXP ${p.exp} / ${need}`;
+
+if (p.level_test_available) {
+
+  $("xpText").textContent =
+    `EXP ${need} / ${need} · LEVEL TEST AVAILABLE`;
+
+}
+  
   const stats=[["감지력",p.perception],["직관력",p.intuition],["집중력",p.focus],["해석력",p.interpretation],["통제력",p.control]];
   $("stats").innerHTML=stats.map(x=>`<div class="stat"><span class="label">${x[0]}</span><b>${x[1]}</b></div>`).join("");
   $("record").innerHTML=[

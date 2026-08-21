@@ -560,6 +560,87 @@ function renderNextUnlock() {
 
 }
 
+/* =========================
+   D TO C PROMOTION TEST
+========================= */
+
+const D_TO_C_PROMOTION_TEST = [
+
+  {
+    objective: "집중력 판별",
+
+    question:
+      "다음 안내를 읽은 뒤, 5초 동안 화면의 중앙에 집중하십시오. 준비가 되면 다음 단계로 진행하십시오.",
+
+    choices: [
+      {
+        text: "준비 완료",
+        correct: true
+      }
+    ]
+  },
+
+  {
+    objective: "감각 관찰",
+
+    question:
+      "지금 이 순간 주변 환경에서 평소에는 의식하지 않았던 소리나 감각을 하나 선택하십시오.",
+
+    choices: [
+      {
+        text: "소리",
+        correct: true
+      },
+
+      {
+        text: "신체 감각",
+        correct: true
+      },
+
+      {
+        text: "온도 변화",
+        correct: true
+      },
+
+      {
+        text: "특별한 감각 없음",
+        correct: true
+      }
+    ]
+  },
+
+  {
+    objective: "직관 선택",
+
+    question:
+      "아래 네 개의 선택지 중 가장 먼저 떠오르는 하나를 선택하십시오. 오래 고민하지 마십시오.",
+
+    choices: [
+      {
+        text: "A",
+        correct: true
+      },
+
+      {
+        text: "B",
+        correct: true
+      },
+
+      {
+        text: "C",
+        correct: true
+      },
+
+      {
+        text: "D",
+        correct: true
+      }
+    ]
+  }
+
+];
+
+
 const QUEST_LIMITS = {
   focus_5: 3,
   sense_observation: 3,

@@ -736,6 +736,9 @@ function renderRankPromotion(){
 
   panel.classList.remove("hidden");
 
+}
+
+
 /* =========================
    START RANK TEST
 ========================= */
@@ -759,6 +762,7 @@ function startRankTest(){
 
 }
 
+  
 
 function renderRankTestQuestion(){
 

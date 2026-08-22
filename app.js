@@ -965,7 +965,7 @@ function finishRankTest(){
 
     };
 
-}
+
 
 
 function getTodayStart() {

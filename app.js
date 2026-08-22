@@ -970,9 +970,6 @@ function finishRankTest(){
 
 function getTodayStart() {
 
-
-function getTodayStart() {
-
   const now = new Date();
 
   now.setHours(
@@ -1337,6 +1334,7 @@ $("rankTestStartButton").onclick =
   startRankTest;
 
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();loadProfile();};
+  
 client.auth.onAuthStateChange(()=>loadProfile());
 loadProfile();
 

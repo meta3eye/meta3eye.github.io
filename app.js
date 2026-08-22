@@ -2,7 +2,10 @@ const cfg = window.SPIRIT_CONFIG || {};
 const client = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY);
 
 const $ = (id) => document.getElementById(id);
-const state = { user:null, profile:null, assessmentIndex:0, assessmentScore:0 };
+const state = { user:null, profile:null, assessmentIndex:0, assessmentScore:0, rankTestIndex: 0,
+rankTestAnswers: [] };
+
+
 
 const assessment = [
   {q:"정보가 거의 없는 두 선택지 중 하나를 골라야 합니다. 어느 쪽을 선택하시겠습니까?", c:["A","B"]},
@@ -733,6 +736,233 @@ function renderRankPromotion(){
 
   panel.classList.remove("hidden");
 
+/* =========================
+   START RANK TEST
+========================= */
+
+function startRankTest(){
+
+  state.rankTestIndex = 0;
+
+  state.rankTestAnswers = [];
+
+
+  $("rankTestPanel")
+    .classList.add("hidden");
+
+
+  $("rankTestRunningPanel")
+    .classList.remove("hidden");
+
+
+  renderRankTestQuestion();
+
+}
+
+
+function renderRankTestQuestion(){
+
+  const index =
+    state.rankTestIndex;
+
+
+  const test =
+    D_TO_C_PROMOTION_TEST[index];
+
+
+  if(!test){
+
+    finishRankTest();
+
+    return;
+
+  }
+
+
+  const total =
+    D_TO_C_PROMOTION_TEST.length;
+
+
+  const currentRank =
+    state.profile.rank || "D";
+
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  $("rankTestTitle").textContent =
+    `${currentRank}-RANK PROMOTION TEST`;
+
+
+  $("rankTestProgress").textContent =
+    `TEST ${index + 1} / ${total}`;
+
+
+  $("rankTestObjective").textContent =
+    test.objective;
+
+
+  $("rankTestQuestion").textContent =
+    test.question;
+
+
+  $("rankTestMessage").textContent =
+    "";
+
+
+  $("rankTestChoices").innerHTML =
+    test.choices
+      .map((choice, choiceIndex) => {
+
+        return `
+          <button
+            class="rank-test-choice"
+            data-choice="${choiceIndex}"
+          >
+            ${choice.text}
+          </button>
+        `;
+
+      })
+      .join("");
+
+
+  document
+    .querySelectorAll(
+      ".rank-test-choice"
+    )
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        const choiceIndex =
+          Number(
+            button.dataset.choice
+          );
+
+
+        state.rankTestAnswers.push({
+          question: index,
+          choice: choiceIndex
+        });
+
+
+        state.rankTestIndex++;
+
+
+        renderRankTestQuestion();
+
+      };
+
+    });
+
+}
+
+
+function finishRankTest(){
+
+  $("rankTestRunningPanel")
+    .classList.add("hidden");
+
+
+  const panel =
+    $("rankTestPanel");
+
+
+  panel.classList.remove("hidden");
+
+
+  const currentRank =
+    state.profile.rank || "D";
+
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  panel.innerHTML = `
+
+    <div class="section-title">
+
+      <h2>
+        TEST COMPLETE
+      </h2>
+
+      <span class="muted">
+        RESULT PENDING
+      </span>
+
+    </div>
+
+
+    <div class="rank-test-header">
+
+      <div class="rank-test-current">
+
+        <span class="label">
+          CURRENT RANK
+        </span>
+
+        <strong>
+          ${currentRank}-RANK
+        </strong>
+
+      </div>
+
+
+      <div class="rank-test-arrow">
+        →
+      </div>
+
+
+      <div class="rank-test-next">
+
+        <span class="label">
+          TARGET RANK
+        </span>
+
+        <strong>
+          ${nextRank}-RANK
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="rank-test-description">
+
+      <p>
+        승급시험이 완료되었습니다.
+      </p>
+
+      <p class="muted">
+        현재는 시험 진행 구조를 확인하는 단계입니다.
+        실제 PASS / FAIL 판정은 다음 단계에서 연결됩니다.
+      </p>
+
+    </div>
+
+
+    <button id="rankTestRetryButton">
+
+      시험 다시 확인하기
+
+    </button>
+
+  `;
+
+
+  $("rankTestRetryButton")
+    .onclick = () => {
+
+      startRankTest();
+
+    };
+
+}
+  
 }
 
 function getTodayStart() {
@@ -1096,6 +1326,10 @@ $("signUpBtn").onclick=signUp;
 $("signInBtn").onclick=signIn;
 $("normalStartBtn").onclick=()=>createProfile(1);
 $("assessmentStartBtn").onclick=startAssessment;
+
+$("rankTestStartButton").onclick =
+  startRankTest;
+
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();loadProfile();};
 client.auth.onAuthStateChange(()=>loadProfile());
 loadProfile();

@@ -656,7 +656,6 @@ const QUEST_LIMITS = {
 /* =========================
    RANK PROMOTION SYSTEM
 ========================= */
-
 /* =========================
    RANK PROMOTION SYSTEM
 ========================= */
@@ -669,26 +668,382 @@ const RANK_ORDER = [
   "S"
 ];
 
-function getNextRank(rank){
-  ...
+
+function getNextRank(rank) {
+
+  const currentRank = rank || "D";
+
+  const index =
+    RANK_ORDER.indexOf(currentRank);
+
+  if (index < 0) {
+    return "C";
+  }
+
+  if (index >= RANK_ORDER.length - 1) {
+    return null;
+  }
+
+  return RANK_ORDER[index + 1];
+
 }
 
-function renderRankPromotion(){
-  ...
+
+/* =========================
+   RENDER RANK PROMOTION
+========================= */
+
+function renderRankPromotion() {
+
+  const p = state.profile;
+
+  if (!p) {
+    return;
+  }
+
+  const currentRank =
+    p.rank || "D";
+
+  const nextRank =
+    getNextRank(currentRank);
+
+  const panel =
+    $("rankTestPanel");
+
+  if (!panel) {
+    return;
+  }
+
+
+  /*
+    S-RANK는 최종 랭크
+  */
+
+  if (
+    !nextRank ||
+    p.level < 100
+  ) {
+
+    panel.classList.add("hidden");
+
+    return;
+  }
+
+
+  $("promotionCurrentRank").textContent =
+    `${currentRank}-RANK`;
+
+  $("promotionNextRank").textContent =
+    `${nextRank}-RANK`;
+
+
+  panel.classList.remove("hidden");
+
 }
 
-function startRankTest(){
-  ...
+
+/* =========================
+   START RANK TEST
+========================= */
+
+function startRankTest() {
+
+  if (!state.profile) {
+    return;
+  }
+
+
+  if (state.profile.level < 100) {
+
+    alert(
+      "LV.100에 도달해야 승급시험에 도전할 수 있습니다."
+    );
+
+    return;
+
+  }
+
+
+  state.rankTestIndex = 0;
+
+  state.rankTestAnswers = [];
+
+
+  const promotionPanel =
+    $("rankTestPanel");
+
+  const runningPanel =
+    $("rankTestRunningPanel");
+
+
+  if (promotionPanel) {
+
+    promotionPanel.classList.add(
+      "hidden"
+    );
+
+  }
+
+
+  if (runningPanel) {
+
+    runningPanel.classList.remove(
+      "hidden"
+    );
+
+  }
+
+
+  renderRankTestQuestion();
+
 }
 
-function renderRankTestQuestion(){
-  ...
+
+/* =========================
+   RENDER RANK TEST QUESTION
+========================= */
+
+function renderRankTestQuestion() {
+
+  const index =
+    state.rankTestIndex;
+
+
+  const test =
+    D_TO_C_PROMOTION_TEST[index];
+
+
+  /*
+    모든 문제 완료
+  */
+
+  if (!test) {
+
+    finishRankTest();
+
+    return;
+
+  }
+
+
+  const total =
+    D_TO_C_PROMOTION_TEST.length;
+
+
+  const currentRank =
+    state.profile.rank || "D";
+
+
+  $("rankTestTitle").textContent =
+    `${currentRank}-RANK PROMOTION TEST`;
+
+
+  $("rankTestProgress").textContent =
+    `TEST ${index + 1} / ${total}`;
+
+
+  $("rankTestObjective").textContent =
+    test.objective;
+
+
+  $("rankTestQuestion").textContent =
+    test.question;
+
+
+  $("rankTestMessage").textContent =
+    "";
+
+
+  $("rankTestChoices").innerHTML =
+    test.choices
+      .map((choice, choiceIndex) => {
+
+        return `
+          <button
+            class="rank-test-choice"
+            data-choice="${choiceIndex}"
+          >
+            ${choice.text}
+          </button>
+        `;
+
+      })
+      .join("");
+
+
+  document
+    .querySelectorAll(
+      ".rank-test-choice"
+    )
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        const choiceIndex =
+          Number(
+            button.dataset.choice
+          );
+
+
+        const testIndex =
+          state.rankTestIndex;
+
+
+        state.rankTestAnswers.push({
+
+          question:
+            testIndex,
+
+          choice:
+            choiceIndex
+
+        });
+
+
+        state.rankTestIndex++;
+
+
+        renderRankTestQuestion();
+
+      };
+
+    });
+
 }
 
-function finishRankTest(){
-  ...
-}
 
+/* =========================
+   FINISH RANK TEST
+========================= */
+
+function finishRankTest() {
+
+  const runningPanel =
+    $("rankTestRunningPanel");
+
+
+  const promotionPanel =
+    $("rankTestPanel");
+
+
+  if (runningPanel) {
+
+    runningPanel.classList.add(
+      "hidden"
+    );
+
+  }
+
+
+  if (!promotionPanel) {
+    return;
+  }
+
+
+  promotionPanel.classList.remove(
+    "hidden"
+  );
+
+
+  const currentRank =
+    state.profile.rank || "D";
+
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  promotionPanel.innerHTML = `
+
+    <div class="section-title">
+
+      <h2>
+        TEST COMPLETE
+      </h2>
+
+      <span class="muted">
+        RESULT PENDING
+      </span>
+
+    </div>
+
+
+    <div class="rank-test-header">
+
+      <div class="rank-test-current">
+
+        <span class="label">
+          CURRENT RANK
+        </span>
+
+        <strong>
+          ${currentRank}-RANK
+        </strong>
+
+      </div>
+
+
+      <div class="rank-test-arrow">
+        →
+      </div>
+
+
+      <div class="rank-test-next">
+
+        <span class="label">
+          TARGET RANK
+        </span>
+
+        <strong>
+          ${nextRank}-RANK
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="rank-test-description">
+
+      <p>
+        승급시험이 완료되었습니다.
+      </p>
+
+      <p class="muted">
+        현재는 승급시험의 진행 구조를 확인하는 단계입니다.
+      </p>
+
+      <p class="muted">
+        다음 단계에서는 실제 PASS / FAIL 판정과
+        실패 시 패널티 시스템을 연결합니다.
+      </p>
+
+    </div>
+
+
+    <button
+      id="rankTestRetryButton"
+    >
+
+      시험 다시 확인하기
+
+    </button>
+
+  `;
+
+
+  const retryButton =
+    $("rankTestRetryButton");
+
+
+  if (retryButton) {
+
+    retryButton.onclick =
+      startRankTest;
+
+  }
+
+}
 
 
 function getTodayStart() {

@@ -966,8 +966,10 @@ function finishRankTest(){
     };
 
 }
-  
-}
+
+
+function getTodayStart() {
+
 
 function getTodayStart() {
 

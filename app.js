@@ -81,3 +81,599 @@ bind("signUpBtn", signUp); bind("signInBtn", signIn); bind("normalStartBtn", () 
 bind("focusStartButton", startFocusTraining); bind("focusCompleteButton", completeFocusTraining); bind("focusBackButton", () => { clearInterval(focusTimerInterval); show("focusTrainingPanel", false); show("gamePanel"); });
 bind("senseStartButton", startSenseTraining); bind("senseCompleteButton", completeSenseTraining); bind("senseBackButton", () => { clearInterval(senseTimerInterval); show("senseTrainingPanel", false); show("gamePanel"); });
 client.auth.onAuthStateChange(() => loadProfile()); loadProfile();
+
+/* =========================================
+   REMOTE VIEWING SYSTEM
+========================================= */
+
+let currentRvSessionId = null;
+
+
+/* =========================================
+   리모트뷰잉 화면 열기
+========================================= */
+
+function openRemoteViewing() {
+
+  const gamePanel =
+    document.getElementById("gamePanel");
+
+  const rvTrainingPanel =
+    document.getElementById("rvTrainingPanel");
+
+  if (!gamePanel || !rvTrainingPanel) {
+    console.error(
+      "리모트뷰잉 화면 요소를 찾을 수 없습니다."
+    );
+    return;
+  }
+
+
+  gamePanel.classList.add("hidden");
+
+  rvTrainingPanel.classList.remove("hidden");
+
+
+  /*
+    시작 화면 표시
+  */
+
+  document
+    .getElementById("rvSetup")
+    .classList.remove("hidden");
+
+
+  /*
+    관찰 화면 숨김
+  */
+
+  document
+    .getElementById("rvObservation")
+    .classList.add("hidden");
+
+
+  /*
+    결과 화면 숨김
+  */
+
+  document
+    .getElementById("rvResult")
+    .classList.add("hidden");
+
+
+  /*
+    메시지 초기화
+  */
+
+  document
+    .getElementById("rvSetupMessage")
+    .textContent = "";
+
+
+  /*
+    이전 세션 초기화
+  */
+
+  currentRvSessionId = null;
+
+}
+
+
+/* =========================================
+   리모트뷰잉 타겟 생성
+========================================= */
+
+async function startRemoteViewingSession() {
+
+  const button =
+    document.getElementById("rvStartButton");
+
+
+  const message =
+    document.getElementById("rvSetupMessage");
+
+
+  if (!state.user) {
+
+    message.textContent =
+      "로그인 후 이용할 수 있습니다.";
+
+    return;
+
+  }
+
+
+  button.disabled = true;
+
+  message.textContent =
+    "서버에서 실제 타겟을 선택하고 있습니다...";
+
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "create_rv_session"
+  );
+
+
+  button.disabled = false;
+
+
+  if (error) {
+
+    console.error(
+      "RV session create error:",
+      error
+    );
+
+
+    message.textContent =
+      error.message;
+
+    return;
+
+  }
+
+
+  /*
+    RPC 반환값 확인
+  */
+
+  const session =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+
+  if (!session) {
+
+    message.textContent =
+      "리모트뷰잉 세션 생성에 실패했습니다.";
+
+    return;
+
+  }
+
+
+  currentRvSessionId =
+    session.session_id;
+
+
+  /*
+    타겟 코드 표시
+  */
+
+  document
+    .getElementById("rvTargetCode")
+    .textContent =
+      session.target_code;
+
+
+  /*
+    시작 화면 숨김
+  */
+
+  document
+    .getElementById("rvSetup")
+    .classList.add("hidden");
+
+
+  /*
+    관찰 화면 표시
+  */
+
+  document
+    .getElementById("rvObservation")
+    .classList.remove("hidden");
+
+
+  /*
+    기존 입력값 초기화
+  */
+
+  document
+    .getElementById("rvFormDescription")
+    .value = "";
+
+  document
+    .getElementById("rvColorDescription")
+    .value = "";
+
+  document
+    .getElementById("rvTextureDescription")
+    .value = "";
+
+  document
+    .getElementById("rvTemperatureDescription")
+    .value = "";
+
+  document
+    .getElementById("rvMovementDescription")
+    .value = "";
+
+  document
+    .getElementById("rvEnvironmentDescription")
+    .value = "";
+
+  document
+    .getElementById("rvFreeDescription")
+    .value = "";
+
+
+  document
+    .getElementById("rvObservationMessage")
+    .textContent = "";
+
+}
+
+
+/* =========================================
+   리모트뷰잉 관찰 기록 제출
+========================================= */
+
+async function submitRemoteViewing() {
+
+  const message =
+    document.getElementById(
+      "rvObservationMessage"
+    );
+
+
+  const button =
+    document.getElementById(
+      "rvSubmitButton"
+    );
+
+
+  if (!currentRvSessionId) {
+
+    message.textContent =
+      "활성화된 리모트뷰잉 세션이 없습니다.";
+
+    return;
+
+  }
+
+
+  const formDescription =
+    document
+      .getElementById(
+        "rvFormDescription"
+      )
+      .value
+      .trim();
+
+
+  const colorDescription =
+    document
+      .getElementById(
+        "rvColorDescription"
+      )
+      .value
+      .trim();
+
+
+  const textureDescription =
+    document
+      .getElementById(
+        "rvTextureDescription"
+      )
+      .value
+      .trim();
+
+
+  const temperatureDescription =
+    document
+      .getElementById(
+        "rvTemperatureDescription"
+      )
+      .value
+      .trim();
+
+
+  const movementDescription =
+    document
+      .getElementById(
+        "rvMovementDescription"
+      )
+      .value
+      .trim();
+
+
+  const environmentDescription =
+    document
+      .getElementById(
+        "rvEnvironmentDescription"
+      )
+      .value
+      .trim();
+
+
+  const freeDescription =
+    document
+      .getElementById(
+        "rvFreeDescription"
+      )
+      .value
+      .trim();
+
+
+  /*
+    최소한 하나는 기록하도록 설정
+  */
+
+  if (
+    !formDescription &&
+    !colorDescription &&
+    !textureDescription &&
+    !temperatureDescription &&
+    !movementDescription &&
+    !environmentDescription &&
+    !freeDescription
+  ) {
+
+    message.textContent =
+      "관찰한 내용을 최소 한 가지 이상 기록하세요.";
+
+    return;
+
+  }
+
+
+  button.disabled = true;
+
+  message.textContent =
+    "관찰 기록을 저장하고 실제 타겟을 공개하고 있습니다...";
+
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "submit_rv_session",
+    {
+
+      p_session_id:
+        currentRvSessionId,
+
+      p_form_description:
+        formDescription || null,
+
+      p_color_description:
+        colorDescription || null,
+
+      p_texture_description:
+        textureDescription || null,
+
+      p_temperature_description:
+        temperatureDescription || null,
+
+      p_movement_description:
+        movementDescription || null,
+
+      p_environment_description:
+        environmentDescription || null,
+
+      p_free_description:
+        freeDescription || null
+
+    }
+  );
+
+
+  button.disabled = false;
+
+
+  if (error) {
+
+    console.error(
+      "RV submit error:",
+      error
+    );
+
+
+    message.textContent =
+      error.message;
+
+    return;
+
+  }
+
+
+  /*
+    RPC 반환값 확인
+  */
+
+  const result =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+
+  if (!result) {
+
+    message.textContent =
+      "타겟 정보를 가져오지 못했습니다.";
+
+    return;
+
+  }
+
+
+  /*
+    실제 타겟 코드
+  */
+
+  document
+    .getElementById(
+      "rvResultTargetCode"
+    )
+    .textContent =
+      result.target_code;
+
+
+  /*
+    이미지 제목
+  */
+
+  document
+    .getElementById(
+      "rvResultTitle"
+    )
+    .textContent =
+      result.source_title ||
+      "REMOTE VIEWING TARGET";
+
+
+  /*
+    Supabase Storage 실제 이미지 URL 생성
+  */
+
+  const {
+    data: publicUrlData
+  } = client
+    .storage
+    .from("rv-images")
+    .getPublicUrl(
+      result.storage_path
+    );
+
+
+  const imageUrl =
+    publicUrlData.publicUrl;
+
+
+  const image =
+    document.getElementById(
+      "rvResultImage"
+    );
+
+
+  image.src =
+    imageUrl;
+
+
+  /*
+    관찰 화면 숨김
+  */
+
+  document
+    .getElementById("rvObservation")
+    .classList.add("hidden");
+
+
+  /*
+    결과 화면 표시
+  */
+
+  document
+    .getElementById("rvResult")
+    .classList.remove("hidden");
+
+
+  document
+    .getElementById("rvResultMessage")
+    .textContent =
+      "실제 타겟 이미지가 공개되었습니다.";
+
+
+  /*
+    현재 세션 종료 처리
+  */
+
+  currentRvSessionId = null;
+
+}
+
+
+/* =========================================
+   리모트뷰잉 취소
+========================================= */
+
+function cancelRemoteViewing() {
+
+  currentRvSessionId = null;
+
+
+  document
+    .getElementById("rvTrainingPanel")
+    .classList.add("hidden");
+
+
+  document
+    .getElementById("gamePanel")
+    .classList.remove("hidden");
+
+
+  render();
+
+}
+
+
+/* =========================================
+   리모트뷰잉 종료
+========================================= */
+
+function finishRemoteViewing() {
+
+  currentRvSessionId = null;
+
+
+  document
+    .getElementById("rvTrainingPanel")
+    .classList.add("hidden");
+
+
+  document
+    .getElementById("gamePanel")
+    .classList.remove("hidden");
+
+
+  render();
+
+}
+
+
+/* =========================================
+   이벤트 연결
+========================================= */
+
+document
+  .getElementById("rvStartButton")
+  ?.addEventListener(
+    "click",
+    startRemoteViewingSession
+  );
+
+
+document
+  .getElementById("rvSubmitButton")
+  ?.addEventListener(
+    "click",
+    submitRemoteViewing
+  );
+
+
+document
+  .getElementById("rvBackButton")
+  ?.addEventListener(
+    "click",
+    cancelRemoteViewing
+  );
+
+
+document
+  .getElementById("rvCancelButton")
+  ?.addEventListener(
+    "click",
+    cancelRemoteViewing
+  );
+
+
+document
+  .getElementById("rvFinishButton")
+  ?.addEventListener(
+    "click",
+    finishRemoteViewing
+  );

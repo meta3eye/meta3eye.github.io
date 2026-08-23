@@ -1,55 +1,99 @@
 <!doctype html>
 <html lang="ko">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
   <title>SPIRIT SYSTEM</title>
-  <link rel="stylesheet" href="style.css">
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
+
 
 <body>
 
   <main class="app">
 
+
+    <!-- =========================
+         상단
+    ========================== -->
+
     <header class="topbar">
+
       <div>
-        <div class="eyebrow">SPIRIT SYSTEM</div>
-        <h1>나 혼자 레벨업</h1>
+
+        <div class="eyebrow">
+          SPIRIT SYSTEM
+        </div>
+
+        <h1>
+          나 혼자 레벨업
+        </h1>
+
       </div>
 
-      <div id="authState" class="auth-state">
+
+      <div
+        id="authState"
+        class="auth-state"
+      >
         로그인 필요
       </div>
+
     </header>
 
 
-    <!-- 로그인 -->
-    <section id="authPanel" class="panel">
+    <!-- =========================
+         로그인
+    ========================== -->
 
-      <h2>PLAYER 접속</h2>
+    <section
+      id="authPanel"
+      class="panel"
+    >
+
+      <h2>
+        PLAYER 접속
+      </h2>
 
       <p class="muted">
         게임 기록은 계정에 연결되어 자동 저장됩니다.
       </p>
 
+
       <div class="form-grid">
+
         <input
           id="email"
           type="email"
           placeholder="이메일"
         >
 
+
         <input
           id="password"
           type="password"
           placeholder="비밀번호 (6자 이상)"
         >
+
       </div>
 
+
       <div class="actions">
+
         <button id="signUpBtn">
           신규 PLAYER 생성
         </button>
+
 
         <button
           id="signInBtn"
@@ -57,17 +101,30 @@
         >
           로그인
         </button>
+
       </div>
 
-      <p id="authMessage" class="message"></p>
+
+      <p
+        id="authMessage"
+        class="message"
+      ></p>
 
     </section>
 
 
-    <!-- 시작 방법 선택 -->
-    <section id="startPanel" class="panel hidden">
+    <!-- =========================
+         시작 방법 선택
+    ========================== -->
 
-      <h2>각성 단계 선택</h2>
+    <section
+      id="startPanel"
+      class="panel hidden"
+    >
+
+      <h2>
+        각성 단계 선택
+      </h2>
 
       <p>
         처음 시작하는 플레이어는 LV.1부터 시작합니다.
@@ -75,18 +132,32 @@
         LV.1~30 범위의 시작 레벨을 받을 수 있습니다.
       </p>
 
+
       <div class="choice-grid">
 
         <button id="normalStartBtn">
+
           일반 시작
+
           <br>
-          <strong>LV.1</strong>
+
+          <strong>
+            LV.1
+          </strong>
+
         </button>
 
+
         <button id="assessmentStartBtn">
+
           능력 측정
+
           <br>
-          <strong>INITIAL AWAKENING</strong>
+
+          <strong>
+            INITIAL AWAKENING
+          </strong>
+
         </button>
 
       </div>
@@ -94,25 +165,36 @@
     </section>
 
 
-    <!-- 능력 측정 -->
-    <section id="assessmentPanel" class="panel hidden">
+    <!-- =========================
+         능력 측정
+    ========================== -->
 
-      <h2>INITIAL AWAKENING TEST</h2>
+    <section
+      id="assessmentPanel"
+      class="panel hidden"
+    >
+
+      <h2>
+        INITIAL AWAKENING TEST
+      </h2>
 
       <p class="muted">
         현재 수행 결과를 기준으로 시작 레벨을 결정합니다.
         결과는 LV.1~30으로 제한됩니다.
       </p>
 
+
       <div
         id="assessmentQuestion"
         class="question"
       ></div>
 
+
       <div
         id="assessmentChoices"
         class="choices"
       ></div>
+
 
       <p
         id="assessmentProgress"
@@ -122,28 +204,49 @@
     </section>
 
 
-    <!-- 메인 게임 화면 -->
-    <section id="gamePanel" class="hidden">
+    <!-- =========================
+         메인 게임 화면
+    ========================== -->
+
+    <section
+      id="gamePanel"
+      class="hidden"
+    >
+
 
       <!-- 플레이어 정보 -->
+
       <div class="player-card panel">
 
-       <div class="level-row">
-  <div>
-    <span class="label">CURRENT RANK</span>
-    <div id="rankValue" class="rank">D-RANK</div>
-    
-    <span class="label level-label">CURRENT LEVEL</span>
-    <div id="levelValue" class="level">LV.1</div>
-  </div>
+
+        <div class="level-row">
+
+          <div>
+
+            <span class="label">
+              CURRENT RANK
+            </span>
+
+            <div
+              id="rankValue"
+              class="rank"
+            >
+              D-RANK
+            </div>
 
 
-         
-  <div class="status-box">
-    <span class="label">STATUS</span>
-    <strong id="statusValue">AWAKENED</strong>
-  </div>
-</div>
+            <span class="label level-label">
+              CURRENT LEVEL
+            </span>
+
+            <div
+              id="levelValue"
+              class="level"
+            >
+              LV.1
+            </div>
+
+          </div>
 
 
           <div class="status-box">
@@ -161,54 +264,120 @@
         </div>
 
 
-<div class="xpbar">
-  <div id="xpFill"></div>
-</div>
+        <div class="xpbar">
 
-<div id="xpText" class="muted">
-  EXP 0 / 100
-</div>
+          <div id="xpFill"></div>
 
-<div class="next-unlock">
-  <span class="label">NEXT UNLOCK</span>
-
-  <div id="nextUnlockTitle" class="unlock-title">
-    새로운 훈련 준비 중
-  </div>
-
-  <div id="nextUnlockDescription" class="muted">
-    다음 레벨에서 새로운 능력과 훈련이 해금됩니다.
-  </div>
-</div>
-
-<div class="awakening-panel">
-  <div class="section-title">
-    <h2>AWAKENING ANALYSIS</h2>
-    <span id="awakeningStatus" class="muted">ANALYZING...</span>
-  </div>
-
-  <div class="awakening-type">
-    <span class="label">CURRENT TYPE</span>
-    <strong id="primaryTypeValue">UNKNOWN</strong>
-  </div>
-
-  <div id="awakeningDescription" class="muted">
-    아직 충분한 훈련 데이터가 없습니다.
-    여러 유형의 훈련을 계속하십시오.
-  </div>
-
-  <div id="potentialPaths" class="potential-paths"></div>
-</div>
-      
-<div class="stats" id="stats"></div>
+        </div>
 
 
-      <!-- 일일 퀘스트 -->
+        <div
+          id="xpText"
+          class="muted"
+        >
+          EXP 0 / 100
+        </div>
+
+
+        <!-- 다음 해금 -->
+
+        <div class="next-unlock">
+
+          <span class="label">
+            NEXT UNLOCK
+          </span>
+
+
+          <div
+            id="nextUnlockTitle"
+            class="unlock-title"
+          >
+            새로운 훈련 준비 중
+          </div>
+
+
+          <div
+            id="nextUnlockDescription"
+            class="muted"
+          >
+            다음 레벨에서 새로운 능력과 훈련이 해금됩니다.
+          </div>
+
+        </div>
+
+
+        <!-- 각성 분석 -->
+
+        <div class="awakening-panel">
+
+          <div class="section-title">
+
+            <h2>
+              AWAKENING ANALYSIS
+            </h2>
+
+            <span
+              id="awakeningStatus"
+              class="muted"
+            >
+              ANALYZING...
+            </span>
+
+          </div>
+
+
+          <div class="awakening-type">
+
+            <span class="label">
+              CURRENT TYPE
+            </span>
+
+            <strong id="primaryTypeValue">
+              UNKNOWN
+            </strong>
+
+          </div>
+
+
+          <div
+            id="awakeningDescription"
+            class="muted"
+          >
+            아직 충분한 훈련 데이터가 없습니다.
+            여러 유형의 훈련을 계속하십시오.
+          </div>
+
+
+          <div
+            id="potentialPaths"
+            class="potential-paths"
+          ></div>
+
+        </div>
+
+
+        <!-- 능력치 -->
+
+        <div
+          class="stats"
+          id="stats"
+        ></div>
+
+      </div>
+
+
+      <!-- =========================
+           DAILY QUEST
+      ========================== -->
+
       <div class="panel">
 
         <div class="section-title">
 
-          <h2>DAILY QUEST</h2>
+          <h2>
+            DAILY QUEST
+          </h2>
+
 
           <span
             id="questNotice"
@@ -217,6 +386,7 @@
 
         </div>
 
+
         <div
           id="questList"
           class="quest-list"
@@ -224,104 +394,163 @@
 
       </div>
 
-      <!-- RANK PROMOTION TEST -->
 
-<section id="rankTestPanel" class="panel hidden">
+      <!-- =========================
+           RANK PROMOTION TEST
+      ========================== -->
 
-  <div class="section-title">
-    <h2>RANK PROMOTION TEST</h2>
-    <span class="muted">BOSS TEST</span>
-  </div>
+      <section
+        id="rankTestPanel"
+        class="panel hidden"
+      >
 
-  <div class="rank-test-header">
+        <div class="section-title">
 
-    <div class="rank-test-current">
-      <span class="label">CURRENT RANK</span>
-      <strong id="promotionCurrentRank">D-RANK</strong>
-    </div>
+          <h2>
+            RANK PROMOTION TEST
+          </h2>
 
-    <div class="rank-test-arrow">
-      →
-    </div>
+          <span class="muted">
+            BOSS TEST
+          </span>
 
-    <div class="rank-test-next">
-      <span class="label">NEXT RANK</span>
-      <strong id="promotionNextRank">C-RANK</strong>
-    </div>
+        </div>
 
-  </div>
 
-  <div class="rank-test-description">
+        <div class="rank-test-header">
 
-    <p>
-      현재 랭크의 최고 레벨에 도달했습니다.
-    </p>
 
-    <p>
-      다음 랭크로 진입하려면
-      승급시험을 통과해야 합니다.
-    </p>
+          <div class="rank-test-current">
 
-    <p class="muted">
-      이것은 일반 퀘스트가 아닙니다.
-      현재까지 쌓아온 능력을 검증하는
-      RANK PROMOTION TEST입니다.
-    </p>
+            <span class="label">
+              CURRENT RANK
+            </span>
 
-  </div>
+            <strong id="promotionCurrentRank">
+              D-RANK
+            </strong>
 
-  <button id="rankTestStartButton">
-    승급시험 시작
-  </button>
+          </div>
 
-</section>
 
-<!-- RANK PROMOTION TEST RUNNING -->
+          <div class="rank-test-arrow">
+            →
+          </div>
 
-<section id="rankTestRunningPanel" class="panel hidden">
 
-  <div class="section-title">
-    <h2 id="rankTestTitle">
-      D-RANK PROMOTION TEST
-    </h2>
+          <div class="rank-test-next">
 
-    <span id="rankTestProgress" class="muted">
-      TEST 1 / 3
-    </span>
-  </div>
+            <span class="label">
+              NEXT RANK
+            </span>
 
-  <div class="rank-test-running-info">
+            <strong id="promotionNextRank">
+              C-RANK
+            </strong>
 
-    <span class="label">
-      CURRENT OBJECTIVE
-    </span>
+          </div>
 
-    <strong id="rankTestObjective">
-      준비 중
-    </strong>
+        </div>
 
-  </div>
 
-  <div id="rankTestQuestion"
-       class="rank-test-question">
-  </div>
+        <div class="rank-test-description">
 
-  <div id="rankTestChoices"
-       class="rank-test-choices">
-  </div>
+          <p>
+            현재 랭크의 최고 레벨에 도달했습니다.
+          </p>
 
-  <p id="rankTestMessage"
-     class="message">
-  </p>
+          <p>
+            다음 랭크로 진입하려면
+            승급시험을 통과해야 합니다.
+          </p>
 
-</section>
-      
-      <!-- 플레이어 기록 -->
+          <p class="muted">
+            이것은 일반 퀘스트가 아닙니다.
+            현재까지 쌓아온 능력을 검증하는
+            RANK PROMOTION TEST입니다.
+          </p>
+
+        </div>
+
+
+        <button id="rankTestStartButton">
+          승급시험 시작
+        </button>
+
+      </section>
+
+
+      <!-- =========================
+           RANK TEST RUNNING
+      ========================== -->
+
+      <section
+        id="rankTestRunningPanel"
+        class="panel hidden"
+      >
+
+        <div class="section-title">
+
+          <h2 id="rankTestTitle">
+            D-RANK PROMOTION TEST
+          </h2>
+
+
+          <span
+            id="rankTestProgress"
+            class="muted"
+          >
+            TEST 1 / 3
+          </span>
+
+        </div>
+
+
+        <div class="rank-test-running-info">
+
+          <span class="label">
+            CURRENT OBJECTIVE
+          </span>
+
+          <strong id="rankTestObjective">
+            준비 중
+          </strong>
+
+        </div>
+
+
+        <div
+          id="rankTestQuestion"
+          class="rank-test-question"
+        ></div>
+
+
+        <div
+          id="rankTestChoices"
+          class="rank-test-choices"
+        ></div>
+
+
+        <p
+          id="rankTestMessage"
+          class="message"
+        ></p>
+
+      </section>
+
+
+      <!-- =========================
+           PLAYER RECORD
+      ========================== -->
+
       <div class="panel">
 
         <div class="section-title">
 
-          <h2>PLAYER RECORD</h2>
+          <h2>
+            PLAYER RECORD
+          </h2>
+
 
           <button
             id="logoutBtn"
@@ -331,6 +560,7 @@
           </button>
 
         </div>
+
 
         <div id="record"></div>
 
@@ -351,10 +581,13 @@
       <div class="focus-training-box">
 
 
-        <!-- 훈련 설명 및 시작 -->
+        <!-- 시작 설정 -->
+
         <div id="focusSetup">
 
-          <h2>5분 집중 훈련</h2>
+          <h2>
+            5분 집중 훈련
+          </h2>
 
           <p>
             하나의 대상에 집중하십시오.
@@ -366,6 +599,7 @@
           <label for="focusTarget">
             집중 대상 선택
           </label>
+
 
           <select id="focusTarget">
 
@@ -402,6 +636,7 @@
               훈련 시작
             </button>
 
+
             <button
               id="focusBackButton"
               class="secondary"
@@ -415,6 +650,7 @@
 
 
         <!-- 실제 타이머 훈련 -->
+
         <div
           id="focusRunning"
           class="hidden"
@@ -434,9 +670,7 @@
 
             집중 대상:
 
-            <strong
-              id="selectedFocusTarget"
-            ></strong>
+            <strong id="selectedFocusTarget"></strong>
 
           </div>
 
@@ -448,13 +682,16 @@
         </div>
 
 
-        <!-- 훈련 종료 후 결과 -->
+        <!-- 결과 기록 -->
+
         <div
           id="focusResult"
           class="hidden"
         >
 
-          <h2>QUEST COMPLETE</h2>
+          <h2>
+            QUEST COMPLETE
+          </h2>
 
           <p>
             5분 집중 훈련이 종료되었습니다.
@@ -464,6 +701,7 @@
           <label for="focusQuality">
             집중 상태는 어땠습니까?
           </label>
+
 
           <select id="focusQuality">
 
@@ -497,6 +735,7 @@
           <label for="focusObstacle">
             가장 큰 방해 요소는 무엇입니까?
           </label>
+
 
           <select id="focusObstacle">
 
@@ -534,6 +773,7 @@
           <label for="focusExperience">
             특별한 경험이 있었습니까?
           </label>
+
 
           <select id="focusExperience">
 
@@ -573,8 +813,13 @@
 
 
           <label for="focusMemo">
+
             오늘의 관찰 기록
-            <span>(선택 사항)</span>
+
+            <span>
+              (선택 사항)
+            </span>
+
           </label>
 
 
@@ -599,291 +844,718 @@
     </section>
 
 
-<!-- =========================
-     감각 관찰 훈련
-========================= -->
+    <!-- =========================
+         감각 관찰 훈련
+    ========================== -->
 
-<section
-  id="senseTrainingPanel"
-  class="hidden"
->
+    <section
+      id="senseTrainingPanel"
+      class="hidden"
+    >
 
-  <div class="sense-training-box">
-
-
-    <!-- 시작 설정 -->
-    <div id="senseSetup">
-
-      <h2>감각 관찰</h2>
-
-      <p>
-        평소에는 지나치던 감각을 의식적으로 관찰하십시오.
-        좋은 결과를 만들려고 하지 말고,
-        실제로 느껴지는 것을 그대로 관찰하십시오.
-      </p>
+      <div class="sense-training-box">
 
 
-      <label for="senseTarget">
-        관찰 대상 선택
-      </label>
+        <!-- 시작 설정 -->
 
-      <select id="senseTarget">
+        <div id="senseSetup">
 
-        <option value="">
-          관찰 대상을 선택하세요
-        </option>
+          <h2>
+            감각 관찰
+          </h2>
 
-        <option value="주변의 소리">
-          주변의 소리
-        </option>
-
-        <option value="몸의 감각">
-          몸의 감각
-        </option>
-
-        <option value="눈앞의 사물">
-          눈앞의 사물
-        </option>
-
-        <option value="냄새">
-          냄새
-        </option>
-
-        <option value="촉감">
-          촉감
-        </option>
-
-        <option value="자유 관찰">
-          자유 관찰
-        </option>
-
-      </select>
+          <p>
+            평소에는 지나치던 감각을 의식적으로 관찰하십시오.
+            좋은 결과를 만들려고 하지 말고,
+            실제로 느껴지는 것을 그대로 관찰하십시오.
+          </p>
 
 
-      <label for="senseDuration">
-        훈련 시간
-      </label>
-
-      <select id="senseDuration">
-
-        <option value="">
-          시간을 선택하세요
-        </option>
-
-        <option value="180">
-          3분 · EXP 5
-        </option>
-
-        <option value="300">
-          5분 · EXP 10
-        </option>
-
-        <option value="600">
-          10분 · EXP 20
-        </option>
-
-      </select>
+          <label for="senseTarget">
+            관찰 대상 선택
+          </label>
 
 
-      <label for="senseSound">
-        종료 알림음
-      </label>
+          <select id="senseTarget">
 
-      <select id="senseSound">
+            <option value="">
+              관찰 대상을 선택하세요
+            </option>
 
-        <option value="bell">
-          기본 종소리
-        </option>
+            <option value="주변의 소리">
+              주변의 소리
+            </option>
 
-        <option value="high">
-          높은 알림음
-        </option>
+            <option value="몸의 감각">
+              몸의 감각
+            </option>
 
-        <option value="low">
-          낮은 알림음
-        </option>
+            <option value="눈앞의 사물">
+              눈앞의 사물
+            </option>
 
-        <option value="double">
-          두 번 알림
-        </option>
+            <option value="냄새">
+              냄새
+            </option>
 
-        <option value="silent">
-          무음
-        </option>
+            <option value="촉감">
+              촉감
+            </option>
 
-      </select>
+            <option value="자유 관찰">
+              자유 관찰
+            </option>
+
+          </select>
 
 
-      <div class="actions">
+          <label for="senseDuration">
+            훈련 시간
+          </label>
 
-        <button id="senseStartButton">
-          관찰 시작
-        </button>
 
-        <button
-          id="senseBackButton"
-          class="secondary"
+          <select id="senseDuration">
+
+            <option value="">
+              시간을 선택하세요
+            </option>
+
+            <option value="180">
+              3분 · EXP 5
+            </option>
+
+            <option value="300">
+              5분 · EXP 10
+            </option>
+
+            <option value="600">
+              10분 · EXP 20
+            </option>
+
+          </select>
+
+
+          <label for="senseSound">
+            종료 알림음
+          </label>
+
+
+          <select id="senseSound">
+
+            <option value="bell">
+              기본 종소리
+            </option>
+
+            <option value="high">
+              높은 알림음
+            </option>
+
+            <option value="low">
+              낮은 알림음
+            </option>
+
+            <option value="double">
+              두 번 알림
+            </option>
+
+            <option value="silent">
+              무음
+            </option>
+
+          </select>
+
+
+          <div class="actions">
+
+            <button id="senseStartButton">
+              관찰 시작
+            </button>
+
+
+            <button
+              id="senseBackButton"
+              class="secondary"
+            >
+              돌아가기
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- 실제 관찰 중 -->
+
+        <div
+          id="senseRunning"
+          class="hidden"
         >
-          돌아가기
-        </button>
+
+          <div class="training-status">
+            SENSE OBSERVATION IN PROGRESS
+          </div>
+
+
+          <div id="senseTimer">
+            05:00
+          </div>
+
+
+          <div class="training-target">
+
+            관찰 대상:
+
+            <strong id="selectedSenseTarget"></strong>
+
+          </div>
+
+
+          <p class="muted">
+            판단하지 말고, 느껴지는 감각을 관찰하십시오.
+          </p>
+
+        </div>
+
+
+        <!-- 관찰 종료 후 -->
+
+        <div
+          id="senseResult"
+          class="hidden"
+        >
+
+          <h2>
+            OBSERVATION COMPLETE
+          </h2>
+
+          <p>
+            관찰 중 경험한 내용을 기록하십시오.
+          </p>
+
+
+          <label for="senseDiscovery">
+            가장 먼저 알아차린 것은 무엇입니까?
+          </label>
+
+
+          <select id="senseDiscovery">
+
+            <option value="">
+              선택하세요
+            </option>
+
+            <option value="평소 느끼지 못했던 감각">
+              평소 느끼지 못했던 감각
+            </option>
+
+            <option value="몸의 미세한 변화">
+              몸의 미세한 변화
+            </option>
+
+            <option value="새로운 소리나 자극">
+              새로운 소리나 자극
+            </option>
+
+            <option value="감정의 변화">
+              감정의 변화
+            </option>
+
+            <option value="특별한 변화 없음">
+              특별한 변화 없음
+            </option>
+
+            <option value="기타">
+              기타
+            </option>
+
+          </select>
+
+
+          <label for="senseDifficulty">
+            관찰 중 가장 어려웠던 것은 무엇입니까?
+          </label>
+
+
+          <select id="senseDifficulty">
+
+            <option value="">
+              선택하세요
+            </option>
+
+            <option value="집중 유지">
+              집중 유지
+            </option>
+
+            <option value="잡생각">
+              잡생각
+            </option>
+
+            <option value="졸음">
+              졸음
+            </option>
+
+            <option value="외부 자극">
+              외부 자극
+            </option>
+
+            <option value="무엇을 관찰해야 할지 모르겠음">
+              무엇을 관찰해야 할지 모르겠음
+            </option>
+
+            <option value="특별한 어려움 없음">
+              특별한 어려움 없음
+            </option>
+
+          </select>
+
+
+          <label for="senseMemo">
+
+            관찰 기록
+
+            <span>
+              (선택 사항)
+            </span>
+
+          </label>
+
+
+          <textarea
+            id="senseMemo"
+            rows="5"
+            placeholder="관찰 중 느낀 감각이나 변화를 기록하세요."
+          ></textarea>
+
+
+          <button id="senseCompleteButton">
+            훈련 기록 저장 및 EXP 받기
+          </button>
+
+
+          <p id="senseMessage"></p>
+
+        </div>
 
       </div>
 
-    </div>
+    </section>
 
 
-    <!-- 실제 관찰 중 -->
-    <div
-      id="senseRunning"
+    <!-- =========================================
+         REMOTE VIEWING TRAINING
+    ========================================== -->
+
+    <section
+      id="remoteViewingTrainingPanel"
       class="hidden"
     >
 
-      <div class="training-status">
-        SENSE OBSERVATION IN PROGRESS
+      <div class="remote-viewing-box">
+
+
+        <!-- =========================
+             STEP 1
+             타겟 세션 생성
+        ========================== -->
+
+        <div id="rvSetup">
+
+          <div class="training-status">
+            REMOTE VIEWING PROTOCOL
+          </div>
+
+
+          <h2>
+            REMOTE VIEWING
+          </h2>
+
+
+          <p class="muted">
+            시스템은 실제 이미지와 연결된 타겟을
+            이미 선택한 상태입니다.
+          </p>
+
+          <p>
+            당신에게는 이미지가 공개되지 않습니다.
+            타겟 코드만 제공됩니다.
+          </p>
+
+
+          <div class="rv-target-card">
+
+            <span class="label">
+              TARGET CODE
+            </span>
+
+            <strong id="rvTargetCode">
+              RV-......
+            </strong>
+
+          </div>
+
+
+          <p class="muted">
+            타겟에 대한 정보를 미리 추측하지 마십시오.
+            떠오르는 형태, 색상, 질감, 온도, 움직임,
+            환경적 특징을 가능한 그대로 관찰하십시오.
+          </p>
+
+
+          <div class="actions">
+
+            <button id="rvStartButton">
+              타겟 관찰 시작
+            </button>
+
+
+            <button
+              id="rvBackButton"
+              class="secondary"
+            >
+              돌아가기
+            </button>
+
+          </div>
+
+
+          <p
+            id="rvMessage"
+            class="message"
+          ></p>
+
+        </div>
+
+
+        <!-- =========================
+             STEP 2
+             관찰 기록
+        ========================== -->
+
+        <div
+          id="rvObservation"
+          class="hidden"
+        >
+
+          <div class="training-status">
+            TARGET OBSERVATION
+          </div>
+
+
+          <h2>
+            관찰 기록
+          </h2>
+
+
+          <div class="rv-target-card small">
+
+            <span class="label">
+              CURRENT TARGET
+            </span>
+
+            <strong id="rvObservationTargetCode">
+              RV-......
+            </strong>
+
+          </div>
+
+
+          <p class="muted">
+            정답을 맞히려고 하지 마십시오.
+            보이는 이미지나 느낌을 있는 그대로 기록하십시오.
+            정확한 단어가 떠오르지 않으면 비슷한 표현으로 기록해도 됩니다.
+          </p>
+
+
+          <!-- 형태 -->
+
+          <label for="rvFormDescription">
+            형태 · 구조
+          </label>
+
+          <textarea
+            id="rvFormDescription"
+            rows="3"
+            placeholder="예: 둥근 형태, 긴 구조물, 높은 것, 넓게 펼쳐진 것"
+          ></textarea>
+
+
+          <!-- 색상 -->
+
+          <label for="rvColorDescription">
+            색상
+          </label>
+
+          <textarea
+            id="rvColorDescription"
+            rows="3"
+            placeholder="예: 파란색, 어두운 색, 밝은 흰색, 여러 색이 섞여 있음"
+          ></textarea>
+
+
+          <!-- 질감 -->
+
+          <label for="rvTextureDescription">
+            질감 · 표면
+          </label>
+
+          <textarea
+            id="rvTextureDescription"
+            rows="3"
+            placeholder="예: 매끄러움, 거침, 단단함, 물기가 있음"
+          ></textarea>
+
+
+          <!-- 온도 -->
+
+          <label for="rvTemperatureDescription">
+            온도 · 열감
+          </label>
+
+          <textarea
+            id="rvTemperatureDescription"
+            rows="3"
+            placeholder="예: 차가움, 따뜻함, 뜨거움, 습한 느낌"
+          ></textarea>
+
+
+          <!-- 움직임 -->
+
+          <label for="rvMovementDescription">
+            움직임
+          </label>
+
+          <textarea
+            id="rvMovementDescription"
+            rows="3"
+            placeholder="예: 움직이지 않음, 흐름, 빠른 이동, 반복적인 움직임"
+          ></textarea>
+
+
+          <!-- 환경 -->
+
+          <label for="rvEnvironmentDescription">
+            환경 · 주변
+          </label>
+
+          <textarea
+            id="rvEnvironmentDescription"
+            rows="4"
+            placeholder="예: 실내, 야외, 넓은 공간, 물가, 건물 주변, 자연 환경"
+          ></textarea>
+
+
+          <!-- 자유 기록 -->
+
+          <label for="rvFreeDescription">
+            자유 관찰 기록
+            <span>(선택 사항)</span>
+          </label>
+
+          <textarea
+            id="rvFreeDescription"
+            rows="6"
+            placeholder="그 외에 떠오른 이미지, 느낌, 상징, 단어, 감정 등을 자유롭게 기록하세요."
+          ></textarea>
+
+
+          <button id="rvSubmitButton">
+            관찰 기록 제출 및 타겟 공개
+          </button>
+
+
+          <p
+            id="rvObservationMessage"
+            class="message"
+          ></p>
+
+        </div>
+
+
+        <!-- =========================
+             STEP 3
+             타겟 공개
+        ========================== -->
+
+        <div
+          id="rvReveal"
+          class="hidden"
+        >
+
+          <div class="training-status">
+            TARGET REVEALED
+          </div>
+
+
+          <h2>
+            실제 타겟 공개
+          </h2>
+
+
+          <div class="rv-target-card">
+
+            <span class="label">
+              TARGET CODE
+            </span>
+
+            <strong id="rvRevealedTargetCode">
+              RV-......
+            </strong>
+
+          </div>
+
+
+          <p class="muted">
+            아래 이미지는 관찰을 시작하기 전에
+            이미 이 타겟 코드와 연결되어 있던 실제 타겟 이미지입니다.
+          </p>
+
+
+          <!-- 실제 타겟 이미지 -->
+
+          <div class="rv-image-wrapper">
+
+            <img
+              id="rvTargetImage"
+              src=""
+              alt="Remote Viewing Target"
+            >
+
+          </div>
+
+
+          <!-- 이미지 제목 -->
+
+          <div
+            id="rvTargetTitle"
+            class="rv-target-title"
+          ></div>
+
+
+          <!-- 관찰 결과 요약 -->
+
+          <div class="rv-observation-summary">
+
+            <h3>
+              YOUR OBSERVATION
+            </h3>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                FORM
+              </span>
+
+              <p id="rvResultForm"></p>
+
+            </div>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                COLOR
+              </span>
+
+              <p id="rvResultColor"></p>
+
+            </div>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                TEXTURE
+              </span>
+
+              <p id="rvResultTexture"></p>
+
+            </div>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                TEMPERATURE
+              </span>
+
+              <p id="rvResultTemperature"></p>
+
+            </div>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                MOVEMENT
+              </span>
+
+              <p id="rvResultMovement"></p>
+
+            </div>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                ENVIRONMENT
+              </span>
+
+              <p id="rvResultEnvironment"></p>
+
+            </div>
+
+
+            <div class="rv-summary-item">
+
+              <span class="label">
+                FREE DESCRIPTION
+              </span>
+
+              <p id="rvResultFree"></p>
+
+            </div>
+
+          </div>
+
+
+          <button id="rvFinishButton">
+            훈련 종료 및 게임으로 돌아가기
+          </button>
+
+        </div>
+
       </div>
 
-      <div id="senseTimer">
-        05:00
-      </div>
-
-      <div class="training-target">
-
-        관찰 대상:
-
-        <strong id="selectedSenseTarget"></strong>
-
-      </div>
-
-      <p class="muted">
-        판단하지 말고, 느껴지는 감각을 관찰하십시오.
-      </p>
-
-    </div>
+    </section>
 
 
-    <!-- 관찰 종료 후 -->
-    <div
-      id="senseResult"
-      class="hidden"
-    >
-
-      <h2>OBSERVATION COMPLETE</h2>
-
-      <p>
-        관찰 중 경험한 내용을 기록하십시오.
-      </p>
-
-
-      <label for="senseDiscovery">
-        가장 먼저 알아차린 것은 무엇입니까?
-      </label>
-
-      <select id="senseDiscovery">
-
-        <option value="">
-          선택하세요
-        </option>
-
-        <option value="평소 느끼지 못했던 감각">
-          평소 느끼지 못했던 감각
-        </option>
-
-        <option value="몸의 미세한 변화">
-          몸의 미세한 변화
-        </option>
-
-        <option value="새로운 소리나 자극">
-          새로운 소리나 자극
-        </option>
-
-        <option value="감정의 변화">
-          감정의 변화
-        </option>
-
-        <option value="특별한 변화 없음">
-          특별한 변화 없음
-        </option>
-
-        <option value="기타">
-          기타
-        </option>
-
-      </select>
-
-
-      <label for="senseDifficulty">
-        관찰 중 가장 어려웠던 것은 무엇입니까?
-      </label>
-
-      <select id="senseDifficulty">
-
-        <option value="">
-          선택하세요
-        </option>
-
-        <option value="집중 유지">
-          집중 유지
-        </option>
-
-        <option value="잡생각">
-          잡생각
-        </option>
-
-        <option value="졸음">
-          졸음
-        </option>
-
-        <option value="외부 자극">
-          외부 자극
-        </option>
-
-        <option value="무엇을 관찰해야 할지 모르겠음">
-          무엇을 관찰해야 할지 모르겠음
-        </option>
-
-        <option value="특별한 어려움 없음">
-          특별한 어려움 없음
-        </option>
-
-      </select>
-
-
-      <label for="senseMemo">
-        관찰 기록
-        <span>(선택 사항)</span>
-      </label>
-
-      <textarea
-        id="senseMemo"
-        rows="5"
-        placeholder="관찰 중 느낀 감각이나 변화를 기록하세요."
-      ></textarea>
-
-
-      <button id="senseCompleteButton">
-        관찰 기록 저장 및 EXP 받기
-      </button>
-
-      <p id="senseMessage"></p>
-
-    </div>
-
-  </div>
-
-</section>
-
-    
+    <!-- =========================
+         FOOTER
+    ========================== -->
 
     <footer>
-      SPIRIT SYSTEM · 훈련 기록은 계정에 저장됩니다.
+
+      SPIRIT SYSTEM ·
+      훈련 기록은 계정에 저장됩니다.
+
     </footer>
+
 
   </main>
 
 
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script src="config.js"></script>
+
   <script src="app.js"></script>
 
+
 </body>
+
 </html>

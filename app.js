@@ -1,3 +1,7 @@
+(() => {
+if (window.__SPIRIT_APP_BOOTED__) return;
+window.__SPIRIT_APP_BOOTED__ = true;
+
 const cfg = window.SPIRIT_CONFIG || {};
 const client = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY);
 
@@ -2304,3 +2308,5 @@ rvElement("rvSubmitButton")?.addEventListener("click", submitRemoteViewingSessio
 rvElement("rvBackButton")?.addEventListener("click", cancelRemoteViewing);
 rvElement("rvCancelButton")?.addEventListener("click", cancelRemoteViewing);
 rvElement("rvFinishButton")?.addEventListener("click", finishRemoteViewing);
+
+})();

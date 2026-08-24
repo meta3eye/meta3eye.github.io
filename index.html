@@ -394,6 +394,15 @@
 
       </div>
 
+      <div class="panel">
+        <div class="section-title">
+          <h2>REMOTE VIEWING</h2>
+          <span class="muted">이미지는 기록 제출 후에만 공개됩니다.</span>
+        </div>
+        <p class="muted">타겟 코드만 받은 뒤, 떠오르는 감각과 이미지를 기록하는 훈련입니다.</p>
+        <button id="openRemoteViewingButton" type="button">리모트뷰잉 훈련 시작</button>
+      </div>
+
 
       <!-- =========================
            RANK PROMOTION TEST
@@ -1362,6 +1371,10 @@
             관찰 기록 제출 및 타겟 공개
           </button>
 
+          <button id="rvCancelButton" class="secondary" type="button">
+            취소하고 게임으로 돌아가기
+          </button>
+
 
           <p
             id="rvObservationMessage"
@@ -1535,6 +1548,15 @@
     ========================== -->
 
     <footer>
+      SPIRIT SYSTEM · 훈련 기록은 계정에 저장됩니다.
+    </footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+<!-- Legacy duplicate Remote Viewing markup from the supplied source is intentionally disabled.
 
 <!-- =========================
      REMOTE VIEWING TRAINING

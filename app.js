@@ -2,678 +2,2305 @@ const cfg = window.SPIRIT_CONFIG || {};
 const client = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY);
 
 const $ = (id) => document.getElementById(id);
-const state = { user: null, profile: null, assessmentIndex: 0, assessmentScore: 0, rankTestIndex: 0, rankTestAnswers: [] };
+const state = { user:null, profile:null, assessmentIndex:0, assessmentScore:0, rankTestIndex: 0,
+rankTestAnswers: [] };
+
+
+
 const assessment = [
-  { q: "정보가 거의 없는 두 선택지 중 하나를 골라야 합니다. 어느 쪽을 선택하시겠습니까?", c: ["A", "B"] },
-  { q: "짧은 시간 동안 여러 자극이 나타났습니다. 가장 먼저 눈에 들어온 것을 고르세요.", c: ["첫 번째", "두 번째", "세 번째", "네 번째"] },
-  { q: "처음 본 장소에서 가장 강하게 느껴지는 인상을 하나 고르세요.", c: ["편안함", "긴장감", "낯섦", "무감각"] },
-  { q: "답을 오래 생각하지 않고 즉시 하나를 선택하세요.", c: ["1", "2", "3", "4"] },
-  { q: "마지막 질문입니다. 지금 가장 먼저 떠오르는 선택지를 고르세요.", c: ["A", "B", "C", "D"] }
-];
-const AWAKENING_PATHS = { sensory: { name: "SENSORY PATH" }, intuitive: { name: "INTUITIVE PATH" }, focus: { name: "FOCUS PATH" }, interpreter: { name: "INTERPRETATION PATH" }, control: { name: "CONTROL PATH" } };
-const QUEST_AWAKENING_EFFECT = { focus_5: { focus: 12, control: 4 }, sense_observation: { sensory: 12, focus: 3 }, intuition_choice: { intuitive: 12 }, emotion_guess: { interpreter: 8, intuitive: 5 }, life_death: { sensory: 10, intuitive: 10 } };
-const QUEST_LIMITS = { focus_5: 3, sense_observation: 3, intuition_choice: 5, emotion_guess: 3, life_death: 3 };
-const RANK_ORDER = ["D", "C", "B", "A", "S"];
-const D_TO_C_PROMOTION_TEST = [
-  { objective: "집중력 판별", question: "다음 안내를 읽은 뒤, 5초 동안 화면의 중앙에 집중하십시오. 준비가 되면 다음 단계로 진행하십시오.", choices: [{ text: "준비 완료", correct: true }] },
-  { objective: "감각 관찰", question: "지금 이 순간 주변 환경에서 평소에는 의식하지 않았던 소리나 감각을 하나 선택하십시오.", choices: ["소리", "신체 감각", "온도 변화", "특별한 감각 없음"].map(text => ({ text, correct: true })) },
-  { objective: "직관 선택", question: "아래 네 개의 선택지 중 가장 먼저 떠오르는 하나를 선택하십시오. 오래 고민하지 마십시오.", choices: ["A", "B", "C", "D"].map(text => ({ text, correct: true })) }
+  {q:"정보가 거의 없는 두 선택지 중 하나를 골라야 합니다. 어느 쪽을 선택하시겠습니까?", c:["A","B"]},
+  {q:"짧은 시간 동안 여러 자극이 나타났습니다. 가장 먼저 눈에 들어온 것을 고르세요.", c:["첫 번째","두 번째","세 번째","네 번째"]},
+  {q:"처음 본 장소에서 가장 강하게 느껴지는 인상을 하나 고르세요.", c:["편안함","긴장감","낯섦","무감각"]},
+  {q:"답을 오래 생각하지 않고 즉시 하나를 선택하세요.", c:["1","2","3","4"]},
+  {q:"마지막 질문입니다. 지금 가장 먼저 떠오르는 선택지를 고르세요.", c:["A","B","C","D"]}
 ];
 
-function show(id, visible = true) { const el = $(id); if (el) el.classList.toggle("hidden", !visible); }
-function msg(text) { const el = $("authMessage"); if (el) el.textContent = text || ""; }
-function xpNeeded(level) { return 100 + (level - 1) * 40; }
-function getTodayStart() { const date = new Date(); date.setHours(0, 0, 0, 0); return date.toISOString(); }
-function getNextRank(rank) { const i = RANK_ORDER.indexOf(rank || "D"); return i < 0 ? "C" : (i < RANK_ORDER.length - 1 ? RANK_ORDER[i + 1] : null); }
+function show(id, visible=true){ $(id).classList.toggle("hidden", !visible); }
+function msg(t){ $("authMessage").textContent=t||""; }
 
-async function loadProfile() {
-  const { data: { user } } = await client.auth.getUser(); state.user = user;
-  if (!user) { state.profile = null; show("authPanel"); show("startPanel", false); show("gamePanel", false); if ($("authState")) $("authState").textContent = "로그인 필요"; return; }
-  if ($("authState")) $("authState").textContent = user.email;
-  const { data, error } = await client.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  if (error) return msg(error.message);
-  state.profile = data; show("authPanel", false); show("startPanel", !data); show("gamePanel", !!data); if (data) render();
-}
-async function signUp() { const email = $("email").value.trim(), password = $("password").value; if (!email || password.length < 6) return msg("이메일과 6자 이상의 비밀번호를 입력하세요."); const { error } = await client.auth.signUp({ email, password }); msg(error ? error.message : "가입 요청 완료. 이메일 확인이 필요한 경우 메일함을 확인하세요."); }
-async function signIn() { const email = $("email").value.trim(), password = $("password").value; const { error } = await client.auth.signInWithPassword({ email, password }); msg(error ? error.message : ""); }
-async function createProfile(level = 1, stats = null) { const s = stats || { perception: 1, intuition: 1, focus: 1, interpretation: 1, control: 1 }; const { data, error } = await client.rpc("create_player", { p_player_name: "PLAYER", p_level: level, p_perception: s.perception, p_intuition: s.intuition, p_focus: s.focus, p_interpretation: s.interpretation, p_control: s.control }); if (error) return msg(error.message); state.profile = data; show("startPanel", false); show("assessmentPanel", false); show("gamePanel"); render(); }
+function xpNeeded(level){ return 100 + (level-1)*40; }
 
-function render() {
-  const p = state.profile; if (!p) return; const need = xpNeeded(p.level), pct = Math.min(100, (p.exp / need) * 100);
-  if ($("rankValue")) $("rankValue").textContent = `${p.rank || "D"}-RANK`; if ($("levelValue")) $("levelValue").textContent = `LV.${p.level}`; if ($("statusValue")) $("statusValue").textContent = p.status;
-  if ($("xpFill")) $("xpFill").style.width = `${pct}%`; if ($("xpText")) $("xpText").textContent = p.level_test_available ? `EXP ${need} / ${need} · LEVEL TEST AVAILABLE` : `EXP ${p.exp} / ${need}`;
-  if ($("stats")) $("stats").innerHTML = [["감지력", p.perception], ["직관력", p.intuition], ["집중력", p.focus], ["해석력", p.interpretation], ["통제력", p.control]].map(([n, v]) => `<div class="stat"><span class="label">${n}</span><b>${v}</b></div>`).join("");
-  if ($("record")) $("record").innerHTML = [["최고 레벨", `LV.${p.highest_level}`], ["연속 훈련", `${p.streak_days}일`], ["상태", p.status], ["생성일", new Date(p.created_at).toLocaleDateString("ko-KR")]].map(([n, v]) => `<div class="record-item"><span>${n}</span><b>${v}</b></div>`).join("");
-  loadQuests(); renderNextUnlock(); renderAwakeningSystem(); renderRankPromotion();
+async function loadProfile(){
+  const {data:{user}} = await client.auth.getUser();
+  state.user=user;
+  if(!user){ state.profile=null; show("authPanel",true); show("startPanel",false); show("gamePanel",false); $("authState").textContent="로그인 필요"; return; }
+  $("authState").textContent=user.email;
+  const {data,error}=await client.from("profiles").select("*").eq("id",user.id).maybeSingle();
+  if(error){ msg(error.message); return; }
+  state.profile=data;
+  show("authPanel",false);
+  if(!data){ show("startPanel",true); show("gamePanel",false); }
+  else { show("startPanel",false); show("gamePanel",true); render(); }
 }
 
-async function calculateAwakeningPaths() { const paths = { sensory: 0, intuitive: 0, focus: 0, interpreter: 0, control: 0 }; if (!state.user) return paths; const { data, error } = await client.from("quest_logs").select("quest_code").eq("user_id", state.user.id); if (error) { console.error("Awakening analysis error:", error); return paths; } for (const log of data || []) for (const key in QUEST_AWAKENING_EFFECT[log.quest_code] || {}) paths[key] += QUEST_AWAKENING_EFFECT[log.quest_code][key]; return paths; }
-function getPrimaryAwakening(paths) { const [top, second] = Object.entries(paths).sort((a, b) => b[1] - a[1]); if (!top || top[1] < 30) return { type: "UNKNOWN", description: "아직 충분한 훈련 데이터가 없습니다. 여러 유형의 훈련을 계속하십시오." }; return { type: AWAKENING_PATHS[top[0]].name, description: top[1] >= 100 && top[1] - second[1] >= 25 ? "특정 성장 경로에서 반복적으로 높은 성장 패턴이 감지되고 있습니다." : "특정 능력 계열에서 성장 가능성이 높게 나타나고 있습니다. 추가 훈련과 검증이 필요합니다." }; }
-async function renderAwakeningSystem() { const paths = await calculateAwakeningPaths(), analysis = getPrimaryAwakening(paths), maxValue = Math.max(...Object.values(paths), 1); if ($("primaryTypeValue")) $("primaryTypeValue").textContent = analysis.type; if ($("awakeningDescription")) $("awakeningDescription").textContent = analysis.description; if ($("awakeningStatus")) $("awakeningStatus").textContent = Object.values(paths).some(Boolean) ? "ANALYZING" : "DATA REQUIRED"; if ($("potentialPaths")) $("potentialPaths").innerHTML = Object.entries(paths).sort((a, b) => b[1] - a[1]).map(([key, value]) => `<div class="potential-path"><div class="potential-path-name">${AWAKENING_PATHS[key].name}</div><div class="potential-path-value">${value}</div><div class="potential-bar"><div style="width:${Math.round(value / maxValue * 100)}%"></div></div></div>`).join(""); }
-
-function getNextUnlock(rank, level) { const unlocks = { D: [[5,"훈련 기록 분석","훈련 기록을 통해 초기 성장 패턴이 분석됩니다."],[10,"첫 번째 능력 분석","특정 능력 계열의 성장 가능성이 표시됩니다."],[20,"잠재 경로 감지","현재 가장 강하게 성장하고 있는 능력 경로를 확인할 수 있습니다."],[30,"직관 훈련 해금","새로운 정답형 훈련이 해금됩니다."],[50,"AWAKENING ANALYSIS","주요 성장 경로가 본격적으로 분석됩니다."],[100,"D-RANK PROMOTION TEST","C-RANK 진입을 위한 승급 시험에 도전할 수 있습니다."]], C: [[10,"고급 직관 훈련","제한된 정보에서 선택하는 훈련이 강화됩니다."],[50,"SPECIALIZATION DETECTION","특정 능력 계열의 세부 특화 가능성이 분석됩니다."],[100,"C-RANK PROMOTION TEST","B-RANK 승급 시험이 준비됩니다."]], B: [[30,"BLIND TEST","정답을 사전에 알 수 없는 검증형 테스트가 강화됩니다."],[100,"B-RANK PROMOTION TEST","A-RANK 진입을 위한 고난도 시험입니다."]], A: [[50,"ADVANCED VERIFICATION","복수 능력을 동시에 검증하는 고난도 테스트가 열립니다."],[100,"A-RANK PROMOTION TEST","최고 랭크 진입 시험에 도전할 수 있습니다."]], S: [[100,"MASTER RECORD","S-RANK 최종 성장 기록이 완성됩니다."]] }; const item = (unlocks[rank || "D"] || []).find(x => x[0] > level); return item ? { level: item[0], title: item[1], description: item[2] } : { level: 100, title: "UNKNOWN", description: "다음 성장 데이터가 아직 분석되지 않았습니다." }; }
-function renderNextUnlock() { if (!state.profile) return; const next = getNextUnlock(state.profile.rank, state.profile.level); if ($("nextUnlockTitle")) $("nextUnlockTitle").textContent = `LV.${next.level} · ${next.title}`; if ($("nextUnlockDescription")) $("nextUnlockDescription").textContent = next.description; }
-
-function renderRankPromotion() { const p = state.profile, panel = $("rankTestPanel"); if (!p || !panel) return; const next = getNextRank(p.rank); if (!next || p.level < 100) return panel.classList.add("hidden"); if ($("promotionCurrentRank")) $("promotionCurrentRank").textContent = `${p.rank || "D"}-RANK`; if ($("promotionNextRank")) $("promotionNextRank").textContent = `${next}-RANK`; panel.classList.remove("hidden"); }
-function startRankTest() { if (!state.profile || state.profile.level < 100) return alert("LV.100에 도달해야 승급시험에 도전할 수 있습니다."); state.rankTestIndex = 0; state.rankTestAnswers = []; show("rankTestPanel", false); show("rankTestRunningPanel"); renderRankTestQuestion(); }
-function renderRankTestQuestion() { const test = D_TO_C_PROMOTION_TEST[state.rankTestIndex]; if (!test) return finishRankTest(); const total = D_TO_C_PROMOTION_TEST.length, rank = state.profile.rank || "D"; $("rankTestTitle").textContent = `${rank}-RANK PROMOTION TEST`; $("rankTestProgress").textContent = `TEST ${state.rankTestIndex + 1} / ${total}`; $("rankTestObjective").textContent = test.objective; $("rankTestQuestion").textContent = test.question; $("rankTestMessage").textContent = ""; $("rankTestChoices").innerHTML = test.choices.map((choice, i) => `<button class="rank-test-choice" data-choice="${i}">${choice.text}</button>`).join(""); $("rankTestChoices").querySelectorAll("button").forEach(button => button.onclick = () => { state.rankTestAnswers.push({ question: state.rankTestIndex, choice: Number(button.dataset.choice) }); state.rankTestIndex++; renderRankTestQuestion(); }); }
-function finishRankTest() { show("rankTestRunningPanel", false); const panel = $("rankTestPanel"), current = state.profile.rank || "D", next = getNextRank(current); panel.classList.remove("hidden"); panel.innerHTML = `<div class="section-title"><h2>TEST COMPLETE</h2><span class="muted">RESULT PENDING</span></div><div class="rank-test-header"><div class="rank-test-current"><span class="label">CURRENT RANK</span><strong>${current}-RANK</strong></div><div class="rank-test-arrow">→</div><div class="rank-test-next"><span class="label">TARGET RANK</span><strong>${next}-RANK</strong></div></div><div class="rank-test-description"><p>승급시험이 완료되었습니다.</p><p class="muted">현재는 시험 진행 구조를 확인하는 단계입니다. 실제 PASS / FAIL 판정은 다음 단계에서 연결됩니다.</p></div><button id="rankTestRetryButton">시험 다시 확인하기</button>`; $("rankTestRetryButton").onclick = startRankTest; }
-
-async function loadQuests() { if (!state.profile) return; const { data: quests, error } = await client.from("quest_defs").select("*").eq("active", true).lte("min_level", state.profile.level).order("min_level"); if (error) { if ($("questList")) $("questList").textContent = error.message; return; } const { data: logs } = await client.from("quest_logs").select("quest_code").gte("completed_at", getTodayStart()); const counts = {}; for (const log of logs || []) counts[log.quest_code] = (counts[log.quest_code] || 0) + 1; const blocked = state.profile.level_test_available === true; if ($("questNotice")) $("questNotice").textContent = blocked ? `LV.${state.profile.pending_level} 승급 시험을 통과해야 훈련을 계속할 수 있습니다.` : ""; $("questList").innerHTML = (quests || []).map(q => { const count = counts[q.code] || 0, limit = QUEST_LIMITS[q.code] || 1, disabled = blocked || count >= limit, cls = q.code === "focus_5" ? "focus-quest-button" : q.code === "sense_observation" ? "sense-quest-button" : "", attrs = cls ? `class="${cls}"` : `data-code="${q.code}" data-exp="${q.base_exp}"`; return `<div class="quest"><div><h3>${q.title}</h3><p>${q.grade}-RANK · 기본 EXP ${q.base_exp}</p><p class="quest-count">오늘 ${count} / ${limit}회</p></div><button ${attrs} ${disabled ? "disabled" : ""}>${blocked ? "승급 시험 필요" : disabled ? "오늘 완료" : "수행"}</button></div>`; }).join(""); $("questList").querySelector(".focus-quest-button")?.addEventListener("click", openFocusTraining); $("questList").querySelector(".sense-quest-button")?.addEventListener("click", openSenseTraining); $("questList").querySelectorAll("[data-code]").forEach(b => b.onclick = () => completeQuest(b.dataset.code, Number(b.dataset.exp))); }
-async function completeQuest(code, exp) { const { data, error } = await client.rpc("complete_simple_quest", { p_quest_code: code, p_exp: exp }); if (error) { $("questNotice").textContent = error.message; return; } state.profile = data; $("questNotice").textContent = `${code} 완료 · EXP +${exp}`; render(); }
-
-function startAssessment() { state.assessmentIndex = 0; state.assessmentScore = 0; show("startPanel", false); show("assessmentPanel"); show("gamePanel", false); drawAssessment(); }
-function drawAssessment() { const a = assessment[state.assessmentIndex]; $("assessmentQuestion").textContent = a.q; $("assessmentChoices").innerHTML = a.c.map((text, i) => `<button data-i="${i}">${text}</button>`).join(""); $("assessmentChoices").querySelectorAll("button").forEach(b => b.onclick = () => answerAssessment(Number(b.dataset.i))); $("assessmentProgress").textContent = `TEST ${state.assessmentIndex + 1} / ${assessment.length}`; }
-async function answerAssessment(i) { state.assessmentScore += 50 + ((i * 17 + state.assessmentIndex * 11) % 51); state.assessmentIndex++; if (state.assessmentIndex < assessment.length) return drawAssessment(); const score = Math.min(100, Math.round(state.assessmentScore / assessment.length)), level = Math.max(1, Math.min(30, Math.floor(score / 4) + 1)), stats = { perception: Math.max(1, Math.round(score * .8)), intuition: Math.max(1, Math.round(score * .9)), focus: Math.max(1, Math.round(score * .7)), interpretation: Math.max(1, Math.round(score * .8)), control: Math.max(1, Math.round(score * .75)) }; const { error } = await client.rpc("save_assessment", { p_score: score, p_level: level, p_stats: stats }); if (error) return msg(error.message); createProfile(level, stats); }
-
-let focusTimerInterval = null, focusSeconds = 300, senseTimerInterval = null, senseSeconds = 300, selectedSenseExp = 10;
-function formatTimer(seconds) { return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`; }
-function openFocusTraining() { show("gamePanel", false); show("focusTrainingPanel"); show("focusSetup"); show("focusRunning", false); show("focusResult", false); focusSeconds = 300; $("focusTimer").textContent = "05:00"; $("focusMessage").textContent = ""; }
-function startFocusTraining() { const target = $("focusTarget").value; if (!target) return alert("집중 대상을 선택하세요."); focusSeconds = 300; $("selectedFocusTarget").textContent = target; show("focusSetup", false); show("focusRunning"); show("focusResult", false); clearInterval(focusTimerInterval); focusTimerInterval = setInterval(() => { $("focusTimer").textContent = formatTimer(--focusSeconds); if (focusSeconds <= 0) { clearInterval(focusTimerInterval); focusTimerInterval = null; finishFocusTraining(); } }, 1000); }
-function finishFocusTraining() { show("focusRunning", false); show("focusResult"); alert("5분 집중 훈련이 종료되었습니다."); }
-async function completeFocusTraining() { const quality = $("focusQuality").value, obstacle = $("focusObstacle").value, experience = $("focusExperience").value; if (!quality || !obstacle || !experience) return $("focusMessage").textContent = "집중 상태, 방해 요소, 실제 경험을 모두 선택하세요."; const result = { training_type: "5분 집중 훈련", target: $("focusTarget").value, focus_quality: quality, obstacle, experience, memo: $("focusMemo").value, completed_at: new Date().toISOString() }; const { data, error } = await client.rpc("complete_focus_quest", { p_result: result }); if (error) return $("focusMessage").textContent = `저장 실패: ${error.message}`; state.profile = data; $("focusMessage").textContent = "훈련 기록이 저장되었습니다. EXP +10"; setTimeout(() => { show("focusTrainingPanel", false); show("gamePanel"); render(); }, 1000); }
-function openSenseTraining() { clearInterval(senseTimerInterval); senseTimerInterval = null; show("gamePanel", false); show("senseTrainingPanel"); show("senseSetup"); show("senseRunning", false); show("senseResult", false); $("senseTimer").textContent = "05:00"; $("senseMessage").textContent = ""; }
-function startSenseTraining() { const target = $("senseTarget").value, duration = Number($("senseDuration").value); if (!target || !duration) return alert("관찰 대상과 훈련 시간을 선택하세요."); selectedSenseExp = duration === 180 ? 5 : duration === 600 ? 20 : 10; senseSeconds = duration; $("selectedSenseTarget").textContent = target; show("senseSetup", false); show("senseRunning"); senseTimerInterval = setInterval(() => { $("senseTimer").textContent = formatTimer(--senseSeconds); if (senseSeconds <= 0) { clearInterval(senseTimerInterval); senseTimerInterval = null; show("senseRunning", false); show("senseResult"); } }, 1000); }
-async function completeSenseTraining() { const discovery = $("senseDiscovery").value, difficulty = $("senseDifficulty").value; if (!discovery || !difficulty) return $("senseMessage").textContent = "관찰 결과와 어려웠던 점을 선택하세요."; const result = { training_type: "감각 관찰 훈련", target: $("senseTarget").value, duration_seconds: Number($("senseDuration").value), discovery, difficulty, memo: $("senseMemo").value, completed_at: new Date().toISOString() }; const { data, error } = await client.rpc("complete_sense_observation_quest", { p_result: result, p_exp: selectedSenseExp }); if (error) return $("senseMessage").textContent = `저장 실패: ${error.message}`; state.profile = data; $("senseMessage").textContent = `훈련 기록이 저장되었습니다. EXP +${selectedSenseExp}`; setTimeout(() => { show("senseTrainingPanel", false); show("gamePanel"); render(); }, 1000); }
-
-function bind(id, fn) { $(id)?.addEventListener("click", fn); }
-bind("signUpBtn", signUp); bind("signInBtn", signIn); bind("normalStartBtn", () => createProfile(1)); bind("assessmentStartBtn", startAssessment); bind("rankTestStartButton", startRankTest); bind("logoutBtn", async () => { await client.auth.signOut(); loadProfile(); });
-bind("focusStartButton", startFocusTraining); bind("focusCompleteButton", completeFocusTraining); bind("focusBackButton", () => { clearInterval(focusTimerInterval); show("focusTrainingPanel", false); show("gamePanel"); });
-bind("senseStartButton", startSenseTraining); bind("senseCompleteButton", completeSenseTraining); bind("senseBackButton", () => { clearInterval(senseTimerInterval); show("senseTrainingPanel", false); show("gamePanel"); });
-client.auth.onAuthStateChange(() => loadProfile()); loadProfile();
-
-/* =========================================
-   REMOTE VIEWING SYSTEM
-========================================= */
-
-let currentRvSessionId = null;
+async function signUp(){
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email || password.length<6){ msg("이메일과 6자 이상의 비밀번호를 입력하세요."); return; }
+  const {error}=await client.auth.signUp({email,password});
+  msg(error ? error.message : "가입 요청 완료. 이메일 확인이 필요한 경우 메일함을 확인하세요.");
+}
+async function signIn(){
+  const email=$("email").value.trim(), password=$("password").value;
+  const {error}=await client.auth.signInWithPassword({email,password});
+  if(error) msg(error.message); else msg("");
+}
+async function createProfile(level=1, stats=null){
+  const s=stats||{perception:1,intuition:1,focus:1,interpretation:1,control:1};
+  const {data,error}=await client.rpc("create_player",{
+    p_player_name:"PLAYER",
+    p_level:level,
+    p_perception:s.perception,p_intuition:s.intuition,p_focus:s.focus,
+    p_interpretation:s.interpretation,p_control:s.control
+  });
+  if(error){msg(error.message);return;}
+  state.profile=data;
+  show("startPanel",false);show("assessmentPanel",false);show("gamePanel",true);render();
+}
+function render(){
+  const p=state.profile;if(!p)return;
+  $("rankValue").textContent =
+  `${p.rank || "D"}-RANK`;
+  $("levelValue").textContent=`LV.${p.level}`;
+  $("statusValue").textContent=p.status;
 
 
-/* =========================================
-   리모트뷰잉 화면 열기
-========================================= */
+  
+  const need=xpNeeded(p.level), pct=Math.min(100,(p.exp/need)*100);
+  $("xpFill").style.width=`${pct}%`;
+  $("xpText").textContent=`EXP ${p.exp} / ${need}`;
 
-function openRemoteViewing() {
+if (p.level_test_available) {
 
-  const gamePanel =
-    document.getElementById("gamePanel");
+  $("xpText").textContent =
+    `EXP ${need} / ${need} · LEVEL TEST AVAILABLE`;
 
-  const rvTrainingPanel =
-    document.getElementById("rvTrainingPanel");
+}
+  
+  const stats=[["감지력",p.perception],["직관력",p.intuition],["집중력",p.focus],["해석력",p.interpretation],["통제력",p.control]];
+  $("stats").innerHTML=stats.map(x=>`<div class="stat"><span class="label">${x[0]}</span><b>${x[1]}</b></div>`).join("");
+  $("record").innerHTML=[
+    ["최고 레벨",`LV.${p.highest_level}`],["연속 훈련",`${p.streak_days}일`],
+    ["상태",p.status],["생성일",new Date(p.created_at).toLocaleDateString("ko-KR")]
+  ].map(x=>`<div class="record-item"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");  
+  loadQuests();
+renderNextUnlock();
+renderAwakeningSystem();
+renderRankPromotion();
+  
+}
 
-  if (!gamePanel || !rvTrainingPanel) {
-    console.error(
-      "리모트뷰잉 화면 요소를 찾을 수 없습니다."
-    );
-    return;
+/* =========================
+   AWAKENING SYSTEM
+========================= */
+
+const AWAKENING_PATHS = {
+  sensory: {
+    name: "SENSORY PATH",
+    label: "감지형"
+  },
+
+  intuitive: {
+    name: "INTUITIVE PATH",
+    label: "직관형"
+  },
+
+  focus: {
+    name: "FOCUS PATH",
+    label: "집중형"
+  },
+
+  interpreter: {
+    name: "INTERPRETATION PATH",
+    label: "해석형"
+  },
+
+  control: {
+    name: "CONTROL PATH",
+    label: "통제형"
   }
+};
 
 
-  gamePanel.classList.add("hidden");
+const QUEST_AWAKENING_EFFECT = {
+  focus_5: {
+    focus: 12,
+    control: 4
+  },
 
-  rvTrainingPanel.classList.remove("hidden");
+  sense_observation: {
+    sensory: 12,
+    focus: 3
+  },
 
+  intuition_choice: {
+    intuitive: 12
+  },
 
-  /*
-    시작 화면 표시
-  */
+  emotion_guess: {
+    interpreter: 8,
+    intuitive: 5
+  },
 
-  document
-    .getElementById("rvSetup")
-    .classList.remove("hidden");
-
-
-  /*
-    관찰 화면 숨김
-  */
-
-  document
-    .getElementById("rvObservation")
-    .classList.add("hidden");
-
-
-  /*
-    결과 화면 숨김
-  */
-
-  document
-    .getElementById("rvResult")
-    .classList.add("hidden");
+  life_death: {
+    sensory: 10,
+    intuitive: 10
+  }
+};
 
 
-  /*
-    메시지 초기화
-  */
-
-  document
-    .getElementById("rvSetupMessage")
-    .textContent = "";
-
-
-  /*
-    이전 세션 초기화
-  */
-
-  currentRvSessionId = null;
-
-}
-
-
-/* =========================================
-   리모트뷰잉 타겟 생성
-========================================= */
-
-async function startRemoteViewingSession() {
-
-  const button =
-    document.getElementById("rvStartButton");
-
-
-  const message =
-    document.getElementById("rvSetupMessage");
-
+async function calculateAwakeningPaths() {
 
   if (!state.user) {
-
-    message.textContent =
-      "로그인 후 이용할 수 있습니다.";
-
-    return;
-
+    return {
+      sensory: 0,
+      intuitive: 0,
+      focus: 0,
+      interpreter: 0,
+      control: 0
+    };
   }
 
 
-  button.disabled = true;
-
-  message.textContent =
-    "서버에서 실제 타겟을 선택하고 있습니다...";
-
-
-  const {
-    data,
-    error
-  } = await client.rpc(
-    "create_rv_session"
-  );
-
-
-  button.disabled = false;
+  const { data, error } =
+    await client
+      .from("quest_logs")
+      .select("quest_code")
+      .eq(
+        "user_id",
+        state.user.id
+      );
 
 
   if (error) {
 
     console.error(
-      "RV session create error:",
+      "Awakening analysis error:",
       error
     );
 
+    return {
+      sensory: 0,
+      intuitive: 0,
+      focus: 0,
+      interpreter: 0,
+      control: 0
+    };
+  }
 
-    message.textContent =
-      error.message;
 
-    return;
+  const paths = {
+    sensory: 0,
+    intuitive: 0,
+    focus: 0,
+    interpreter: 0,
+    control: 0
+  };
+
+
+  for (const log of data || []) {
+
+    const effect =
+      QUEST_AWAKENING_EFFECT[
+        log.quest_code
+      ];
+
+    if (!effect) {
+      continue;
+    }
+
+
+    for (const key in effect) {
+
+      paths[key] +=
+        effect[key];
+
+    }
 
   }
 
 
-  /*
-    RPC 반환값 확인
-  */
-
-  const session =
-    Array.isArray(data)
-      ? data[0]
-      : data;
-
-
-  if (!session) {
-
-    message.textContent =
-      "리모트뷰잉 세션 생성에 실패했습니다.";
-
-    return;
-
-  }
-
-
-  currentRvSessionId =
-    session.session_id;
-
-
-  /*
-    타겟 코드 표시
-  */
-
-  document
-    .getElementById("rvTargetCode")
-    .textContent =
-      session.target_code;
-
-
-  /*
-    시작 화면 숨김
-  */
-
-  document
-    .getElementById("rvSetup")
-    .classList.add("hidden");
-
-
-  /*
-    관찰 화면 표시
-  */
-
-  document
-    .getElementById("rvObservation")
-    .classList.remove("hidden");
-
-
-  /*
-    기존 입력값 초기화
-  */
-
-  document
-    .getElementById("rvFormDescription")
-    .value = "";
-
-  document
-    .getElementById("rvColorDescription")
-    .value = "";
-
-  document
-    .getElementById("rvTextureDescription")
-    .value = "";
-
-  document
-    .getElementById("rvTemperatureDescription")
-    .value = "";
-
-  document
-    .getElementById("rvMovementDescription")
-    .value = "";
-
-  document
-    .getElementById("rvEnvironmentDescription")
-    .value = "";
-
-  document
-    .getElementById("rvFreeDescription")
-    .value = "";
-
-
-  document
-    .getElementById("rvObservationMessage")
-    .textContent = "";
+  return paths;
 
 }
 
 
-/* =========================================
-   리모트뷰잉 관찰 기록 제출
-========================================= */
+function getPrimaryAwakening(
+  paths
+) {
 
-async function submitRemoteViewing() {
-
-  const message =
-    document.getElementById(
-      "rvObservationMessage"
-    );
-
-
-  const button =
-    document.getElementById(
-      "rvSubmitButton"
-    );
+  const entries =
+    Object.entries(paths)
+      .sort(
+        (a, b) =>
+          b[1] - a[1]
+      );
 
 
-  if (!currentRvSessionId) {
+  const top =
+    entries[0];
 
-    message.textContent =
-      "활성화된 리모트뷰잉 세션이 없습니다.";
 
-    return;
+  const second =
+    entries[1];
+
+
+  if (!top || top[1] < 30) {
+
+    return {
+      type: "UNKNOWN",
+      description:
+        "아직 충분한 훈련 데이터가 없습니다. 여러 유형의 훈련을 계속하십시오."
+    };
 
   }
 
 
-  const formDescription =
-    document
-      .getElementById(
-        "rvFormDescription"
+  const difference =
+    top[1] - second[1];
+
+
+  if (
+    top[1] >= 100 &&
+    difference >= 25
+  ) {
+
+    return {
+      type:
+        AWAKENING_PATHS[
+          top[0]
+        ].name,
+
+      description:
+        "특정 성장 경로에서 반복적으로 높은 성장 패턴이 감지되고 있습니다."
+    };
+
+  }
+
+
+  return {
+    type:
+      AWAKENING_PATHS[
+        top[0]
+      ].name,
+
+    description:
+      "특정 능력 계열에서 성장 가능성이 높게 나타나고 있습니다. 추가 훈련과 검증이 필요합니다."
+  };
+
+}
+
+
+async function renderAwakeningSystem() {
+
+  const paths =
+    await calculateAwakeningPaths();
+
+
+  const analysis =
+    getPrimaryAwakening(paths);
+
+
+  $("primaryTypeValue").textContent =
+    analysis.type;
+
+
+  $("awakeningDescription").textContent =
+    analysis.description;
+
+
+  const total =
+    Object.values(paths)
+      .reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      );
+
+
+  $("awakeningStatus").textContent =
+    total === 0
+      ? "DATA REQUIRED"
+      : "ANALYZING";
+
+
+  const maxValue =
+    Math.max(
+      ...Object.values(paths),
+      1
+    );
+
+
+  const sortedPaths =
+    Object.entries(paths)
+      .sort(
+        (a, b) =>
+          b[1] - a[1]
+      );
+
+
+  $("potentialPaths").innerHTML =
+    sortedPaths
+      .map(
+        ([key, value]) => {
+
+          const path =
+            AWAKENING_PATHS[key];
+
+
+          const percentage =
+            Math.min(
+              100,
+              Math.round(
+                value / maxValue * 100
+              )
+            );
+
+
+          return `
+            <div class="potential-path">
+
+              <div class="potential-path-name">
+                ${path.name}
+              </div>
+
+              <div class="potential-path-value">
+                ${value}
+              </div>
+
+              <div class="potential-bar">
+                <div
+                  style="
+                    width:${percentage}%
+                  "
+                ></div>
+              </div>
+
+            </div>
+          `;
+
+        }
       )
-      .value
-      .trim();
+      .join("");
+
+}
+
+/* =========================
+   NEXT UNLOCK SYSTEM
+========================= */
+
+function getNextUnlock(
+  rank,
+  level
+) {
+
+  const currentRank =
+    rank || "D";
 
 
-  const colorDescription =
-    document
-      .getElementById(
-        "rvColorDescription"
-      )
-      .value
-      .trim();
+  const unlocks = {
+
+    D: [
+      {
+        level: 5,
+        title: "훈련 기록 분석",
+        description:
+          "훈련 기록을 통해 초기 성장 패턴이 분석됩니다."
+      },
+
+      {
+        level: 10,
+        title: "첫 번째 능력 분석",
+        description:
+          "특정 능력 계열의 성장 가능성이 표시됩니다."
+      },
+
+      {
+        level: 20,
+        title: "잠재 경로 감지",
+        description:
+          "현재 가장 강하게 성장하고 있는 능력 경로를 확인할 수 있습니다."
+      },
+
+      {
+        level: 30,
+        title: "직관 훈련 해금",
+        description:
+          "새로운 정답형 훈련이 해금됩니다."
+      },
+
+      {
+        level: 50,
+        title: "AWAKENING ANALYSIS",
+        description:
+          "주요 성장 경로가 본격적으로 분석됩니다."
+      },
+
+      {
+        level: 100,
+        title: "D-RANK PROMOTION TEST",
+        description:
+          "C-RANK 진입을 위한 승급 시험에 도전할 수 있습니다."
+      }
+    ],
+
+    C: [
+      {
+        level: 10,
+        title: "고급 직관 훈련",
+        description:
+          "제한된 정보에서 선택하는 훈련이 강화됩니다."
+      },
+
+      {
+        level: 50,
+        title: "SPECIALIZATION DETECTION",
+        description:
+          "특정 능력 계열의 세부 특화 가능성이 분석됩니다."
+      },
+
+      {
+        level: 100,
+        title: "C-RANK PROMOTION TEST",
+        description:
+          "B-RANK 승급 시험이 준비됩니다."
+      }
+    ],
+
+    B: [
+      {
+        level: 30,
+        title: "BLIND TEST",
+        description:
+          "정답을 사전에 알 수 없는 검증형 테스트가 강화됩니다."
+      },
+
+      {
+        level: 100,
+        title: "B-RANK PROMOTION TEST",
+        description:
+          "A-RANK 진입을 위한 고난도 시험입니다."
+      }
+    ],
+
+    A: [
+      {
+        level: 50,
+        title: "ADVANCED VERIFICATION",
+        description:
+          "복수 능력을 동시에 검증하는 고난도 테스트가 열립니다."
+      },
+
+      {
+        level: 100,
+        title: "A-RANK PROMOTION TEST",
+        description:
+          "최고 랭크 진입 시험에 도전할 수 있습니다."
+      }
+    ],
+
+    S: [
+      {
+        level: 100,
+        title: "MASTER RECORD",
+        description:
+          "S-RANK 최종 성장 기록이 완성됩니다."
+      }
+    ]
+
+  };
 
 
-  const textureDescription =
-    document
-      .getElementById(
-        "rvTextureDescription"
-      )
-      .value
-      .trim();
+  const list =
+    unlocks[currentRank] || [];
 
 
-  const temperatureDescription =
-    document
-      .getElementById(
-        "rvTemperatureDescription"
-      )
-      .value
-      .trim();
+  const next =
+    list.find(
+      item =>
+        item.level > level
+    );
 
 
-  const movementDescription =
-    document
-      .getElementById(
-        "rvMovementDescription"
-      )
-      .value
-      .trim();
+  if (next) {
+    return next;
+  }
 
 
-  const environmentDescription =
-    document
-      .getElementById(
-        "rvEnvironmentDescription"
-      )
-      .value
-      .trim();
+  return {
+    level: 100,
+    title: "UNKNOWN",
+    description:
+      "다음 성장 데이터가 아직 분석되지 않았습니다."
+  };
+
+}
 
 
-  const freeDescription =
-    document
-      .getElementById(
-        "rvFreeDescription"
-      )
-      .value
-      .trim();
+function renderNextUnlock() {
+
+  const p =
+    state.profile;
+
+
+  if (!p) {
+    return;
+  }
+
+
+  const next =
+    getNextUnlock(
+      p.rank,
+      p.level
+    );
+
+
+  $("nextUnlockTitle").textContent =
+    `LV.${next.level} · ${next.title}`;
+
+
+  $("nextUnlockDescription").textContent =
+    next.description;
+
+}
+
+/* =========================
+   D TO C PROMOTION TEST
+========================= */
+
+const D_TO_C_PROMOTION_TEST = [
+
+  {
+    objective: "집중력 판별",
+
+    question:
+      "다음 안내를 읽은 뒤, 5초 동안 화면의 중앙에 집중하십시오. 준비가 되면 다음 단계로 진행하십시오.",
+
+    choices: [
+      {
+        text: "준비 완료",
+        correct: true
+      }
+    ]
+  },
+
+  {
+    objective: "감각 관찰",
+
+    question:
+      "지금 이 순간 주변 환경에서 평소에는 의식하지 않았던 소리나 감각을 하나 선택하십시오.",
+
+    choices: [
+      {
+        text: "소리",
+        correct: true
+      },
+
+      {
+        text: "신체 감각",
+        correct: true
+      },
+
+      {
+        text: "온도 변화",
+        correct: true
+      },
+
+      {
+        text: "특별한 감각 없음",
+        correct: true
+      }
+    ]
+  },
+
+  {
+    objective: "직관 선택",
+
+    question:
+      "아래 네 개의 선택지 중 가장 먼저 떠오르는 하나를 선택하십시오. 오래 고민하지 마십시오.",
+
+    choices: [
+      {
+        text: "A",
+        correct: true
+      },
+
+      {
+        text: "B",
+        correct: true
+      },
+
+      {
+        text: "C",
+        correct: true
+      },
+
+      {
+        text: "D",
+        correct: true
+      }
+    ]
+  }
+
+];
+
+
+const QUEST_LIMITS = {
+  focus_5: 3,
+  sense_observation: 3,
+
+  intuition_choice: 5,
+  emotion_guess: 3,
+  life_death: 3
+};
+
+/* =========================
+   RANK PROMOTION SYSTEM
+========================= */
+
+const RANK_ORDER = [
+  "D",
+  "C",
+  "B",
+  "A",
+  "S"
+];
+
+
+function getNextRank(rank){
+
+  const index =
+    RANK_ORDER.indexOf(rank || "D");
+
+  if(index < 0){
+    return "C";
+  }
+
+  if(index >= RANK_ORDER.length - 1){
+    return null;
+  }
+
+  return RANK_ORDER[index + 1];
+
+}
+
+
+function renderRankPromotion(){
+
+  const p =
+    state.profile;
+
+  if(!p){
+    return;
+  }
+
+
+  const currentRank =
+    p.rank || "D";
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  const panel =
+    $("rankTestPanel");
+
+
+  if(!panel){
+    return;
+  }
 
 
   /*
-    최소한 하나는 기록하도록 설정
+    S-RANK는 최종 랭크이므로
+    승급시험을 표시하지 않는다.
   */
 
-  if (
-    !formDescription &&
-    !colorDescription &&
-    !textureDescription &&
-    !temperatureDescription &&
-    !movementDescription &&
-    !environmentDescription &&
-    !freeDescription
-  ) {
+  if(
+    !nextRank ||
+    p.level < 100
+  ){
 
-    message.textContent =
-      "관찰한 내용을 최소 한 가지 이상 기록하세요.";
+    panel.classList.add("hidden");
+
+    return;
+  }
+
+
+  $("promotionCurrentRank").textContent =
+    `${currentRank}-RANK`;
+
+
+  $("promotionNextRank").textContent =
+    `${nextRank}-RANK`;
+
+
+  panel.classList.remove("hidden");
+
+}
+
+
+/* =========================
+   START RANK TEST
+========================= */
+
+function startRankTest(){
+
+  state.rankTestIndex = 0;
+
+  state.rankTestAnswers = [];
+
+
+  $("rankTestPanel")
+    .classList.add("hidden");
+
+
+  $("rankTestRunningPanel")
+    .classList.remove("hidden");
+
+
+  renderRankTestQuestion();
+
+}
+
+  
+
+function renderRankTestQuestion(){
+
+  const index =
+    state.rankTestIndex;
+
+
+  const test =
+    D_TO_C_PROMOTION_TEST[index];
+
+
+  if(!test){
+
+    finishRankTest();
 
     return;
 
   }
 
 
-  button.disabled = true;
+  const total =
+    D_TO_C_PROMOTION_TEST.length;
 
-  message.textContent =
-    "관찰 기록을 저장하고 실제 타겟을 공개하고 있습니다...";
+
+  const currentRank =
+    state.profile.rank || "D";
+
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  $("rankTestTitle").textContent =
+    `${currentRank}-RANK PROMOTION TEST`;
+
+
+  $("rankTestProgress").textContent =
+    `TEST ${index + 1} / ${total}`;
+
+
+  $("rankTestObjective").textContent =
+    test.objective;
+
+
+  $("rankTestQuestion").textContent =
+    test.question;
+
+
+  $("rankTestMessage").textContent =
+    "";
+
+
+  $("rankTestChoices").innerHTML =
+    test.choices
+      .map((choice, choiceIndex) => {
+
+        return `
+          <button
+            class="rank-test-choice"
+            data-choice="${choiceIndex}"
+          >
+            ${choice.text}
+          </button>
+        `;
+
+      })
+      .join("");
+
+
+  document
+    .querySelectorAll(
+      ".rank-test-choice"
+    )
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        const choiceIndex =
+          Number(
+            button.dataset.choice
+          );
+
+
+        state.rankTestAnswers.push({
+          question: index,
+          choice: choiceIndex
+        });
+
+
+        state.rankTestIndex++;
+
+
+        renderRankTestQuestion();
+
+      };
+
+    });
+
+}
+
+
+function finishRankTest(){
+
+  $("rankTestRunningPanel")
+    .classList.add("hidden");
+
+
+  const panel =
+    $("rankTestPanel");
+
+
+  panel.classList.remove("hidden");
+
+
+  const currentRank =
+    state.profile.rank || "D";
+
+
+  const nextRank =
+    getNextRank(currentRank);
+
+
+  panel.innerHTML = `
+
+    <div class="section-title">
+
+      <h2>
+        TEST COMPLETE
+      </h2>
+
+      <span class="muted">
+        RESULT PENDING
+      </span>
+
+    </div>
+
+
+    <div class="rank-test-header">
+
+      <div class="rank-test-current">
+
+        <span class="label">
+          CURRENT RANK
+        </span>
+
+        <strong>
+          ${currentRank}-RANK
+        </strong>
+
+      </div>
+
+
+      <div class="rank-test-arrow">
+        →
+      </div>
+
+
+      <div class="rank-test-next">
+
+        <span class="label">
+          TARGET RANK
+        </span>
+
+        <strong>
+          ${nextRank}-RANK
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="rank-test-description">
+
+      <p>
+        승급시험이 완료되었습니다.
+      </p>
+
+      <p class="muted">
+        현재는 시험 진행 구조를 확인하는 단계입니다.
+        실제 PASS / FAIL 판정은 다음 단계에서 연결됩니다.
+      </p>
+
+    </div>
+
+
+    <button id="rankTestRetryButton">
+
+      시험 다시 확인하기
+
+    </button>
+
+  `;
+
+
+  $("rankTestRetryButton")
+    .onclick = () => {
+
+      startRankTest();
+
+    };
+
+}
+
+
+function getTodayStart() {
+
+  const now = new Date();
+
+  now.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  return now.toISOString();
+
+}
+
+
+async function loadQuests() {
+
+  const playerLevel =
+    state.profile.level;
+
+
+  const { data: quests, error: questError } =
+    await client
+      .from("quest_defs")
+      .select("*")
+      .eq("active", true)
+      .lte("min_level", playerLevel)
+      .order("min_level");
+
+
+  if (questError) {
+
+    $("questList").textContent =
+      questError.message;
+
+    return;
+  }
+
+
+  const { data: todayLogs, error: logError } =
+    await client
+      .from("quest_logs")
+      .select("quest_code")
+      .gte(
+        "completed_at",
+        getTodayStart()
+      );
+
+
+  if (logError) {
+
+    console.error(logError);
+
+  }
+
+
+  const todayCount = {};
+
+
+  for (
+    const log of
+    (todayLogs || [])
+  ) {
+
+    todayCount[log.quest_code] =
+      (
+        todayCount[log.quest_code] || 0
+      ) + 1;
+
+  }
+
+
+  const levelTestReady =
+    state.profile.level_test_available === true;
+
+
+  if (levelTestReady) {
+
+    $("questNotice").textContent =
+      `LV.${state.profile.pending_level} 승급 시험을 통과해야 훈련을 계속할 수 있습니다.`;
+
+  }
+
+  else {
+
+    $("questNotice").textContent = "";
+
+  }
+
+
+  $("questList").innerHTML =
+    quests.map(q => {
+
+
+      const maxCount =
+        QUEST_LIMITS[q.code] || 1;
+
+
+      const currentCount =
+        todayCount[q.code] || 0;
+
+
+      const limitReached =
+        currentCount >= maxCount;
+
+
+      const questLocked =
+        levelTestReady || limitReached;
+
+
+      let buttonText = "수행";
+
+
+      if (levelTestReady) {
+
+        buttonText =
+          "승급 시험 필요";
+
+      }
+
+      else if (limitReached) {
+
+        buttonText =
+          "오늘 완료";
+
+      }
+
+
+      // -------------------------
+      // 5분 집중 훈련
+      // -------------------------
+
+      if (q.code === "focus_5") {
+
+        return `
+
+          <div class="quest">
+
+            <div>
+
+              <h3>
+                ${q.title}
+              </h3>
+
+              <p>
+                ${q.grade}-RANK ·
+                실제 5분 훈련 ·
+                EXP ${q.base_exp}
+              </p>
+
+              <p class="quest-count">
+
+                오늘
+                ${currentCount}
+                /
+                ${maxCount}회
+
+              </p>
+
+            </div>
+
+
+            <button
+
+              class="focus-quest-button"
+
+              ${questLocked ? "disabled" : ""}
+
+            >
+
+              ${buttonText}
+
+            </button>
+
+          </div>
+
+        `;
+
+      }
+
+
+      // -------------------------
+      // 감각 관찰
+      // -------------------------
+
+      if (q.code === "sense_observation") {
+
+        return `
+
+          <div class="quest">
+
+            <div>
+
+              <h3>
+                ${q.title}
+              </h3>
+
+              <p>
+                ${q.grade}-RANK ·
+                실제 관찰 훈련 ·
+                3~10분
+              </p>
+
+              <p class="quest-count">
+
+                오늘
+                ${currentCount}
+                /
+                ${maxCount}회
+
+              </p>
+
+            </div>
+
+
+            <button
+
+              class="sense-quest-button"
+
+              ${questLocked ? "disabled" : ""}
+
+            >
+
+              ${buttonText}
+
+            </button>
+
+          </div>
+
+        `;
+
+      }
+
+
+      // -------------------------
+      // 나머지 퀘스트
+      // -------------------------
+
+      return `
+
+        <div class="quest">
+
+          <div>
+
+            <h3>
+              ${q.title}
+            </h3>
+
+            <p>
+
+              ${q.grade}-RANK ·
+              기본 EXP ${q.base_exp}
+
+            </p>
+
+            <p class="quest-count">
+
+              오늘
+              ${currentCount}
+              /
+              ${maxCount}회
+
+            </p>
+
+          </div>
+
+
+          <button
+
+            data-code="${q.code}"
+
+            data-exp="${q.base_exp}"
+
+            ${questLocked ? "disabled" : ""}
+
+          >
+
+            ${buttonText}
+
+          </button>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+
+  document
+    .querySelector(".focus-quest-button")
+    ?.addEventListener(
+      "click",
+      openFocusTraining
+    );
+
+
+  document
+    .querySelector(".sense-quest-button")
+    ?.addEventListener(
+      "click",
+      openSenseTraining
+    );
+
+
+  $("questList")
+    .querySelectorAll("[data-code]")
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        completeQuest(
+
+          button.dataset.code,
+
+          Number(
+            button.dataset.exp
+          )
+
+        );
+
+      };
+
+    });
+
+}
+
+
+async function completeQuest(code,exp){
+  const {data,error}=await client.rpc("complete_simple_quest",{p_quest_code:code,p_exp:exp});
+  if(error){$("questNotice").textContent=error.message;return;}
+  state.profile=data;
+  $("questNotice").textContent=`${code} 완료 · EXP +${exp}`;
+  render();
+}
+function startAssessment(){
+  state.assessmentIndex=0;state.assessmentScore=0;
+  show("startPanel",false);show("assessmentPanel",true);show("gamePanel",false);drawAssessment();
+}
+function drawAssessment(){
+  const a=assessment[state.assessmentIndex];
+  $("assessmentQuestion").textContent=a.q;
+  $("assessmentChoices").innerHTML=a.c.map((x,i)=>`<button data-i="${i}">${x}</button>`).join("");
+  $("assessmentChoices").querySelectorAll("button").forEach(b=>b.onclick=()=>answerAssessment(Number(b.dataset.i)));
+  $("assessmentProgress").textContent=`TEST ${state.assessmentIndex+1} / ${assessment.length}`;
+}
+async function answerAssessment(i){
+  state.assessmentScore += 50 + ((i*17 + state.assessmentIndex*11)%51);
+  state.assessmentIndex++;
+  if(state.assessmentIndex<assessment.length){drawAssessment();return;}
+  const score=Math.min(100,Math.round(state.assessmentScore/assessment.length));
+  const level=Math.max(1,Math.min(30,Math.floor(score/4)+1));
+  const stats={perception:Math.max(1,Math.round(score*.8)),intuition:Math.max(1,Math.round(score*.9)),focus:Math.max(1,Math.round(score*.7)),interpretation:Math.max(1,Math.round(score*.8)),control:Math.max(1,Math.round(score*.75))};
+  const {error}=await client.rpc("save_assessment",{p_score:score,p_level:level,p_stats:stats});
+  if(error){msg(error.message);return;}
+  await createProfile(level,stats);
+}
+$("signUpBtn").onclick=signUp;
+$("signInBtn").onclick=signIn;
+$("normalStartBtn").onclick=()=>createProfile(1);
+$("assessmentStartBtn").onclick=startAssessment;
+
+$("rankTestStartButton").onclick =
+  startRankTest;
+
+$("logoutBtn").onclick=async()=>{await client.auth.signOut();loadProfile();};
+  
+client.auth.onAuthStateChange(()=>loadProfile());
+loadProfile();
+
+
+let focusTimerInterval = null;
+let focusSeconds = 300;
+let focusStarted = false;
+
+
+// 5분 집중 훈련 시작
+function startFocusTraining() {
+
+  const target = document.getElementById("focusTarget").value;
+
+  if (!target) {
+    alert("집중 대상을 선택하세요.");
+    return;
+  }
+
+  focusStarted = true;
+  focusSeconds = 300;
+
+  document.getElementById("selectedFocusTarget").textContent = target;
+
+  document.getElementById("focusSetup").classList.add("hidden");
+  document.getElementById("focusRunning").classList.remove("hidden");
+  document.getElementById("focusResult").classList.add("hidden");
+
+  updateFocusTimer();
+
+
+  focusTimerInterval = setInterval(() => {
+
+    focusSeconds--;
+
+    updateFocusTimer();
+
+
+    if (focusSeconds <= 0) {
+
+      clearInterval(focusTimerInterval);
+
+      focusTimerInterval = null;
+
+      finishFocusTraining();
+    }
+
+  }, 1000);
+}
+
+
+// 타이머 화면 업데이트
+function updateFocusTimer() {
+
+  const minutes = Math.floor(focusSeconds / 60);
+
+  const seconds = focusSeconds % 60;
+
+  const formattedMinutes =
+    String(minutes).padStart(2, "0");
+
+  const formattedSeconds =
+    String(seconds).padStart(2, "0");
+
+  document.getElementById("focusTimer").textContent =
+    formattedMinutes + ":" + formattedSeconds;
+}
+
+
+// 훈련 종료
+function finishFocusTraining() {
+
+  focusStarted = false;
+
+  document.getElementById("focusRunning").classList.add("hidden");
+
+  document.getElementById("focusResult").classList.remove("hidden");
+
+
+  // 종료 알림음
+  try {
+
+    const audioContext =
+      new (window.AudioContext || window.webkitAudioContext)();
+
+    const oscillator =
+      audioContext.createOscillator();
+
+    const gain =
+      audioContext.createGain();
+
+    oscillator.connect(gain);
+
+    gain.connect(audioContext.destination);
+
+    oscillator.frequency.value = 880;
+
+    gain.gain.value = 0.15;
+
+    oscillator.start();
+
+    setTimeout(() => {
+
+      oscillator.stop();
+
+      audioContext.close();
+
+    }, 700);
+
+  } catch (error) {
+
+    console.log("알림음 재생 실패", error);
+
+  }
+
+
+  alert("5분 집중 훈련이 종료되었습니다.");
+}
+
+
+// 집중 훈련 결과 저장
+async function completeFocusTraining() {
+
+  const quality =
+    document.getElementById("focusQuality").value;
+
+  const obstacle =
+    document.getElementById("focusObstacle").value;
+
+  const experience =
+    document.getElementById("focusExperience").value;
+
+  const memo =
+    document.getElementById("focusMemo").value;
+
+  const target =
+    document.getElementById("focusTarget").value;
+
+
+  if (!quality || !obstacle || !experience) {
+
+    document.getElementById("focusMessage").textContent =
+      "집중 상태, 방해 요소, 특별한 경험을 모두 선택하세요.";
+
+    return;
+  }
+
+
+  document.getElementById("focusMessage").textContent =
+    "훈련 기록을 저장하고 있습니다...";
+
+
+  const resultData = {
+
+    training_type: "5분 집중 훈련",
+
+    target: target,
+
+    focus_quality: quality,
+
+    obstacle: obstacle,
+
+    experience: experience,
+
+    memo: memo,
+
+    completed_at:
+      new Date().toISOString()
+
+  };
 
 
   const {
     data,
     error
   } = await client.rpc(
-    "submit_rv_session",
+    "complete_focus_quest",
     {
+      p_result: resultData
+    }
+  );
 
-      p_session_id:
-        currentRvSessionId,
 
-      p_form_description:
-        formDescription || null,
+  if (error) {
 
-      p_color_description:
-        colorDescription || null,
+    console.error(error);
 
-      p_texture_description:
-        textureDescription || null,
+    document.getElementById("focusMessage").textContent =
+      "저장 실패: " + error.message;
 
-      p_temperature_description:
-        temperatureDescription || null,
+    return;
+  }
 
-      p_movement_description:
-        movementDescription || null,
 
-      p_environment_description:
-        environmentDescription || null,
+  // 최신 플레이어 정보 반영
+  state.profile = data;
 
-      p_free_description:
-        freeDescription || null
+
+  document.getElementById("focusMessage").textContent =
+    "훈련 기록이 저장되었습니다. EXP +10";
+
+
+  // 기존 게임 화면 다시 표시
+  setTimeout(() => {
+
+    document
+      .getElementById("focusTrainingPanel")
+      .classList.add("hidden");
+
+
+    document
+      .getElementById("gamePanel")
+      .classList.remove("hidden");
+
+
+    // 입력값 초기화
+    document.getElementById("focusQuality").value = "";
+    document.getElementById("focusObstacle").value = "";
+    document.getElementById("focusExperience").value = "";
+    document.getElementById("focusMemo").value = "";
+
+
+    // 기존 플레이어 화면 갱신
+    render();
+
+  }, 1000);
+
+}
+
+
+document
+  .getElementById("focusStartButton")
+  .addEventListener(
+    "click",
+    startFocusTraining
+  );
+
+
+document
+  .getElementById("focusCompleteButton")
+  .addEventListener(
+    "click",
+    completeFocusTraining
+  );
+
+
+document
+  .getElementById("focusBackButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      document
+        .getElementById("focusTrainingPanel")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("gamePanel")
+        .classList.remove("hidden");
 
     }
   );
 
 
-  button.disabled = false;
+
+function openFocusTraining() {
+
+  // 기존 게임 화면 숨김
+  document
+    .getElementById("gamePanel")
+    .classList.add("hidden");
+
+
+  // 5분 집중 훈련 화면 표시
+  document
+    .getElementById("focusTrainingPanel")
+    .classList.remove("hidden");
+
+
+  // 시작 화면 표시
+  document
+    .getElementById("focusSetup")
+    .classList.remove("hidden");
+
+
+  // 타이머 화면 숨김
+  document
+    .getElementById("focusRunning")
+    .classList.add("hidden");
+
+
+  // 결과 화면 숨김
+  document
+    .getElementById("focusResult")
+    .classList.add("hidden");
+
+
+  // 타이머 초기화
+  focusSeconds = 300;
+
+  document
+    .getElementById("focusTimer")
+    .textContent = "05:00";
+
+
+  // 결과 메시지 초기화
+  document
+    .getElementById("focusMessage")
+    .textContent = "";
+
+}
+
+
+
+/* =========================
+   감각 관찰 훈련
+========================= */
+
+let senseTimerInterval = null;
+let senseSeconds = 300;
+let selectedSenseExp = 10;
+
+
+function openSenseTraining() {
+
+  if (senseTimerInterval) {
+    clearInterval(senseTimerInterval);
+    senseTimerInterval = null;
+  }
+
+  document
+    .getElementById("gamePanel")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseTrainingPanel")
+    .classList.remove("hidden");
+
+
+  document
+    .getElementById("senseSetup")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("senseRunning")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseResult")
+    .classList.add("hidden");
+
+
+  document
+    .getElementById("senseMessage")
+    .textContent = "";
+
+
+  document
+    .getElementById("senseTimer")
+    .textContent = "05:00";
+
+}
+
+
+function startSenseTraining() {
+
+  const target =
+    document.getElementById("senseTarget").value;
+
+  const duration =
+    Number(
+      document.getElementById("senseDuration").value
+    );
+
+
+  if (!target) {
+    alert("관찰 대상을 선택하세요.");
+    return;
+  }
+
+
+  if (!duration) {
+    alert("훈련 시간을 선택하세요.");
+    return;
+  }
+
+
+  if (senseTimerInterval) {
+    return;
+  }
+
+
+  senseSeconds = duration;
+
+
+  // 시간에 따른 EXP
+  if (duration === 180) {
+    selectedSenseExp = 5;
+  }
+
+  else if (duration === 300) {
+    selectedSenseExp = 10;
+  }
+
+  else if (duration === 600) {
+    selectedSenseExp = 20;
+  }
+
+
+  document
+    .getElementById("selectedSenseTarget")
+    .textContent = target;
+
+
+  document
+    .getElementById("senseSetup")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseRunning")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("senseResult")
+    .classList.add("hidden");
+
+
+  updateSenseTimer();
+
+
+  senseTimerInterval = setInterval(() => {
+
+    senseSeconds--;
+
+    updateSenseTimer();
+
+
+    if (senseSeconds <= 0) {
+
+      clearInterval(senseTimerInterval);
+
+      senseTimerInterval = null;
+
+      finishSenseTraining();
+
+    }
+
+  }, 1000);
+
+}
+
+
+function updateSenseTimer() {
+
+  const minutes =
+    Math.floor(senseSeconds / 60);
+
+  const seconds =
+    senseSeconds % 60;
+
+
+  document
+    .getElementById("senseTimer")
+    .textContent =
+      String(minutes).padStart(2, "0")
+      + ":"
+      + String(seconds).padStart(2, "0");
+
+}
+
+
+function finishSenseTraining() {
+
+  document
+    .getElementById("senseRunning")
+    .classList.add("hidden");
+
+  document
+    .getElementById("senseResult")
+    .classList.remove("hidden");
+
+
+  playSelectedSenseSound();
+
+}
+
+
+function playSelectedSenseSound() {
+
+  const sound =
+    document.getElementById("senseSound").value;
+
+
+  if (sound === "silent") {
+    return;
+  }
+
+
+  try {
+
+    const audioContext =
+      new (
+        window.AudioContext
+        || window.webkitAudioContext
+      )();
+
+
+    const gain =
+      audioContext.createGain();
+
+    gain.connect(audioContext.destination);
+
+    gain.gain.value = 0.15;
+
+
+    let frequency = 660;
+    let duration = 0.6;
+
+
+    if (sound === "high") {
+      frequency = 1100;
+    }
+
+    else if (sound === "low") {
+      frequency = 440;
+    }
+
+    else if (sound === "bell") {
+      frequency = 880;
+    }
+
+
+    function playTone(
+      freq,
+      startTime,
+      toneDuration
+    ) {
+
+      const oscillator =
+        audioContext.createOscillator();
+
+      oscillator.frequency.value = freq;
+
+      oscillator.connect(gain);
+
+      oscillator.start(startTime);
+
+      oscillator.stop(
+        startTime + toneDuration
+      );
+
+    }
+
+
+    if (sound === "double") {
+
+      const now =
+        audioContext.currentTime;
+
+      playTone(
+        880,
+        now,
+        0.25
+      );
+
+      playTone(
+        880,
+        now + 0.4,
+        0.25
+      );
+
+
+      setTimeout(() => {
+        audioContext.close();
+      }, 1000);
+
+    }
+
+    else {
+
+      const oscillator =
+        audioContext.createOscillator();
+
+      oscillator.frequency.value =
+        frequency;
+
+      oscillator.connect(gain);
+
+      oscillator.start();
+
+      oscillator.stop(
+        audioContext.currentTime
+        + duration
+      );
+
+
+      setTimeout(() => {
+        audioContext.close();
+      }, 1000);
+
+    }
+
+  }
+
+  catch (error) {
+    console.log(
+      "알림음 재생 실패",
+      error
+    );
+  }
+
+}
+
+
+async function completeSenseTraining() {
+
+  const target =
+    document.getElementById("senseTarget").value;
+
+  const duration =
+    Number(
+      document.getElementById("senseDuration").value
+    );
+
+  const discovery =
+    document.getElementById("senseDiscovery").value;
+
+  const difficulty =
+    document.getElementById("senseDifficulty").value;
+
+  const memo =
+    document.getElementById("senseMemo").value;
+
+
+  if (!discovery || !difficulty) {
+
+    document
+      .getElementById("senseMessage")
+      .textContent =
+        "관찰 결과와 어려웠던 점을 선택하세요.";
+
+    return;
+  }
+
+
+  document
+    .getElementById("senseCompleteButton")
+    .disabled = true;
+
+  document
+    .getElementById("senseMessage")
+    .textContent =
+      "훈련 기록을 저장하고 있습니다...";
+
+
+  const resultData = {
+
+    training_type:
+      "감각 관찰",
+
+    target: target,
+
+    duration_seconds:
+      duration,
+
+    discovery:
+      discovery,
+
+    difficulty:
+      difficulty,
+
+    memo:
+      memo,
+
+    completed_at:
+      new Date().toISOString()
+
+  };
+
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "complete_sense_observation_quest",
+    {
+      p_result: resultData,
+      p_exp: selectedSenseExp
+    }
+  );
+
+
+  document
+    .getElementById("senseCompleteButton")
+    .disabled = false;
 
 
   if (error) {
 
-    console.error(
-      "RV submit error:",
-      error
-    );
+    console.error(error);
 
-
-    message.textContent =
-      error.message;
+    document
+      .getElementById("senseMessage")
+      .textContent =
+        "저장 실패: "
+        + error.message;
 
     return;
-
   }
 
 
-  /*
-    RPC 반환값 확인
-  */
-
-  const result =
-    Array.isArray(data)
-      ? data[0]
-      : data;
+  state.profile = data;
 
 
-  if (!result) {
+  document
+    .getElementById("senseMessage")
+    .textContent =
+      `훈련 기록이 저장되었습니다. EXP +${selectedSenseExp}`;
 
-    message.textContent =
-      "타겟 정보를 가져오지 못했습니다.";
 
+  setTimeout(() => {
+
+    document
+      .getElementById("senseTrainingPanel")
+      .classList.add("hidden");
+
+
+    document
+      .getElementById("gamePanel")
+      .classList.remove("hidden");
+
+
+    document
+      .getElementById("senseDiscovery")
+      .value = "";
+
+    document
+      .getElementById("senseDifficulty")
+      .value = "";
+
+    document
+      .getElementById("senseMemo")
+      .value = "";
+
+
+    render();
+
+  }, 1000);
+
+}
+
+
+document
+  .getElementById("senseStartButton")
+  .addEventListener(
+    "click",
+    startSenseTraining
+  );
+
+
+document
+  .getElementById("senseCompleteButton")
+  .addEventListener(
+    "click",
+    completeSenseTraining
+  );
+
+
+document
+  .getElementById("senseBackButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (senseTimerInterval) {
+        clearInterval(senseTimerInterval);
+        senseTimerInterval = null;
+      }
+
+
+      document
+        .getElementById("senseTrainingPanel")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("gamePanel")
+        .classList.remove("hidden");
+
+    }
+  );
+
+
+/* =========================================
+   REMOTE VIEWING
+   The target path never enters the browser until submit_rv_session succeeds.
+========================================= */
+
+let currentRvSessionId = null;
+let currentRvTargetCode = null;
+
+const rvFieldIds = [
+  "rvFormDescription", "rvColorDescription", "rvTextureDescription",
+  "rvTemperatureDescription", "rvMovementDescription",
+  "rvEnvironmentDescription", "rvFreeDescription"
+];
+
+function rvElement(id) {
+  return document.getElementById(id);
+}
+
+function setRvMessage(id, value) {
+  const element = rvElement(id);
+  if (element) element.textContent = value || "";
+}
+
+function showRvStep(stepId) {
+  ["rvSetup", "rvObservation", "rvReveal"].forEach((id) => {
+    const element = rvElement(id);
+    if (element) element.classList.toggle("hidden", id !== stepId);
+  });
+}
+
+function resetRvFields() {
+  rvFieldIds.forEach((id) => {
+    const field = rvElement(id);
+    if (field) field.value = "";
+  });
+  const image = rvElement("rvTargetImage");
+  if (image) image.removeAttribute("src");
+}
+
+function openRemoteViewing() {
+  const gamePanel = rvElement("gamePanel");
+  const panel = rvElement("remoteViewingTrainingPanel");
+  if (!gamePanel || !panel) return;
+
+  gamePanel.classList.add("hidden");
+  panel.classList.remove("hidden");
+  currentRvSessionId = null;
+  currentRvTargetCode = null;
+  resetRvFields();
+  setRvMessage("rvMessage", "");
+  setRvMessage("rvObservationMessage", "");
+  showRvStep("rvSetup");
+}
+
+async function startRemoteViewingSession() {
+  const button = rvElement("rvStartButton");
+  if (button) button.disabled = true;
+  setRvMessage("rvMessage", "타겟을 안전하게 생성하고 있습니다...");
+
+  const { data, error } = await client.rpc("create_rv_session");
+  if (button) button.disabled = false;
+  if (error) {
+    console.error("create_rv_session failed", error);
+    setRvMessage("rvMessage", "타겟 생성 실패: " + error.message);
     return;
-
   }
 
+  const session = Array.isArray(data) ? data[0] : data;
+  if (!session || !session.session_id || !session.target_code) {
+    setRvMessage("rvMessage", "서버가 올바른 타겟 세션을 반환하지 않았습니다.");
+    return;
+  }
 
-  /*
-    실제 타겟 코드
-  */
+  currentRvSessionId = session.session_id;
+  currentRvTargetCode = session.target_code;
+  rvElement("rvObservationTargetCode").textContent = currentRvTargetCode;
+  rvElement("rvTargetCode").textContent = currentRvTargetCode;
+  showRvStep("rvObservation");
+}
 
-  document
-    .getElementById(
-      "rvResultTargetCode"
-    )
-    .textContent =
-      result.target_code;
+function readRvObservation() {
+  return {
+    p_form_description: rvElement("rvFormDescription").value.trim(),
+    p_color_description: rvElement("rvColorDescription").value.trim(),
+    p_texture_description: rvElement("rvTextureDescription").value.trim(),
+    p_temperature_description: rvElement("rvTemperatureDescription").value.trim(),
+    p_movement_description: rvElement("rvMovementDescription").value.trim(),
+    p_environment_description: rvElement("rvEnvironmentDescription").value.trim(),
+    p_free_description: rvElement("rvFreeDescription").value.trim()
+  };
+}
 
+async function submitRemoteViewingSession() {
+  if (!currentRvSessionId) {
+    setRvMessage("rvObservationMessage", "유효한 세션이 없습니다. 새 타겟을 생성하세요.");
+    return;
+  }
+  const observation = readRvObservation();
+  if (!Object.values(observation).some(Boolean)) {
+    setRvMessage("rvObservationMessage", "관찰 기록을 한 항목 이상 입력하세요.");
+    return;
+  }
 
-  /*
-    이미지 제목
-  */
+  const button = rvElement("rvSubmitButton");
+  button.disabled = true;
+  setRvMessage("rvObservationMessage", "기록을 저장하고 타겟을 공개하고 있습니다...");
 
-  document
-    .getElementById(
-      "rvResultTitle"
-    )
-    .textContent =
-      result.source_title ||
-      "REMOTE VIEWING TARGET";
+  const { data, error } = await client.rpc("submit_rv_session", {
+    p_session_id: currentRvSessionId,
+    ...observation
+  });
+  if (error) {
+    button.disabled = false;
+    console.error("submit_rv_session failed", error);
+    setRvMessage("rvObservationMessage", "제출 실패: " + error.message);
+    return;
+  }
 
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result || !result.storage_path) {
+    button.disabled = false;
+    setRvMessage("rvObservationMessage", "공개할 타겟 정보를 받지 못했습니다.");
+    return;
+  }
 
-  /*
-    Supabase Storage 실제 이미지 URL 생성
-  */
-
-  const {
-    data: publicUrlData
-  } = client
-    .storage
+  // The Storage policy permits this only after the session is revealed.
+  const { data: signed, error: signedError } = await client.storage
     .from("rv-images")
-    .getPublicUrl(
-      result.storage_path
-    );
+    .createSignedUrl(result.storage_path, 600);
+  if (signedError || !signed?.signedUrl) {
+    button.disabled = false;
+    console.error("Signed URL creation failed", signedError);
+    setRvMessage("rvObservationMessage", "타겟은 공개되었지만 이미지를 불러오지 못했습니다. 다시 시도하세요.");
+    return;
+  }
 
-
-  const imageUrl =
-    publicUrlData.publicUrl;
-
-
-  const image =
-    document.getElementById(
-      "rvResultImage"
-    );
-
-
-  image.src =
-    imageUrl;
-
-
-  /*
-    관찰 화면 숨김
-  */
-
-  document
-    .getElementById("rvObservation")
-    .classList.add("hidden");
-
-
-  /*
-    결과 화면 표시
-  */
-
-  document
-    .getElementById("rvResult")
-    .classList.remove("hidden");
-
-
-  document
-    .getElementById("rvResultMessage")
-    .textContent =
-      "실제 타겟 이미지가 공개되었습니다.";
-
-
-  /*
-    현재 세션 종료 처리
-  */
-
+  rvElement("rvRevealedTargetCode").textContent = result.target_code || currentRvTargetCode;
+  rvElement("rvTargetTitle").textContent = result.source_title || "REMOTE VIEWING TARGET";
+  const image = rvElement("rvTargetImage");
+  image.onerror = () => setRvMessage("rvObservationMessage", "이미지를 불러오지 못했습니다. 잠시 후 다시 시도하세요.");
+  image.src = signed.signedUrl;
+  ["Form", "Color", "Texture", "Temperature", "Movement", "Environment", "Free"].forEach((name) => {
+    rvElement("rvResult" + name).textContent = observation["p_" + ({ Form: "form_description", Color: "color_description", Texture: "texture_description", Temperature: "temperature_description", Movement: "movement_description", Environment: "environment_description", Free: "free_description" })[name]] || "—";
+  });
+  button.disabled = false;
   currentRvSessionId = null;
-
+  showRvStep("rvReveal");
 }
 
-
-/* =========================================
-   리모트뷰잉 취소
-========================================= */
-
-function cancelRemoteViewing() {
-
+async function cancelRemoteViewing() {
+  if (currentRvSessionId) {
+    const { error } = await client.rpc("cancel_rv_session", { p_session_id: currentRvSessionId });
+    if (error) console.warn("cancel_rv_session failed", error);
+  }
   currentRvSessionId = null;
-
-
-  document
-    .getElementById("rvTrainingPanel")
-    .classList.add("hidden");
-
-
-  document
-    .getElementById("gamePanel")
-    .classList.remove("hidden");
-
-
+  currentRvTargetCode = null;
+  rvElement("remoteViewingTrainingPanel").classList.add("hidden");
+  rvElement("gamePanel").classList.remove("hidden");
   render();
-
 }
-
-
-/* =========================================
-   리모트뷰잉 종료
-========================================= */
 
 function finishRemoteViewing() {
-
   currentRvSessionId = null;
-
-
-  document
-    .getElementById("rvTrainingPanel")
-    .classList.add("hidden");
-
-
-  document
-    .getElementById("gamePanel")
-    .classList.remove("hidden");
-
-
+  currentRvTargetCode = null;
+  rvElement("remoteViewingTrainingPanel").classList.add("hidden");
+  rvElement("gamePanel").classList.remove("hidden");
   render();
-
 }
 
-
-/* =========================================
-   이벤트 연결
-========================================= */
-
-document
-  .getElementById("rvStartButton")
-  ?.addEventListener(
-    "click",
-    startRemoteViewingSession
-  );
-
-
-document
-  .getElementById("rvSubmitButton")
-  ?.addEventListener(
-    "click",
-    submitRemoteViewing
-  );
-
-
-document
-  .getElementById("rvBackButton")
-  ?.addEventListener(
-    "click",
-    cancelRemoteViewing
-  );
-
-
-document
-  .getElementById("rvCancelButton")
-  ?.addEventListener(
-    "click",
-    cancelRemoteViewing
-  );
-
-
-document
-  .getElementById("rvFinishButton")
-  ?.addEventListener(
-    "click",
-    finishRemoteViewing
-  );
+rvElement("openRemoteViewingButton")?.addEventListener("click", openRemoteViewing);
+rvElement("rvStartButton")?.addEventListener("click", startRemoteViewingSession);
+rvElement("rvSubmitButton")?.addEventListener("click", submitRemoteViewingSession);
+rvElement("rvBackButton")?.addEventListener("click", cancelRemoteViewing);
+rvElement("rvCancelButton")?.addEventListener("click", cancelRemoteViewing);
+rvElement("rvFinishButton")?.addEventListener("click", finishRemoteViewing);

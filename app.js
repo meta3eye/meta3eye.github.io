@@ -648,6 +648,15 @@ const D_TO_C_PROMOTION_TEST = [
 ];
 
 
+// Add a rank-specific array here when that rank receives unique questions.
+// The common test flow and server-side scorer work for every promotion now.
+const PROMOTION_TESTS = {
+  D: D_TO_C_PROMOTION_TEST,
+  C: D_TO_C_PROMOTION_TEST,
+  B: D_TO_C_PROMOTION_TEST,
+  A: D_TO_C_PROMOTION_TEST
+};
+
 const QUEST_LIMITS = {
   focus_5: 3,
   sense_observation: 3,
@@ -685,6 +694,10 @@ function getNextRank(rank){
 
   return RANK_ORDER[index + 1];
 
+}
+
+function getPromotionTest(rank){
+  return PROMOTION_TESTS[rank] || D_TO_C_PROMOTION_TEST;
 }
 
 
@@ -749,12 +762,22 @@ function renderRankPromotion(){
 
 function startRankTest(){
 
+  const currentRank = state.profile?.rank || "D";
+  if(!getNextRank(currentRank) || state.profile?.level < 100){
+    return;
+  }
+
   state.rankTestIndex = 0;
 
   state.rankTestAnswers = [];
 
+  state.rankTestCurrentRank = currentRank;
+
 
   $("rankTestPanel")
+    .classList.add("hidden");
+
+  $("rankTestResultPanel")
     .classList.add("hidden");
 
 
@@ -774,8 +797,12 @@ function renderRankTestQuestion(){
     state.rankTestIndex;
 
 
-  const test =
-    D_TO_C_PROMOTION_TEST[index];
+  const currentRank =
+    state.rankTestCurrentRank || state.profile.rank || "D";
+
+  const questions = getPromotionTest(currentRank);
+
+  const test = questions[index];
 
 
   if(!test){
@@ -787,12 +814,7 @@ function renderRankTestQuestion(){
   }
 
 
-  const total =
-    D_TO_C_PROMOTION_TEST.length;
-
-
-  const currentRank =
-    state.profile.rank || "D";
+  const total = questions.length;
 
 
   const nextRank =
@@ -855,6 +877,10 @@ function renderRankTestQuestion(){
           choice: choiceIndex
         });
 
+        document.querySelectorAll(".rank-test-choice").forEach(choice => {
+          choice.disabled = true;
+        });
+
 
         state.rankTestIndex++;
 
@@ -868,109 +894,55 @@ function renderRankTestQuestion(){
 }
 
 
-function finishRankTest(){
+async function finishRankTest(){
 
-  $("rankTestRunningPanel")
-    .classList.add("hidden");
+  $("rankTestRunningPanel").classList.add("hidden");
 
+  const currentRank = state.rankTestCurrentRank || state.profile.rank || "D";
+  const targetRank = getNextRank(currentRank);
+  const resultPanel = $("rankTestResultPanel");
 
-  const panel =
-    $("rankTestPanel");
+  $("rankTestMessage").textContent = "시험을 채점하고 있습니다...";
 
+  const {data, error} = await client.rpc("submit_rank_promotion_test", {
+    p_answers: state.rankTestAnswers
+  });
 
-  panel.classList.remove("hidden");
+  if(error){
+    $("rankTestRunningPanel").classList.remove("hidden");
+    $("rankTestMessage").textContent = "시험 처리 실패: " + error.message;
+    return;
+  }
 
+  const result = Array.isArray(data) ? data[0] : data;
+  if(!result){
+    $("rankTestRunningPanel").classList.remove("hidden");
+    $("rankTestMessage").textContent = "시험 결과를 받지 못했습니다.";
+    return;
+  }
 
-  const currentRank =
-    state.profile.rank || "D";
+  const passed = result.result === "PASS";
+  $("rankTestResultCurrentRank").textContent = `${currentRank}-RANK`;
+  $("rankTestResultTargetRank").textContent = `${targetRank}-RANK`;
+  $("rankTestResultBadge").textContent = passed ? "PASS" : "FAIL";
+  $("rankTestScore").textContent = `SCORE ${result.score} / 100`;
+  $("rankTestResultMessage").textContent = passed
+    ? `${targetRank}-RANK 승급이 완료되었습니다. LV.1부터 새로운 랭크의 훈련을 시작합니다.`
+    : "이번 승급시험은 불합격입니다. 현재 랭크와 LV.100은 유지되며 바로 재응시할 수 있습니다.";
+  $("rankTestResultAction").textContent = passed ? "새 랭크로 게임 계속하기" : "다시 시험 보기";
+  $("rankTestResultAction").onclick = async () => {
+    resultPanel.classList.add("hidden");
+    if(passed){
+      await loadProfile();
+    }else{
+      $("rankTestPanel").classList.remove("hidden");
+    }
+  };
 
-
-  const nextRank =
-    getNextRank(currentRank);
-
-
-  panel.innerHTML = `
-
-    <div class="section-title">
-
-      <h2>
-        TEST COMPLETE
-      </h2>
-
-      <span class="muted">
-        RESULT PENDING
-      </span>
-
-    </div>
-
-
-    <div class="rank-test-header">
-
-      <div class="rank-test-current">
-
-        <span class="label">
-          CURRENT RANK
-        </span>
-
-        <strong>
-          ${currentRank}-RANK
-        </strong>
-
-      </div>
-
-
-      <div class="rank-test-arrow">
-        →
-      </div>
-
-
-      <div class="rank-test-next">
-
-        <span class="label">
-          TARGET RANK
-        </span>
-
-        <strong>
-          ${nextRank}-RANK
-        </strong>
-
-      </div>
-
-    </div>
-
-
-    <div class="rank-test-description">
-
-      <p>
-        승급시험이 완료되었습니다.
-      </p>
-
-      <p class="muted">
-        현재는 시험 진행 구조를 확인하는 단계입니다.
-        실제 PASS / FAIL 판정은 다음 단계에서 연결됩니다.
-      </p>
-
-    </div>
-
-
-    <button id="rankTestRetryButton">
-
-      시험 다시 확인하기
-
-    </button>
-
-  `;
-
-
-  $("rankTestRetryButton")
-    .onclick = () => {
-
-      startRankTest();
-
-    };
+  resultPanel.classList.remove("hidden");
+  await loadProfile();
 
 }
-
 
 function getTodayStart() {
 
@@ -2310,3 +2282,4 @@ rvElement("rvCancelButton")?.addEventListener("click", cancelRemoteViewing);
 rvElement("rvFinishButton")?.addEventListener("click", finishRemoteViewing);
 
 })();
+

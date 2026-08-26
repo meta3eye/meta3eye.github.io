@@ -567,106 +567,8 @@ function renderNextUnlock() {
 
 }
 
-/* =========================
-   D TO C PROMOTION TEST
-========================= */
 
-const D_TO_C_PROMOTION_TEST = [
-
-  {
-    objective: "집중력 판별",
-
-    question:
-      "다음 안내를 읽은 뒤, 5초 동안 화면의 중앙에 집중하십시오. 준비가 되면 다음 단계로 진행하십시오.",
-
-    choices: [
-      {
-        text: "준비 완료",
-        correct: true
-      }
-    ]
-  },
-
-  {
-    objective: "감각 관찰",
-
-    question:
-      "지금 이 순간 주변 환경에서 평소에는 의식하지 않았던 소리나 감각을 하나 선택하십시오.",
-
-    choices: [
-      {
-        text: "소리",
-        correct: true
-      },
-
-      {
-        text: "신체 감각",
-        correct: true
-      },
-
-      {
-        text: "온도 변화",
-        correct: true
-      },
-
-      {
-        text: "특별한 감각 없음",
-        correct: true
-      }
-    ]
-  },
-
-  {
-    objective: "직관 선택",
-
-    question:
-      "아래 네 개의 선택지 중 가장 먼저 떠오르는 하나를 선택하십시오. 오래 고민하지 마십시오.",
-
-    choices: [
-      {
-        text: "A",
-        correct: true
-      },
-
-      {
-        text: "B",
-        correct: true
-      },
-
-      {
-        text: "C",
-        correct: true
-      },
-
-      {
-        text: "D",
-        correct: true
-      }
-    ]
-  }
-
-];
-
-
-// Add a rank-specific array here when that rank receives unique questions.
-// The common test flow and server-side scorer work for every promotion now.
-const PROMOTION_TESTS = {
-  D: D_TO_C_PROMOTION_TEST,
-  C: D_TO_C_PROMOTION_TEST,
-  B: D_TO_C_PROMOTION_TEST,
-  A: D_TO_C_PROMOTION_TEST
-};
-
-const QUEST_LIMITS = {
-  focus_5: 3,
-  sense_observation: 3,
-
-  intuition_choice: 5,
-  emotion_guess: 3,
-  life_death: 3
-};
-
-/* =========================
+  /* =========================
    RANK PROMOTION SYSTEM
 ========================= */
 
@@ -678,6 +580,70 @@ const RANK_ORDER = [
   "S"
 ];
 
+
+const PROMOTION_TESTS = {
+  D: [
+    {
+      type: "focus",
+      objective: "집중 유지 시험",
+      duration: 60
+    },
+
+    {
+      type: "impulse",
+      objective: "충동 억제 시험",
+      duration: 60
+    },
+
+    {
+      type: "attention",
+      objective: "주의 전환 시험",
+      duration: 90
+    },
+
+    {
+      type: "observation",
+      objective: "자기 상태 관찰",
+      duration: 60
+    }
+  ]
+};
+
+
+/* =========================
+   RANK TEST STATE
+========================= */
+
+const promotionState = {
+  active: false,
+  currentRank: null,
+  testIndex: 0,
+
+  timer: null,
+  remainingSeconds: 0,
+
+  startedAt: 0,
+
+  focusLostCount: 0,
+
+  impulseClickCount: 0,
+  impulseShownCount: 0,
+  impulseTimers: [],
+
+  attentionSignalShown: false,
+  attentionSignalAt: 0,
+  attentionReactionMs: null,
+
+  observationText: "",
+
+  tabHiddenCount: 0,
+  windowBlurCount: 0
+};
+
+
+/* =========================
+   RANK FUNCTIONS
+========================= */
 
 function getNextRank(rank){
 
@@ -693,23 +659,27 @@ function getNextRank(rank){
   }
 
   return RANK_ORDER[index + 1];
-
 }
+
 
 function getPromotionTest(rank){
-  return PROMOTION_TESTS[rank] || D_TO_C_PROMOTION_TEST;
+
+  return PROMOTION_TESTS[rank] || null;
+
 }
 
+
+/* =========================
+   RANK PROMOTION PANEL
+========================= */
 
 function renderRankPromotion(){
 
-  const p =
-    state.profile;
+  const p = state.profile;
 
   if(!p){
     return;
   }
-
 
   const currentRank =
     p.rank || "D";
@@ -717,20 +687,13 @@ function renderRankPromotion(){
   const nextRank =
     getNextRank(currentRank);
 
-
   const panel =
     $("rankTestPanel");
-
 
   if(!panel){
     return;
   }
 
-
-  /*
-    S-RANK는 최종 랭크이므로
-    승급시험을 표시하지 않는다.
-  */
 
   if(
     !nextRank ||
@@ -740,20 +703,158 @@ function renderRankPromotion(){
     panel.classList.add("hidden");
 
     return;
+
   }
 
 
   $("promotionCurrentRank").textContent =
     `${currentRank}-RANK`;
 
-
   $("promotionNextRank").textContent =
     `${nextRank}-RANK`;
-
 
   panel.classList.remove("hidden");
 
 }
+
+
+/* =========================
+   PROMOTION TEST HELPERS
+========================= */
+
+function resetPromotionAreas(){
+
+  const ids = [
+    "promotionFocusArea",
+    "promotionImpulseArea",
+    "promotionAttentionArea",
+    "promotionObservationArea"
+  ];
+
+  ids.forEach(id => {
+
+    const element = $(id);
+
+    if(element){
+      element.classList.add("hidden");
+    }
+
+  });
+
+}
+
+
+function clearPromotionTimers(){
+
+  if(promotionState.timer){
+
+    clearInterval(
+      promotionState.timer
+    );
+
+    promotionState.timer = null;
+
+  }
+
+
+  promotionState.impulseTimers.forEach(timer => {
+
+    clearTimeout(timer);
+
+  });
+
+
+  promotionState.impulseTimers = [];
+
+}
+
+
+function formatPromotionTime(seconds){
+
+  const minutes =
+    Math.floor(seconds / 60);
+
+  const remain =
+    seconds % 60;
+
+  return (
+    String(minutes).padStart(2, "0")
+    +
+    ":"
+    +
+    String(remain).padStart(2, "0")
+  );
+
+}
+
+
+function updatePromotionTimer(){
+
+  const timer =
+    $("rankTestTimer");
+
+  if(!timer){
+    return;
+  }
+
+  timer.textContent =
+    formatPromotionTime(
+      promotionState.remainingSeconds
+    );
+
+}
+
+
+function recordFocusLoss(){
+
+  if(!promotionState.active){
+    return;
+  }
+
+  if(document.hidden){
+
+    promotionState.tabHiddenCount++;
+
+  }else{
+
+    promotionState.windowBlurCount++;
+
+  }
+
+}
+
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if(
+      promotionState.active &&
+      document.hidden
+    ){
+
+      promotionState.tabHiddenCount++;
+
+    }
+
+  }
+);
+
+
+window.addEventListener(
+  "blur",
+  () => {
+
+    if(
+      promotionState.active
+    ){
+
+      promotionState.windowBlurCount++;
+
+    }
+
+  }
+);
 
 
 /* =========================
@@ -762,47 +863,102 @@ function renderRankPromotion(){
 
 function startRankTest(){
 
-  const currentRank = state.profile?.rank || "D";
-  if(!getNextRank(currentRank) || state.profile?.level < 100){
+  const currentRank =
+    state.profile?.rank || "D";
+
+
+  if(
+    !getNextRank(currentRank) ||
+    state.profile?.level < 100
+  ){
     return;
   }
 
-  state.rankTestIndex = 0;
 
-  state.rankTestAnswers = [];
+  const tests =
+    getPromotionTest(currentRank);
 
-  state.rankTestCurrentRank = currentRank;
+
+  if(!tests){
+
+    alert(
+      "현재 랭크의 승급시험은 아직 준비되지 않았습니다."
+    );
+
+    return;
+
+  }
+
+
+  clearPromotionTimers();
+
+
+  promotionState.active = true;
+
+  promotionState.currentRank =
+    currentRank;
+
+  promotionState.testIndex = 0;
+
+  promotionState.focusLostCount = 0;
+
+  promotionState.impulseClickCount = 0;
+
+  promotionState.impulseShownCount = 0;
+
+  promotionState.attentionSignalShown =
+    false;
+
+  promotionState.attentionSignalAt = 0;
+
+  promotionState.attentionReactionMs =
+    null;
+
+  promotionState.observationText =
+    "";
+
+  promotionState.tabHiddenCount = 0;
+
+  promotionState.windowBlurCount = 0;
 
 
   $("rankTestPanel")
     .classList.add("hidden");
 
+
   $("rankTestResultPanel")
-    .classList.add("hidden");
+    ?.classList.add("hidden");
 
 
   $("rankTestRunningPanel")
     .classList.remove("hidden");
 
 
-  renderRankTestQuestion();
+  $("rankTestMessage").textContent =
+    "";
+
+
+  runPromotionTestStep();
 
 }
 
-  
 
-function renderRankTestQuestion(){
+/* =========================
+   RUN CURRENT TEST
+========================= */
 
-  const index =
-    state.rankTestIndex;
+function runPromotionTestStep(){
+
+  const tests =
+    getPromotionTest(
+      promotionState.currentRank
+    );
 
 
-  const currentRank =
-    state.rankTestCurrentRank || state.profile.rank || "D";
-
-  const questions = getPromotionTest(currentRank);
-
-  const test = questions[index];
+  const test =
+    tests[
+      promotionState.testIndex
+    ];
 
 
   if(!test){
@@ -814,463 +970,651 @@ function renderRankTestQuestion(){
   }
 
 
-  const total = questions.length;
+  resetPromotionAreas();
 
-
-  const nextRank =
-    getNextRank(currentRank);
+  clearPromotionTimers();
 
 
   $("rankTestTitle").textContent =
-    `${currentRank}-RANK PROMOTION TEST`;
+    `${promotionState.currentRank}-RANK PROMOTION TEST`;
 
 
   $("rankTestProgress").textContent =
-    `TEST ${index + 1} / ${total}`;
+    `TEST ${
+      promotionState.testIndex + 1
+    } / ${
+      tests.length
+    }`;
 
 
   $("rankTestObjective").textContent =
     test.objective;
 
 
-  $("rankTestQuestion").textContent =
-    test.question;
-
-
   $("rankTestMessage").textContent =
     "";
 
 
-  $("rankTestChoices").innerHTML =
-    test.choices
-      .map((choice, choiceIndex) => {
-
-        return `
-          <button
-            class="rank-test-choice"
-            data-choice="${choiceIndex}"
-          >
-            ${choice.text}
-          </button>
-        `;
-
-      })
-      .join("");
+  promotionState.remainingSeconds =
+    test.duration;
 
 
-  document
-    .querySelectorAll(
-      ".rank-test-choice"
-    )
-    .forEach(button => {
+  updatePromotionTimer();
 
-      button.onclick = () => {
 
-        const choiceIndex =
-          Number(
-            button.dataset.choice
+  if(test.type === "focus"){
+
+    startPromotionFocusTest(
+      test
+    );
+
+    return;
+
+  }
+
+
+  if(test.type === "impulse"){
+
+    startPromotionImpulseTest(
+      test
+    );
+
+    return;
+
+  }
+
+
+  if(test.type === "attention"){
+
+    startPromotionAttentionTest(
+      test
+    );
+
+    return;
+
+  }
+
+
+  if(test.type === "observation"){
+
+    startPromotionObservationTest(
+      test
+    );
+
+    return;
+
+  }
+
+}
+
+
+/* =========================
+   GENERIC TIMER
+========================= */
+
+function startPromotionCountdown(
+  onComplete
+){
+
+  promotionState.timer =
+    setInterval(
+      () => {
+
+        promotionState.remainingSeconds--;
+
+        updatePromotionTimer();
+
+
+        if(
+          promotionState.remainingSeconds <= 0
+        ){
+
+          clearInterval(
+            promotionState.timer
           );
 
+          promotionState.timer =
+            null;
 
-        state.rankTestAnswers.push({
-          question: index,
-          choice: choiceIndex
-        });
+          onComplete();
 
-        document.querySelectorAll(".rank-test-choice").forEach(choice => {
-          choice.disabled = true;
-        });
+        }
 
-
-        state.rankTestIndex++;
-
-
-        renderRankTestQuestion();
-
-      };
-
-    });
+      },
+      1000
+    );
 
 }
 
 
-async function finishRankTest(){
+/* =========================
+   TEST 1
+   FOCUS MAINTENANCE
+========================= */
 
-  $("rankTestRunningPanel").classList.add("hidden");
+function startPromotionFocusTest(test){
 
-  const currentRank = state.rankTestCurrentRank || state.profile.rank || "D";
-  const targetRank = getNextRank(currentRank);
-  const resultPanel = $("rankTestResultPanel");
+  const area =
+    $("promotionFocusArea");
 
-  $("rankTestMessage").textContent = "시험을 채점하고 있습니다...";
+  area.classList.remove("hidden");
 
-  const {data, error} = await client.rpc("submit_rank_promotion_test", {
-    p_answers: state.rankTestAnswers
-  });
 
-  if(error){
-    $("rankTestRunningPanel").classList.remove("hidden");
-    $("rankTestMessage").textContent = "시험 처리 실패: " + error.message;
-    return;
-  }
+  $("rankTestQuestion").textContent =
+    "60초 동안 화면 중앙의 점에 집중하십시오. 다른 탭으로 이동하지 마십시오.";
 
-  const result = Array.isArray(data) ? data[0] : data;
-  if(!result){
-    $("rankTestRunningPanel").classList.remove("hidden");
-    $("rankTestMessage").textContent = "시험 결과를 받지 못했습니다.";
-    return;
-  }
 
-  const passed = result.result === "PASS";
-  $("rankTestResultCurrentRank").textContent = `${currentRank}-RANK`;
-  $("rankTestResultTargetRank").textContent = `${targetRank}-RANK`;
-  $("rankTestResultBadge").textContent = passed ? "PASS" : "FAIL";
-  $("rankTestScore").textContent = `SCORE ${result.score} / 100`;
-  $("rankTestResultMessage").textContent = passed
-    ? `${targetRank}-RANK 승급이 완료되었습니다. LV.1부터 새로운 랭크의 훈련을 시작합니다.`
-    : "이번 승급시험은 불합격입니다. 현재 랭크와 LV.100은 유지되며 바로 재응시할 수 있습니다.";
-  $("rankTestResultAction").textContent = passed ? "새 랭크로 게임 계속하기" : "다시 시험 보기";
-  $("rankTestResultAction").onclick = async () => {
-    resultPanel.classList.add("hidden");
-    if(passed){
-      await loadProfile();
-    }else{
-      $("rankTestPanel").classList.remove("hidden");
+  promotionState.startedAt =
+    Date.now();
+
+
+  startPromotionCountdown(
+    () => {
+
+      promotionState.testIndex++;
+
+      runPromotionTestStep();
+
     }
-  };
-
-  resultPanel.classList.remove("hidden");
-  await loadProfile();
-
-}
-
-function getTodayStart() {
-
-  const now = new Date();
-
-  now.setHours(
-    0,
-    0,
-    0,
-    0
   );
 
-  return now.toISOString();
-
 }
 
 
-async function loadQuests() {
+/* =========================
+   TEST 2
+   IMPULSE CONTROL
+========================= */
 
-  const playerLevel =
-    state.profile.level;
+function startPromotionImpulseTest(test){
 
+  const area =
+    $("promotionImpulseArea");
 
-  const { data: quests, error: questError } =
-    await client
-      .from("quest_defs")
-      .select("*")
-      .eq("active", true)
-      .lte("min_level", playerLevel)
-      .order("min_level");
-
-
-  if (questError) {
-
-    $("questList").textContent =
-      questError.message;
-
-    return;
-  }
+  const target =
+    $("promotionImpulseTarget");
 
 
-  const { data: todayLogs, error: logError } =
-    await client
-      .from("quest_logs")
-      .select("quest_code")
-      .gte(
-        "completed_at",
-        getTodayStart()
+  area.classList.remove("hidden");
+
+  target.classList.add("hidden");
+
+
+  $("rankTestQuestion").textContent =
+    "60초 동안 아무 행동도 하지 마십시오. 화면에 나타나는 유혹적인 요소에도 반응하지 마십시오.";
+
+
+  target.onclick =
+    () => {
+
+      if(
+        promotionState.active &&
+        !target.classList.contains("hidden")
+      ){
+
+        promotionState.impulseClickCount++;
+
+        target.classList.add("hidden");
+
+      }
+
+    };
+
+
+  const appearanceTimes = [
+    15000 + Math.floor(Math.random() * 10000),
+    35000 + Math.floor(Math.random() * 10000)
+  ];
+
+
+  appearanceTimes.forEach(delay => {
+
+    const timer =
+      setTimeout(
+        () => {
+
+          if(
+            !promotionState.active
+          ){
+            return;
+          }
+
+          promotionState.impulseShownCount++;
+
+          target.classList.remove("hidden");
+
+        },
+        delay
       );
 
 
-  if (logError) {
-
-    console.error(logError);
-
-  }
-
-
-  const todayCount = {};
-
-
-  for (
-    const log of
-    (todayLogs || [])
-  ) {
-
-    todayCount[log.quest_code] =
-      (
-        todayCount[log.quest_code] || 0
-      ) + 1;
-
-  }
-
-
-  const levelTestReady =
-    state.profile.level_test_available === true;
-
-
-  if (levelTestReady) {
-
-    $("questNotice").textContent =
-      `LV.${state.profile.pending_level} 승급 시험을 통과해야 훈련을 계속할 수 있습니다.`;
-
-  }
-
-  else {
-
-    $("questNotice").textContent = "";
-
-  }
-
-
-  $("questList").innerHTML =
-    quests.map(q => {
-
-
-      const maxCount =
-        QUEST_LIMITS[q.code] || 1;
-
-
-      const currentCount =
-        todayCount[q.code] || 0;
-
-
-      const limitReached =
-        currentCount >= maxCount;
-
-
-      const questLocked =
-        levelTestReady || limitReached;
-
-
-      let buttonText = "수행";
-
-
-      if (levelTestReady) {
-
-        buttonText =
-          "승급 시험 필요";
-
-      }
-
-      else if (limitReached) {
-
-        buttonText =
-          "오늘 완료";
-
-      }
-
-
-      // -------------------------
-      // 5분 집중 훈련
-      // -------------------------
-
-      if (q.code === "focus_5") {
-
-        return `
-
-          <div class="quest">
-
-            <div>
-
-              <h3>
-                ${q.title}
-              </h3>
-
-              <p>
-                ${q.grade}-RANK ·
-                실제 5분 훈련 ·
-                EXP ${q.base_exp}
-              </p>
-
-              <p class="quest-count">
-
-                오늘
-                ${currentCount}
-                /
-                ${maxCount}회
-
-              </p>
-
-            </div>
-
-
-            <button
-
-              class="focus-quest-button"
-
-              ${questLocked ? "disabled" : ""}
-
-            >
-
-              ${buttonText}
-
-            </button>
-
-          </div>
-
-        `;
-
-      }
-
-
-      // -------------------------
-      // 감각 관찰
-      // -------------------------
-
-      if (q.code === "sense_observation") {
-
-        return `
-
-          <div class="quest">
-
-            <div>
-
-              <h3>
-                ${q.title}
-              </h3>
-
-              <p>
-                ${q.grade}-RANK ·
-                실제 관찰 훈련 ·
-                3~10분
-              </p>
-
-              <p class="quest-count">
-
-                오늘
-                ${currentCount}
-                /
-                ${maxCount}회
-
-              </p>
-
-            </div>
-
-
-            <button
-
-              class="sense-quest-button"
-
-              ${questLocked ? "disabled" : ""}
-
-            >
-
-              ${buttonText}
-
-            </button>
-
-          </div>
-
-        `;
-
-      }
-
-
-      // -------------------------
-      // 나머지 퀘스트
-      // -------------------------
-
-      return `
-
-        <div class="quest">
-
-          <div>
-
-            <h3>
-              ${q.title}
-            </h3>
-
-            <p>
-
-              ${q.grade}-RANK ·
-              기본 EXP ${q.base_exp}
-
-            </p>
-
-            <p class="quest-count">
-
-              오늘
-              ${currentCount}
-              /
-              ${maxCount}회
-
-            </p>
-
-          </div>
-
-
-          <button
-
-            data-code="${q.code}"
-
-            data-exp="${q.base_exp}"
-
-            ${questLocked ? "disabled" : ""}
-
-          >
-
-            ${buttonText}
-
-          </button>
-
-        </div>
-
-      `;
-
-    }).join("");
-
-
-  document
-    .querySelector(".focus-quest-button")
-    ?.addEventListener(
-      "click",
-      openFocusTraining
+    promotionState.impulseTimers.push(
+      timer
     );
 
-
-  document
-    .querySelector(".sense-quest-button")
-    ?.addEventListener(
-      "click",
-      openSenseTraining
-    );
+  });
 
 
-  $("questList")
-    .querySelectorAll("[data-code]")
-    .forEach(button => {
+  startPromotionCountdown(
+    () => {
 
-      button.onclick = () => {
+      target.classList.add("hidden");
 
-        completeQuest(
+      promotionState.testIndex++;
 
-          button.dataset.code,
+      runPromotionTestStep();
 
-          Number(
-            button.dataset.exp
-          )
-
-        );
-
-      };
-
-    });
+    }
+  );
 
 }
 
+
+/* =========================
+   TEST 3
+   ATTENTION SHIFT
+========================= */
+
+function startPromotionAttentionTest(test){
+
+  const area =
+    $("promotionAttentionArea");
+
+  const button =
+    $("promotionAttentionButton");
+
+
+  area.classList.remove("hidden");
+
+  button.classList.add("hidden");
+
+  button.disabled = false;
+
+
+  $("rankTestQuestion").textContent =
+    "화면을 주시하십시오. SIGNAL 버튼이 나타나면 가능한 빠르게 누르십시오.";
+
+
+  const signalDelay =
+    10000
+    +
+    Math.floor(
+      Math.random() * 20000
+    );
+
+
+  const signalTimer =
+    setTimeout(
+      () => {
+
+        if(
+          !promotionState.active
+        ){
+          return;
+        }
+
+
+        promotionState.attentionSignalShown =
+          true;
+
+
+        promotionState.attentionSignalAt =
+          performance.now();
+
+
+        button.classList.remove("hidden");
+
+
+        $("rankTestMessage").textContent =
+          "SIGNAL DETECTED";
+
+      },
+      signalDelay
+    );
+
+
+  promotionState.impulseTimers.push(
+    signalTimer
+  );
+
+
+  button.onclick =
+    () => {
+
+      if(
+        !promotionState.active ||
+        !promotionState.attentionSignalShown ||
+        promotionState.attentionReactionMs !== null
+      ){
+        return;
+      }
+
+
+      promotionState.attentionReactionMs =
+        Math.round(
+          performance.now()
+          -
+          promotionState.attentionSignalAt
+        );
+
+
+      button.disabled = true;
+
+
+      $("rankTestMessage").textContent =
+        `REACTION TIME: ${
+          promotionState.attentionReactionMs
+        } ms`;
+
+
+      setTimeout(
+        () => {
+
+          if(
+            promotionState.active
+          ){
+
+            promotionState.testIndex++;
+
+            runPromotionTestStep();
+
+          }
+
+        },
+        1200
+      );
+
+    };
+
+
+  startPromotionCountdown(
+    () => {
+
+      if(
+        promotionState.testIndex === 2
+      ){
+
+        promotionState.testIndex++;
+
+        runPromotionTestStep();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================
+   TEST 4
+   SELF OBSERVATION
+========================= */
+
+function startPromotionObservationTest(test){
+
+  const area =
+    $("promotionObservationArea");
+
+  const input =
+    $("promotionObservationInput");
+
+  const submit =
+    $("promotionObservationSubmit");
+
+
+  area.classList.remove("hidden");
+
+
+  input.value = "";
+
+
+  $("rankTestQuestion").textContent =
+    "지금까지의 시험 동안 자신의 집중 상태와 충동, 주의 변화, 신체 및 정신 상태를 관찰한 내용을 기록하십시오.";
+
+
+  submit.disabled = false;
+
+
+  submit.onclick =
+    () => {
+
+      const text =
+        input.value.trim();
+
+
+      if(
+        text.length < 20
+      ){
+
+        $("rankTestMessage").textContent =
+          "최소 20자 이상 자신의 상태를 기록하십시오.";
+
+        return;
+
+      }
+
+
+      promotionState.observationText =
+        text;
+
+
+      submit.disabled = true;
+
+
+      promotionState.testIndex++;
+
+      runPromotionTestStep();
+
+    };
+
+
+  startPromotionCountdown(
+    () => {
+
+      if(
+        promotionState.testIndex === 3
+      ){
+
+        promotionState.observationText =
+          input.value.trim();
+
+
+        promotionState.testIndex++;
+
+        runPromotionTestStep();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================
+   FINISH RANK TEST
+========================= */
+
+async function finishRankTest(){
+
+  clearPromotionTimers();
+
+
+  promotionState.active = false;
+
+
+  $("rankTestRunningPanel")
+    .classList.add("hidden");
+
+
+  const currentRank =
+    promotionState.currentRank
+    ||
+    state.profile.rank
+    ||
+    "D";
+
+
+  const targetRank =
+    getNextRank(
+      currentRank
+    );
+
+
+  const payload = {
+
+    test_type:
+      "D_TO_C_PERFORMANCE",
+
+    current_rank:
+      currentRank,
+
+    focus_duration_seconds:
+      60,
+
+    impulse_shown_count:
+      promotionState.impulseShownCount,
+
+    impulse_click_count:
+      promotionState.impulseClickCount,
+
+    attention_reaction_ms:
+      promotionState.attentionReactionMs,
+
+    observation_text:
+      promotionState.observationText,
+
+    tab_hidden_count:
+      promotionState.tabHiddenCount,
+
+    window_blur_count:
+      promotionState.windowBlurCount
+
+  };
+
+
+  const {data, error} =
+    await client.rpc(
+      "submit_rank_promotion_test",
+      {
+        p_answers: payload
+      }
+    );
+
+
+  if(error){
+
+    console.error(
+      "Promotion test error:",
+      error
+    );
+
+
+    $("rankTestRunningPanel")
+      .classList.remove("hidden");
+
+
+    $("rankTestMessage").textContent =
+      "시험 처리 실패: "
+      +
+      error.message;
+
+
+    promotionState.active = true;
+
+    return;
+
+  }
+
+
+  const result =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+
+  if(!result){
+
+    $("rankTestRunningPanel")
+      .classList.remove("hidden");
+
+
+    $("rankTestMessage").textContent =
+      "시험 결과를 받지 못했습니다.";
+
+
+    promotionState.active = true;
+
+    return;
+
+  }
+
+
+  const passed =
+    result.result === "PASS";
+
+
+  $("rankTestResultCurrentRank").textContent =
+    `${currentRank}-RANK`;
+
+
+  $("rankTestResultTargetRank").textContent =
+    `${targetRank}-RANK`;
+
+
+  $("rankTestResultBadge").textContent =
+    passed
+      ? "PASS"
+      : "FAIL";
+
+
+  $("rankTestScore").textContent =
+    `SCORE ${
+      result.score
+    } / 100`;
+
+
+  $("rankTestResultMessage").textContent =
+    passed
+      ? `${targetRank}-RANK 승급이 완료되었습니다. LV.1부터 새로운 랭크의 훈련을 시작합니다.`
+      : "이번 승급시험은 불합격입니다. 현재 랭크와 LV.100은 유지되며 다시 응시할 수 있습니다.";
+
+
+  $("rankTestResultAction").textContent =
+    passed
+      ? "새 랭크로 게임 계속하기"
+      : "다시 시험 보기";
+
+
+  $("rankTestResultAction").onclick =
+    async () => {
+
+      $("rankTestResultPanel")
+        .classList.add("hidden");
+
+
+      if(passed){
+
+        await loadProfile();
+
+      }else{
+
+        $("rankTestPanel")
+          .classList.remove("hidden");
+
+      }
+
+    };
+
+
+  $("rankTestResultPanel")
+    .classList.remove("hidden");
+
+
+  await loadProfile();
+
+}
 
 async function completeQuest(code,exp){
   const {data,error}=await client.rpc("complete_simple_quest",{p_quest_code:code,p_exp:exp});

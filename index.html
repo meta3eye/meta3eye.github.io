@@ -527,23 +527,163 @@
 
         </div>
 
+<!-- =========================
+     RANK TEST RUNNING
+========================== -->
 
-        <div
-          id="rankTestQuestion"
-          class="rank-test-question"
-        ></div>
+<section
+  id="rankTestRunningPanel"
+  class="panel hidden"
+>
+
+  <div class="section-title">
+
+    <h2 id="rankTestTitle">
+      D-RANK PROMOTION TEST
+    </h2>
+
+    <span
+      id="rankTestProgress"
+      class="muted"
+    >
+      TEST 1 / 4
+    </span>
+
+  </div>
 
 
-        <div
-          id="rankTestChoices"
-          class="rank-test-choices"
-        ></div>
+  <div class="rank-test-running-info">
+
+    <span class="label">
+      CURRENT OBJECTIVE
+    </span>
+
+    <strong id="rankTestObjective">
+      준비 중
+    </strong>
+
+  </div>
 
 
-        <p
-          id="rankTestMessage"
-          class="message"
-        ></p>
+  <div
+    id="rankTestQuestion"
+    class="rank-test-question"
+  ></div>
+
+
+  <!-- 시험 타이머 -->
+
+  <div
+    id="rankTestTimer"
+    class="rank-test-timer"
+  >
+    00:00
+  </div>
+
+
+  <!-- 집중 시험 -->
+
+  <div
+    id="promotionFocusArea"
+    class="promotion-test-area hidden"
+  >
+
+    <div class="promotion-focus-symbol">
+      ●
+    </div>
+
+    <p class="muted">
+      화면 중앙의 점에 집중하십시오.
+      다른 행동을 하지 말고 시험 종료까지 집중을 유지하십시오.
+    </p>
+
+  </div>
+
+
+  <!-- 충동 억제 시험 -->
+
+  <div
+    id="promotionImpulseArea"
+    class="promotion-test-area hidden"
+  >
+
+    <p>
+      아무 행동도 하지 말고 화면을 유지하십시오.
+    </p>
+
+    <p class="muted">
+      화면에 나타나는 요소에 반응하지 마십시오.
+    </p>
+
+    <div
+      id="promotionImpulseTarget"
+      class="promotion-impulse-target hidden"
+    >
+      클릭하여 보상 받기
+    </div>
+
+  </div>
+
+
+  <!-- 주의 전환 시험 -->
+
+  <div
+    id="promotionAttentionArea"
+    class="promotion-test-area hidden"
+  >
+
+    <p>
+      화면을 주시하십시오.
+      신호가 나타나면 가능한 빠르게 버튼을 누르십시오.
+    </p>
+
+    <button
+      id="promotionAttentionButton"
+      class="hidden"
+      type="button"
+    >
+      SIGNAL
+    </button>
+
+  </div>
+
+
+  <!-- 자기 관찰 시험 -->
+
+  <div
+    id="promotionObservationArea"
+    class="promotion-test-area hidden"
+  >
+
+    <p>
+      방금까지의 시험 과정에서 자신의 상태를 관찰하십시오.
+    </p>
+
+    <textarea
+      id="promotionObservationInput"
+      rows="6"
+      placeholder="집중 상태, 충동, 감정 변화, 신체 감각, 주의가 흔들린 순간 등을 자유롭게 기록하십시오."
+    ></textarea>
+
+    <button
+      id="promotionObservationSubmit"
+      type="button"
+    >
+      관찰 기록 제출
+    </button>
+
+  </div>
+
+
+  <p
+    id="rankTestMessage"
+    class="message"
+  ></p>
+
+</section>
+
+
+        
 
       </section>
 

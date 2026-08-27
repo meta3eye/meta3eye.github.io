@@ -3562,9 +3562,6 @@ $("signInBtn").onclick=signIn;
 $("normalStartBtn").onclick=()=>createProfile(1);
 $("assessmentStartBtn").onclick=startAssessment;
 
-$("rankTestStartButton").onclick =
-  startRankTest;
-
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();loadProfile();};
   
 client.auth.onAuthStateChange(()=>loadProfile());

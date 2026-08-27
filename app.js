@@ -568,515 +568,492 @@ function renderNextUnlock() {
 }
 
 
-  /* =========================
-   RANK PROMOTION SYSTEM
-========================= */
+/* =========================================================
+   CONSCIOUSNESS / BRAIN STATE TRAINING SYSTEM
+   ADDITIVE MODULE — EXISTING SPIRIT SYSTEM IS PRESERVED
+========================================================= */
 
-const RANK_ORDER = [
-  "D",
-  "C",
-  "B",
-  "A",
-  "S"
-];
+const CS_TRAINING_TYPES = {
+  beta: {
+    name: "BETA",
+    label: "집중 · 주의 · 의식 통제",
+    stat: "focus",
+    defaultExp: 10
+  },
 
+  alpha: {
+    name: "ALPHA",
+    label: "이완된 집중 · 신체 이완 · 주변 인식",
+    stat: "relaxation",
+    defaultExp: 15
+  },
 
-const PROMOTION_TESTS = {
-  D: [
-    {
-      type: "focus",
-      objective: "집중 유지 시험",
-      duration: 60
-    },
+  theta: {
+    name: "THETA",
+    label: "내부 이미지 · 감각 · 의식 변화 관찰",
+    stat: "awareness",
+    defaultExp: 20
+  },
 
-    {
-      type: "impulse",
-      objective: "충동 억제 시험",
-      duration: 60
-    },
-
-    {
-      type: "attention",
-      objective: "주의 전환 시험",
-      duration: 90
-    },
-
-    {
-      type: "observation",
-      objective: "자기 상태 관찰",
-      duration: 60
-    }
-  ]
+  deep: {
+    name: "DEEP STATE",
+    label: "깊은 이완 · 의식 안정 탐색",
+    stat: "awareness",
+    defaultExp: 25
+  }
 };
 
 
-/* =========================
-   RANK TEST STATE
-========================= */
-
-const promotionState = {
+const cs_state = {
   active: false,
-  currentRank: null,
-  testIndex: 0,
+  paused: false,
 
-  timer: null,
+  trainingType: null,
+  duration: 0,
   remainingSeconds: 0,
 
-  startedAt: 0,
+  timer: null,
+  preparationTimer: null,
 
-  focusLostCount: 0,
+  startedAt: null,
+  completedAt: null,
 
-  impulseClickCount: 0,
-  impulseShownCount: 0,
-  impulseTimers: [],
-
-  attentionSignalShown: false,
-  attentionSignalAt: 0,
-  attentionReactionMs: null,
-
-  observationText: "",
-
-  tabHiddenCount: 0,
-  windowBlurCount: 0
+  preparationSeconds: 5
 };
 
 
-/* =========================
-   RANK FUNCTIONS
-========================= */
+/* =========================================================
+   SAFE DOM HELPERS
+========================================================= */
 
-function getNextRank(rank){
-
-  const index =
-    RANK_ORDER.indexOf(rank || "D");
-
-  if(index < 0){
-    return "C";
-  }
-
-  if(index >= RANK_ORDER.length - 1){
-    return null;
-  }
-
-  return RANK_ORDER[index + 1];
+function cs_element(id) {
+  return document.getElementById(id);
 }
 
 
-function getPromotionTest(rank){
+function cs_show(id, visible = true) {
 
-  return PROMOTION_TESTS[rank] || null;
+  const element = cs_element(id);
 
-}
-
-
-/* =========================
-   RANK PROMOTION PANEL
-========================= */
-
-function renderRankPromotion(){
-
-  const p = state.profile;
-
-  if(!p){
+  if (!element) {
     return;
   }
 
-  const currentRank =
-    p.rank || "D";
-
-  const nextRank =
-    getNextRank(currentRank);
-
-  const panel =
-    $("rankTestPanel");
-
-  if(!panel){
-    return;
-  }
-
-
-  if(
-    !nextRank ||
-    p.level < 100
-  ){
-
-    panel.classList.add("hidden");
-
-    return;
-
-  }
-
-
-  $("promotionCurrentRank").textContent =
-    `${currentRank}-RANK`;
-
-  $("promotionNextRank").textContent =
-    `${nextRank}-RANK`;
-
-  panel.classList.remove("hidden");
-
-}
-
-
-/* =========================
-   PROMOTION TEST HELPERS
-========================= */
-
-function resetPromotionAreas(){
-
-  const ids = [
-    "promotionFocusArea",
-    "promotionImpulseArea",
-    "promotionAttentionArea",
-    "promotionObservationArea"
-  ];
-
-  ids.forEach(id => {
-
-    const element = $(id);
-
-    if(element){
-      element.classList.add("hidden");
-    }
-
-  });
-
-}
-
-
-function clearPromotionTimers(){
-
-  if(promotionState.timer){
-
-    clearInterval(
-      promotionState.timer
-    );
-
-    promotionState.timer = null;
-
-  }
-
-
-  promotionState.impulseTimers.forEach(timer => {
-
-    clearTimeout(timer);
-
-  });
-
-
-  promotionState.impulseTimers = [];
-
-}
-
-
-function formatPromotionTime(seconds){
-
-  const minutes =
-    Math.floor(seconds / 60);
-
-  const remain =
-    seconds % 60;
-
-  return (
-    String(minutes).padStart(2, "0")
-    +
-    ":"
-    +
-    String(remain).padStart(2, "0")
+  element.classList.toggle(
+    "hidden",
+    !visible
   );
 
 }
 
 
-function updatePromotionTimer(){
+function cs_setText(id, value) {
 
-  const timer =
-    $("rankTestTimer");
+  const element = cs_element(id);
 
-  if(!timer){
+  if (!element) {
     return;
   }
 
-  timer.textContent =
-    formatPromotionTime(
-      promotionState.remainingSeconds
-    );
+  element.textContent =
+    value == null
+      ? ""
+      : value;
 
 }
 
 
-function recordFocusLoss(){
+/* =========================================================
+   TRAINING TYPE INFO
+========================================================= */
 
-  if(!promotionState.active){
-    return;
+function cs_getTrainingInfo(type) {
+
+  return CS_TRAINING_TYPES[type]
+    || CS_TRAINING_TYPES.beta;
+
+}
+
+
+/* =========================================================
+   TIME FORMAT
+========================================================= */
+
+function cs_formatTime(seconds) {
+
+  const safeSeconds =
+    Math.max(
+      0,
+      Number(seconds) || 0
+    );
+
+  const minutes =
+    Math.floor(
+      safeSeconds / 60
+    );
+
+  const remain =
+    safeSeconds % 60;
+
+  return (
+    String(minutes)
+      .padStart(2, "0")
+    +
+    ":"
+    +
+    String(remain)
+      .padStart(2, "0")
+  );
+
+}
+
+
+/* =========================================================
+   STOP TIMERS
+========================================================= */
+
+function cs_clearTimers() {
+
+  if (cs_state.timer) {
+
+    clearInterval(
+      cs_state.timer
+    );
+
+    cs_state.timer =
+      null;
+
   }
 
-  if(document.hidden){
 
-    promotionState.tabHiddenCount++;
+  if (cs_state.preparationTimer) {
 
-  }else{
+    clearInterval(
+      cs_state.preparationTimer
+    );
 
-    promotionState.windowBlurCount++;
+    cs_state.preparationTimer =
+      null;
 
   }
 
 }
 
 
-document.addEventListener(
-  "visibilitychange",
-  () => {
+/* =========================================================
+   OPEN TRAINING
+========================================================= */
 
-    if(
-      promotionState.active &&
-      document.hidden
-    ){
+function cs_openTraining(type) {
 
-      promotionState.tabHiddenCount++;
-
-    }
-
-  }
-);
+  const info =
+    cs_getTrainingInfo(type);
 
 
-window.addEventListener(
-  "blur",
-  () => {
-
-    if(
-      promotionState.active
-    ){
-
-      promotionState.windowBlurCount++;
-
-    }
-
-  }
-);
+  cs_clearTimers();
 
 
-/* =========================
-   START RANK TEST
-========================= */
-
-function startRankTest(){
-
-  const currentRank =
-    state.profile?.rank || "D";
-
-
-  if(
-    !getNextRank(currentRank) ||
-    state.profile?.level < 100
-  ){
-    return;
-  }
-
-
-  const tests =
-    getPromotionTest(currentRank);
-
-
-  if(!tests){
-
-    alert(
-      "현재 랭크의 승급시험은 아직 준비되지 않았습니다."
-    );
-
-    return;
-
-  }
-
-
-  clearPromotionTimers();
-
-
-  promotionState.active = true;
-
-  promotionState.currentRank =
-    currentRank;
-
-  promotionState.testIndex = 0;
-
-  promotionState.focusLostCount = 0;
-
-  promotionState.impulseClickCount = 0;
-
-  promotionState.impulseShownCount = 0;
-
-  promotionState.attentionSignalShown =
+  cs_state.active =
     false;
 
-  promotionState.attentionSignalAt = 0;
+  cs_state.paused =
+    false;
 
-  promotionState.attentionReactionMs =
-    null;
+  cs_state.trainingType =
+    type;
 
-  promotionState.observationText =
-    "";
+  cs_state.duration =
+    0;
 
-  promotionState.tabHiddenCount = 0;
-
-  promotionState.windowBlurCount = 0;
-
-
-  $("rankTestPanel")
-    .classList.add("hidden");
+  cs_state.remainingSeconds =
+    0;
 
 
-  $("rankTestResultPanel")
-    ?.classList.add("hidden");
+  const gamePanel =
+    cs_element("gamePanel");
+
+  const trainingPanel =
+    cs_element(
+      "consciousnessTrainingPanel"
+    );
 
 
-  $("rankTestRunningPanel")
-    .classList.remove("hidden");
+  if (!trainingPanel) {
+
+    console.warn(
+      "consciousnessTrainingPanel not found"
+    );
+
+    return;
+
+  }
 
 
-  $("rankTestMessage").textContent =
-    "";
+  if (gamePanel) {
+
+    gamePanel.classList.add(
+      "hidden"
+    );
+
+  }
 
 
-  runPromotionTestStep();
+  trainingPanel.classList.remove(
+    "hidden"
+  );
+
+
+  cs_setText(
+    "csTrainingTitle",
+    info.name
+  );
+
+
+  cs_setText(
+    "csTrainingLabel",
+    info.label
+  );
+
+
+  cs_setText(
+    "csTrainingMessage",
+    ""
+  );
+
+
+  cs_setText(
+    "csTimer",
+    "00:00"
+  );
+
+
+  cs_setText(
+    "csPreparationTimer",
+    ""
+  );
+
+
+  cs_show(
+    "csSetup",
+    true
+  );
+
+  cs_show(
+    "csPreparation",
+    false
+  );
+
+  cs_show(
+    "csRunning",
+    false
+  );
+
+  cs_show(
+    "csResult",
+    false
+  );
+
+
+  cs_updateInstructions(
+    type
+  );
 
 }
 
 
-/* =========================
-   RUN CURRENT TEST
-========================= */
+/* =========================================================
+   INSTRUCTIONS
+========================================================= */
 
-function runPromotionTestStep(){
+function cs_updateInstructions(type) {
 
-  const tests =
-    getPromotionTest(
-      promotionState.currentRank
+  const element =
+    cs_element(
+      "csInstructions"
     );
 
 
-  const test =
-    tests[
-      promotionState.testIndex
-    ];
-
-
-  if(!test){
-
-    finishRankTest();
-
+  if (!element) {
     return;
-
   }
 
 
-  resetPromotionAreas();
+  const instructions = {
 
-  clearPromotionTimers();
+    beta: `
+      <ol>
+        <li>자세를 안정시킵니다.</li>
+        <li>선택한 대상에 주의를 둡니다.</li>
+        <li>생각이 다른 곳으로 이동한 것을 알아차립니다.</li>
+        <li>억지로 밀어내지 말고 다시 집중 대상으로 돌아옵니다.</li>
+        <li>훈련 종료 후 자신의 집중 상태를 기록합니다.</li>
+      </ol>
+    `,
 
+    alpha: `
+      <ol>
+        <li>편안한 자세를 취합니다.</li>
+        <li>호흡을 자연스럽게 관찰합니다.</li>
+        <li>신체의 긴장된 부분을 알아차립니다.</li>
+        <li>호흡과 함께 긴장을 천천히 이완합니다.</li>
+        <li>주변 소리와 신체 감각을 억지로 판단하지 않고 관찰합니다.</li>
+      </ol>
+    `,
 
-  $("rankTestTitle").textContent =
-    `${promotionState.currentRank}-RANK PROMOTION TEST`;
+    theta: `
+      <ol>
+        <li>눈을 편안하게 감거나 시선을 안정시킵니다.</li>
+        <li>내부에서 자연스럽게 발생하는 이미지와 색상을 관찰합니다.</li>
+        <li>특정 장면을 억지로 만들어내지 않습니다.</li>
+        <li>떠오르는 형태, 움직임, 느낌을 있는 그대로 기록합니다.</li>
+        <li>아무것도 관찰되지 않아도 정상적인 훈련 결과입니다.</li>
+      </ol>
+    `,
 
+    deep: `
+      <ol>
+        <li>안전하고 편안한 장소에서 훈련합니다.</li>
+        <li>호흡과 신체 감각을 자연스럽게 관찰합니다.</li>
+        <li>생각이 나타났다가 사라지는 과정을 판단하지 않고 지켜봅니다.</li>
+        <li>졸거나 잠드는 것을 목표로 하지 않습니다.</li>
+        <li>깨어 있는 상태에서 깊은 이완과 의식 안정 상태를 탐색합니다.</li>
+      </ol>
+    `
 
-  $("rankTestProgress").textContent =
-    `TEST ${
-      promotionState.testIndex + 1
-    } / ${
-      tests.length
-    }`;
-
-
-  $("rankTestObjective").textContent =
-    test.objective;
-
-
-  $("rankTestMessage").textContent =
-    "";
-
-
-  promotionState.remainingSeconds =
-    test.duration;
-
-
-  updatePromotionTimer();
-
-
-  if(test.type === "focus"){
-
-    startPromotionFocusTest(
-      test
-    );
-
-    return;
-
-  }
-
-
-  if(test.type === "impulse"){
-
-    startPromotionImpulseTest(
-      test
-    );
-
-    return;
-
-  }
+  };
 
 
-  if(test.type === "attention"){
-
-    startPromotionAttentionTest(
-      test
-    );
-
-    return;
-
-  }
-
-
-  if(test.type === "observation"){
-
-    startPromotionObservationTest(
-      test
-    );
-
-    return;
-
-  }
+  element.innerHTML =
+    instructions[type]
+    ||
+    instructions.beta;
 
 }
 
 
-/* =========================
-   GENERIC TIMER
-========================= */
+/* =========================================================
+   START BUTTON
+========================================================= */
 
-function startPromotionCountdown(
-  onComplete
-){
+function cs_startTraining() {
 
-  promotionState.timer =
+  const type =
+    cs_state.trainingType;
+
+
+  if (!type) {
+
+    alert(
+      "훈련 유형을 선택하세요."
+    );
+
+    return;
+
+  }
+
+
+  const durationSelect =
+    cs_element(
+      "csDuration"
+    );
+
+
+  const duration =
+    Number(
+      durationSelect?.value
+    );
+
+
+  if (
+    !duration ||
+    duration < 60
+  ) {
+
+    alert(
+      "훈련 시간을 선택하세요."
+    );
+
+    return;
+
+  }
+
+
+  cs_state.duration =
+    duration;
+
+  cs_state.remainingSeconds =
+    duration;
+
+  cs_state.preparationSeconds =
+    5;
+
+
+  cs_show(
+    "csSetup",
+    false
+  );
+
+  cs_show(
+    "csPreparation",
+    true
+  );
+
+  cs_show(
+    "csRunning",
+    false
+  );
+
+  cs_show(
+    "csResult",
+    false
+  );
+
+
+  cs_setText(
+    "csTrainingMessage",
+    "훈련 준비 중..."
+  );
+
+
+  cs_setText(
+    "csPreparationTimer",
+    String(
+      cs_state.preparationSeconds
+    )
+  );
+
+
+  cs_state.preparationTimer =
     setInterval(
       () => {
 
-        promotionState.remainingSeconds--;
-
-        updatePromotionTimer();
+        cs_state.preparationSeconds--;
 
 
-        if(
-          promotionState.remainingSeconds <= 0
-        ){
+        cs_setText(
+          "csPreparationTimer",
+          cs_state.preparationSeconds > 0
+            ? String(
+                cs_state.preparationSeconds
+              )
+            : "START"
+        );
+
+
+        if (
+          cs_state.preparationSeconds <= 0
+        ) {
 
           clearInterval(
-            promotionState.timer
+            cs_state.preparationTimer
           );
 
-          promotionState.timer =
+
+          cs_state.preparationTimer =
             null;
 
-          onComplete();
+
+          cs_beginTraining();
 
         }
 
@@ -1087,534 +1064,1059 @@ function startPromotionCountdown(
 }
 
 
-/* =========================
-   TEST 1
-   FOCUS MAINTENANCE
-========================= */
+/* =========================================================
+   ACTUAL TRAINING START
+========================================================= */
 
-function startPromotionFocusTest(test){
+function cs_beginTraining() {
 
-  const area =
-    $("promotionFocusArea");
+  cs_state.active =
+    true;
 
-  area.classList.remove("hidden");
+  cs_state.paused =
+    false;
 
-
-  $("rankTestQuestion").textContent =
-    "60초 동안 화면 중앙의 점에 집중하십시오. 다른 탭으로 이동하지 마십시오.";
-
-
-  promotionState.startedAt =
-    Date.now();
+  cs_state.startedAt =
+    new Date();
 
 
-  startPromotionCountdown(
-    () => {
-
-      promotionState.testIndex++;
-
-      runPromotionTestStep();
-
-    }
+  cs_show(
+    "csPreparation",
+    false
   );
 
-}
-
-
-/* =========================
-   TEST 2
-   IMPULSE CONTROL
-========================= */
-
-function startPromotionImpulseTest(test){
-
-  const area =
-    $("promotionImpulseArea");
-
-  const target =
-    $("promotionImpulseTarget");
-
-
-  area.classList.remove("hidden");
-
-  target.classList.add("hidden");
-
-
-  $("rankTestQuestion").textContent =
-    "60초 동안 아무 행동도 하지 마십시오. 화면에 나타나는 유혹적인 요소에도 반응하지 마십시오.";
-
-
-  target.onclick =
-    () => {
-
-      if(
-        promotionState.active &&
-        !target.classList.contains("hidden")
-      ){
-
-        promotionState.impulseClickCount++;
-
-        target.classList.add("hidden");
-
-      }
-
-    };
-
-
-  const appearanceTimes = [
-    15000 + Math.floor(Math.random() * 10000),
-    35000 + Math.floor(Math.random() * 10000)
-  ];
-
-
-  appearanceTimes.forEach(delay => {
-
-    const timer =
-      setTimeout(
-        () => {
-
-          if(
-            !promotionState.active
-          ){
-            return;
-          }
-
-          promotionState.impulseShownCount++;
-
-          target.classList.remove("hidden");
-
-        },
-        delay
-      );
-
-
-    promotionState.impulseTimers.push(
-      timer
-    );
-
-  });
-
-
-  startPromotionCountdown(
-    () => {
-
-      target.classList.add("hidden");
-
-      promotionState.testIndex++;
-
-      runPromotionTestStep();
-
-    }
+  cs_show(
+    "csRunning",
+    true
   );
 
-}
+
+  cs_setText(
+    "csTrainingMessage",
+    "TRAINING ACTIVE"
+  );
 
 
-/* =========================
-   TEST 3
-   ATTENTION SHIFT
-========================= */
-
-function startPromotionAttentionTest(test){
-
-  const area =
-    $("promotionAttentionArea");
-
-  const button =
-    $("promotionAttentionButton");
+  cs_updateTimer();
 
 
-  area.classList.remove("hidden");
-
-  button.classList.add("hidden");
-
-  button.disabled = false;
-
-
-  $("rankTestQuestion").textContent =
-    "화면을 주시하십시오. SIGNAL 버튼이 나타나면 가능한 빠르게 누르십시오.";
-
-
-  const signalDelay =
-    10000
-    +
-    Math.floor(
-      Math.random() * 20000
-    );
-
-
-  const signalTimer =
-    setTimeout(
+  cs_state.timer =
+    setInterval(
       () => {
 
-        if(
-          !promotionState.active
-        ){
+        if (
+          !cs_state.active ||
+          cs_state.paused
+        ) {
+
           return;
+
         }
 
 
-        promotionState.attentionSignalShown =
-          true;
+        cs_state.remainingSeconds--;
 
 
-        promotionState.attentionSignalAt =
-          performance.now();
+        cs_updateTimer();
 
 
-        button.classList.remove("hidden");
+        if (
+          cs_state.remainingSeconds <= 0
+        ) {
 
+          cs_finishTraining();
 
-        $("rankTestMessage").textContent =
-          "SIGNAL DETECTED";
+        }
 
       },
-      signalDelay
+      1000
+    );
+
+}
+
+
+/* =========================================================
+   UPDATE TIMER / PROGRESS
+========================================================= */
+
+function cs_updateTimer() {
+
+  cs_setText(
+    "csTimer",
+    cs_formatTime(
+      cs_state.remainingSeconds
+    )
+  );
+
+
+  const progress =
+    cs_state.duration > 0
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            (
+              (
+                cs_state.duration
+                -
+                cs_state.remainingSeconds
+              )
+              /
+              cs_state.duration
+            )
+            * 100
+          )
+        )
+      : 0;
+
+
+  const fill =
+    cs_element(
+      "csProgressFill"
     );
 
 
-  promotionState.impulseTimers.push(
-    signalTimer
-  );
+  if (fill) {
+
+    fill.style.width =
+      progress + "%";
+
+  }
 
 
-  button.onclick =
-    () => {
-
-      if(
-        !promotionState.active ||
-        !promotionState.attentionSignalShown ||
-        promotionState.attentionReactionMs !== null
-      ){
-        return;
-      }
-
-
-      promotionState.attentionReactionMs =
-        Math.round(
-          performance.now()
-          -
-          promotionState.attentionSignalAt
-        );
-
-
-      button.disabled = true;
-
-
-      $("rankTestMessage").textContent =
-        `REACTION TIME: ${
-          promotionState.attentionReactionMs
-        } ms`;
-
-
-      setTimeout(
-        () => {
-
-          if(
-            promotionState.active
-          ){
-
-            promotionState.testIndex++;
-
-            runPromotionTestStep();
-
-          }
-
-        },
-        1200
-      );
-
-    };
-
-
-  startPromotionCountdown(
-    () => {
-
-      if(
-        promotionState.testIndex === 2
-      ){
-
-        promotionState.testIndex++;
-
-        runPromotionTestStep();
-
-      }
-
-    }
+  cs_setText(
+    "csProgressText",
+    Math.round(
+      progress
+    ) + "%"
   );
 
 }
 
 
-/* =========================
-   TEST 4
-   SELF OBSERVATION
-========================= */
+/* =========================================================
+   PAUSE / RESUME
+========================================================= */
 
-function startPromotionObservationTest(test){
+function cs_togglePause() {
 
-  const area =
-    $("promotionObservationArea");
+  if (
+    !cs_state.active
+  ) {
 
-  const input =
-    $("promotionObservationInput");
+    return;
 
-  const submit =
-    $("promotionObservationSubmit");
+  }
 
 
-  area.classList.remove("hidden");
+  cs_state.paused =
+    !cs_state.paused;
 
 
-  input.value = "";
+  const button =
+    cs_element(
+      "csPauseButton"
+    );
 
 
-  $("rankTestQuestion").textContent =
-    "지금까지의 시험 동안 자신의 집중 상태와 충동, 주의 변화, 신체 및 정신 상태를 관찰한 내용을 기록하십시오.";
+  if (button) {
+
+    button.textContent =
+      cs_state.paused
+        ? "RESUME"
+        : "PAUSE";
+
+  }
 
 
-  submit.disabled = false;
-
-
-  submit.onclick =
-    () => {
-
-      const text =
-        input.value.trim();
-
-
-      if(
-        text.length < 20
-      ){
-
-        $("rankTestMessage").textContent =
-          "최소 20자 이상 자신의 상태를 기록하십시오.";
-
-        return;
-
-      }
-
-
-      promotionState.observationText =
-        text;
-
-
-      submit.disabled = true;
-
-
-      promotionState.testIndex++;
-
-      runPromotionTestStep();
-
-    };
-
-
-  startPromotionCountdown(
-    () => {
-
-      if(
-        promotionState.testIndex === 3
-      ){
-
-        promotionState.observationText =
-          input.value.trim();
-
-
-        promotionState.testIndex++;
-
-        runPromotionTestStep();
-
-      }
-
-    }
+  cs_setText(
+    "csTrainingMessage",
+    cs_state.paused
+      ? "훈련이 일시정지되었습니다."
+      : "훈련을 다시 시작합니다."
   );
 
 }
 
 
-/* =========================
-   FINISH RANK TEST
-========================= */
+/* =========================================================
+   MANUAL STOP
+========================================================= */
 
-async function finishRankTest(){
+function cs_stopTraining() {
 
-  clearPromotionTimers();
+  if (
+    !cs_state.active
+  ) {
+
+    return;
+
+  }
 
 
-  promotionState.active = false;
+  const confirmStop =
+    confirm(
+      "현재 훈련을 종료하시겠습니까?"
+    );
 
 
-  $("rankTestRunningPanel")
-    .classList.add("hidden");
+  if (
+    !confirmStop
+  ) {
+
+    return;
+
+  }
 
 
-  const currentRank =
-    promotionState.currentRank
+  cs_finishTraining(
+    true
+  );
+
+}
+
+
+/* =========================================================
+   FINISH TRAINING
+========================================================= */
+
+function cs_finishTraining(
+  manuallyStopped = false
+) {
+
+  cs_clearTimers();
+
+
+  cs_state.active =
+    false;
+
+  cs_state.paused =
+    false;
+
+  cs_state.completedAt =
+    new Date();
+
+
+  cs_show(
+    "csRunning",
+    false
+  );
+
+  cs_show(
+    "csResult",
+    true
+  );
+
+
+  const info =
+    cs_getTrainingInfo(
+      cs_state.trainingType
+    );
+
+
+  cs_setText(
+    "csResultTitle",
+    info.name
+      +
+      " TRAINING RESULT"
+  );
+
+
+  cs_setText(
+    "csResultMessage",
+    manuallyStopped
+      ? "훈련이 사용자의 요청으로 종료되었습니다. 수행 결과를 기록할 수 있습니다."
+      : "훈련 시간이 완료되었습니다. 자신의 상태를 기록하세요."
+  );
+
+
+  cs_playEndSound();
+
+}
+
+
+/* =========================================================
+   END SOUND
+========================================================= */
+
+function cs_playEndSound() {
+
+  try {
+
+    const audioContext =
+      new (
+        window.AudioContext
+        ||
+        window.webkitAudioContext
+      )();
+
+
+    const oscillator =
+      audioContext.createOscillator();
+
+
+    const gain =
+      audioContext.createGain();
+
+
+    oscillator.connect(
+      gain
+    );
+
+
+    gain.connect(
+      audioContext.destination
+    );
+
+
+    oscillator.frequency.value =
+      660;
+
+
+    gain.gain.value =
+      0.12;
+
+
+    oscillator.start();
+
+
+    oscillator.stop(
+      audioContext.currentTime
+      + 0.5
+    );
+
+
+    setTimeout(
+      () => {
+
+        audioContext.close();
+
+      },
+      800
+    );
+
+  }
+  catch(error) {
+
+    console.log(
+      "CS training sound error",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   SCORE CALCULATION
+========================================================= */
+
+function cs_calculateScore(
+  result
+) {
+
+  let score =
+    0;
+
+
+  const durationRatio =
+    cs_state.duration > 0
+      ? (
+          (
+            cs_state.duration
+            -
+            cs_state.remainingSeconds
+          )
+          /
+          cs_state.duration
+        )
+      : 0;
+
+
+  score +=
+    Math.min(
+      40,
+      Math.round(
+        durationRatio * 40
+      )
+    );
+
+
+  const difficulty =
+    Number(
+      result.difficulty
+    ) || 0;
+
+
+  const focus =
+    Number(
+      result.focus_score
+    ) || 0;
+
+
+  const relaxation =
+    Number(
+      result.relaxation_score
+    ) || 0;
+
+
+  const awareness =
+    Number(
+      result.awareness_score
+    ) || 0;
+
+
+  const innerVision =
+    Number(
+      result.inner_vision_score
+    ) || 0;
+
+
+  score +=
+    Math.round(
+      (
+        focus
+        +
+        relaxation
+        +
+        awareness
+        +
+        innerVision
+      )
+      / 4
+      * 4
+    );
+
+
+  score +=
+    Math.min(
+      20,
+      difficulty * 4
+    );
+
+
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(score)
+    )
+  );
+
+}
+
+
+/* =========================================================
+   EXP CALCULATION
+========================================================= */
+
+function cs_calculateExp(
+  score
+) {
+
+  const info =
+    cs_getTrainingInfo(
+      cs_state.trainingType
+    );
+
+
+  let exp =
+    info.defaultExp;
+
+
+  if (
+    score >= 90
+  ) {
+
+    exp += 10;
+
+  }
+  else if (
+    score >= 75
+  ) {
+
+    exp += 5;
+
+  }
+
+
+  if (
+    cs_state.duration >= 1200
+  ) {
+
+    exp += 5;
+
+  }
+
+
+  return exp;
+
+}
+
+
+/* =========================================================
+   READ RESULT FORM
+========================================================= */
+
+function cs_readResult() {
+
+  const getValue =
+    (id) => {
+
+      const element =
+        cs_element(id);
+
+      return element
+        ? element.value
+        : "";
+
+    };
+
+
+  return {
+
+    difficulty:
+      getValue(
+        "csDifficulty"
+      ),
+
+    focus_score:
+      getValue(
+        "csFocusScore"
+      ),
+
+    relaxation_score:
+      getValue(
+        "csRelaxationScore"
+      ),
+
+    awareness_score:
+      getValue(
+        "csAwarenessScore"
+      ),
+
+    inner_vision_score:
+      getValue(
+        "csInnerVisionScore"
+      ),
+
+    notes:
+      getValue(
+        "csNotes"
+      )
+
+  };
+
+}
+
+
+/* =========================================================
+   SAVE TRAINING SESSION
+========================================================= */
+
+async function cs_saveTraining() {
+
+  const result =
+    cs_readResult();
+
+
+  const message =
+    cs_element(
+      "csSaveMessage"
+    );
+
+
+  if (
+    !result.difficulty
     ||
-    state.profile.rank
+    !result.focus_score
     ||
-    "D";
+    !result.relaxation_score
+    ||
+    !result.awareness_score
+  ) {
+
+    if (message) {
+
+      message.textContent =
+        "난이도, 집중, 이완, 인식 상태를 모두 선택하세요.";
+
+    }
+
+    return;
+
+  }
 
 
-  const targetRank =
-    getNextRank(
-      currentRank
+  const score =
+    cs_calculateScore(
+      result
+    );
+
+
+  const exp =
+    cs_calculateExp(
+      score
     );
 
 
   const payload = {
 
-    test_type:
-      "D_TO_C_PERFORMANCE",
+    training_type:
+      "consciousness_training",
 
-    current_rank:
-      currentRank,
+    training_stage:
+      cs_state.trainingType,
 
-    focus_duration_seconds:
-      60,
+    duration_seconds:
+      cs_state.duration,
 
-    impulse_shown_count:
-      promotionState.impulseShownCount,
+    completed:
+      true,
 
-    impulse_click_count:
-      promotionState.impulseClickCount,
+    difficulty:
+      Number(
+        result.difficulty
+      ),
 
-    attention_reaction_ms:
-      promotionState.attentionReactionMs,
+    focus_score:
+      Number(
+        result.focus_score
+      ),
 
-    observation_text:
-      promotionState.observationText,
+    relaxation_score:
+      Number(
+        result.relaxation_score
+      ),
 
-    tab_hidden_count:
-      promotionState.tabHiddenCount,
+    awareness_score:
+      Number(
+        result.awareness_score
+      ),
 
-    window_blur_count:
-      promotionState.windowBlurCount
+    inner_vision_score:
+      Number(
+        result.inner_vision_score
+      ) || 0,
+
+    user_notes:
+      result.notes,
+
+    score:
+      score,
+
+    exp_reward:
+      exp,
+
+    started_at:
+      cs_state.startedAt
+        ? cs_state.startedAt.toISOString()
+        : null,
+
+    completed_at:
+      cs_state.completedAt
+        ? cs_state.completedAt.toISOString()
+        : new Date().toISOString()
 
   };
 
 
-  const {data, error} =
-    await client.rpc(
-      "submit_rank_promotion_test",
-      {
-        p_answers: payload
-      }
+  if (message) {
+
+    message.textContent =
+      "훈련 기록을 저장하고 있습니다...";
+
+  }
+
+
+  const saveButton =
+    cs_element(
+      "csSaveButton"
     );
 
 
-  if(error){
+  if (saveButton) {
+
+    saveButton.disabled =
+      true;
+
+  }
+
+
+  /*
+     IMPORTANT:
+
+     This first attempts the new dedicated RPC:
+
+     complete_consciousness_training
+
+     Required SQL RPC parameter names:
+       p_result
+       p_exp
+  */
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "complete_consciousness_training",
+    {
+      p_result: payload,
+      p_exp: exp
+    }
+  );
+
+
+  if (saveButton) {
+
+    saveButton.disabled =
+      false;
+
+  }
+
+
+  if (error) {
 
     console.error(
-      "Promotion test error:",
+      "Consciousness training save error:",
       error
     );
 
 
-    $("rankTestRunningPanel")
-      .classList.remove("hidden");
+    if (message) {
 
+      message.textContent =
+        "저장 실패: "
+        + error.message;
 
-    $("rankTestMessage").textContent =
-      "시험 처리 실패: "
-      +
-      error.message;
-
-
-    promotionState.active = true;
+    }
 
     return;
 
   }
 
 
-  const result =
+  const profile =
     Array.isArray(data)
       ? data[0]
       : data;
 
 
-  if(!result){
+  if (profile) {
 
-    $("rankTestRunningPanel")
-      .classList.remove("hidden");
-
-
-    $("rankTestMessage").textContent =
-      "시험 결과를 받지 못했습니다.";
-
-
-    promotionState.active = true;
-
-    return;
+    state.profile =
+      profile;
 
   }
 
 
-  const passed =
-    result.result === "PASS";
+  cs_setText(
+    "csEarnedExp",
+    "EXP +"
+    + exp
+  );
 
 
-  $("rankTestResultCurrentRank").textContent =
-    `${currentRank}-RANK`;
+  cs_setText(
+    "csFinalScore",
+    "SCORE "
+    + score
+    + " / 100"
+  );
 
 
-  $("rankTestResultTargetRank").textContent =
-    `${targetRank}-RANK`;
+  if (message) {
+
+    message.textContent =
+      "훈련 기록이 저장되었습니다.";
+
+  }
 
 
-  $("rankTestResultBadge").textContent =
-    passed
-      ? "PASS"
-      : "FAIL";
+  if (
+    state.profile
+  ) {
+
+    render();
+
+  }
+
+}
 
 
-  $("rankTestScore").textContent =
-    `SCORE ${
-      result.score
-    } / 100`;
+/* =========================================================
+   BACK TO GAME
+========================================================= */
+
+function cs_backToGame() {
+
+  cs_clearTimers();
 
 
-  $("rankTestResultMessage").textContent =
-    passed
-      ? `${targetRank}-RANK 승급이 완료되었습니다. LV.1부터 새로운 랭크의 훈련을 시작합니다.`
-      : "이번 승급시험은 불합격입니다. 현재 랭크와 LV.100은 유지되며 다시 응시할 수 있습니다.";
+  cs_state.active =
+    false;
+
+  cs_state.paused =
+    false;
 
 
-  $("rankTestResultAction").textContent =
-    passed
-      ? "새 랭크로 게임 계속하기"
-      : "다시 시험 보기";
+  const trainingPanel =
+    cs_element(
+      "consciousnessTrainingPanel"
+    );
 
 
-  $("rankTestResultAction").onclick =
-    async () => {
+  const gamePanel =
+    cs_element(
+      "gamePanel"
+    );
 
-      $("rankTestResultPanel")
-        .classList.add("hidden");
+
+  if (trainingPanel) {
+
+    trainingPanel.classList.add(
+      "hidden"
+    );
+
+  }
 
 
-      if(passed){
+  if (gamePanel) {
 
-        await loadProfile();
+    gamePanel.classList.remove(
+      "hidden"
+    );
 
-      }else{
+  }
 
-        $("rankTestPanel")
-          .classList.remove("hidden");
+
+  if (
+    state.profile
+  ) {
+
+    render();
+
+  }
+
+}
+
+
+/* =========================================================
+   RESET RESULT FORM
+========================================================= */
+
+function cs_resetResultForm() {
+
+  const ids = [
+
+    "csDifficulty",
+
+    "csFocusScore",
+
+    "csRelaxationScore",
+
+    "csAwarenessScore",
+
+    "csInnerVisionScore",
+
+    "csNotes"
+
+  ];
+
+
+  ids.forEach(
+    (id) => {
+
+      const element =
+        cs_element(id);
+
+      if (!element) {
+
+        return;
 
       }
 
-    };
+
+      if (
+        element.tagName ===
+        "TEXTAREA"
+      ) {
+
+        element.value =
+          "";
+
+      }
+      else {
+
+        element.selectedIndex =
+          0;
+
+      }
+
+    }
+  );
 
 
-  $("rankTestResultPanel")
-    .classList.remove("hidden");
+  cs_setText(
+    "csSaveMessage",
+    ""
+  );
 
 
-  await loadProfile();
+  cs_setText(
+    "csEarnedExp",
+    ""
+  );
+
+
+  cs_setText(
+    "csFinalScore",
+    ""
+  );
 
 }
+
+
+/* =========================================================
+   TRAINING MENU BUTTONS
+========================================================= */
+
+document.addEventListener(
+  "click",
+  (event) => {
+
+    const button =
+      event.target.closest(
+        "[data-cs-training]"
+      );
+
+
+    if (
+      !button
+    ) {
+
+      return;
+
+    }
+
+
+    const type =
+      button.dataset
+        .csTraining;
+
+
+    cs_openTraining(
+      type
+    );
+
+  }
+);
+
+
+/* =========================================================
+   TRAINING PANEL BUTTONS
+========================================================= */
+
+cs_element(
+  "csStartButton"
+)?.addEventListener(
+  "click",
+  () => {
+
+    cs_startTraining();
+
+  }
+);
+
+
+cs_element(
+  "csPauseButton"
+)?.addEventListener(
+  "click",
+  () => {
+
+    cs_togglePause();
+
+  }
+);
+
+
+cs_element(
+  "csStopButton"
+)?.addEventListener(
+  "click",
+  () => {
+
+    cs_stopTraining();
+
+  }
+);
+
+
+cs_element(
+  "csSaveButton"
+)?.addEventListener(
+  "click",
+  () => {
+
+    cs_saveTraining();
+
+  }
+);
+
+
+cs_element(
+  "csBackButton"
+)?.addEventListener(
+  "click",
+  () => {
+
+    cs_backToGame();
+
+  }
+);
+
+
+cs_element(
+  "csResultBackButton"
+)?.addEventListener(
+  "click",
+  () => {
+
+    cs_backToGame();
+
+  }
+);
+
+
+/* =========================================================
+   EXTERNAL OPEN FUNCTIONS
+   FOR EXISTING HTML onclick BUTTONS
+========================================================= */
+
+window.cs_openBetaTraining =
+  () => cs_openTraining(
+    "beta"
+  );
+
+
+window.cs_openAlphaTraining =
+  () => cs_openTraining(
+    "alpha"
+  );
+
+
+window.cs_openThetaTraining =
+  () => cs_openTraining(
+    "theta"
+  );
+
+
+window.cs_openDeepTraining =
+  () => cs_openTraining(
+    "deep"
+  );  
 
 async function completeQuest(code,exp){
   const {data,error}=await client.rpc("complete_simple_quest",{p_quest_code:code,p_exp:exp});

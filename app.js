@@ -2118,6 +2118,1416 @@ window.cs_openDeepTraining =
     "deep"
   );  
 
+
+/* =========================================================
+   RANK PROMOTION SYSTEM
+   PERFORMANCE-BASED TEST
+   D-RANK → C-RANK
+========================================================= */
+
+const RANK_ORDER = [
+  "D",
+  "C",
+  "B",
+  "A",
+  "S"
+];
+
+
+const PROMOTION_TESTS = {
+
+  D: [
+    {
+      type: "focus",
+      objective: "집중 유지",
+      question:
+        "화면 중앙의 점에 집중하십시오. 시험이 종료될 때까지 다른 행동을 하지 마십시오.",
+      duration: 20
+    },
+
+    {
+      type: "impulse",
+      objective: "충동 억제",
+      question:
+        "화면에 나타나는 보상 유혹에 반응하지 마십시오.",
+      duration: 15
+    },
+
+    {
+      type: "attention",
+      objective: "주의 전환",
+      question:
+        "신호가 나타나면 가능한 빠르게 SIGNAL 버튼을 누르십시오.",
+      duration: 10
+    },
+
+    {
+      type: "observation",
+      objective: "자기 상태 관찰",
+      question:
+        "지금까지의 시험 과정에서 자신의 집중, 충동, 감정, 신체 감각 및 주의 변화를 기록하십시오.",
+      duration: 0
+    }
+  ]
+
+};
+
+
+const promotionState = {
+
+  active: false,
+
+  currentRank: null,
+
+  currentIndex: 0,
+
+  timer: null,
+
+  remainingSeconds: 0,
+
+  impulseClicked: false,
+
+  attentionSignalShown: false,
+
+  attentionSignalTime: null,
+
+  attentionReactionTime: null,
+
+  results: []
+
+};
+
+
+/* =========================================================
+   RANK HELPERS
+========================================================= */
+
+function getNextRank(rank) {
+
+  const index =
+    RANK_ORDER.indexOf(
+      rank || "D"
+    );
+
+  if (index < 0) {
+    return "C";
+  }
+
+  if (
+    index >=
+    RANK_ORDER.length - 1
+  ) {
+    return null;
+  }
+
+  return RANK_ORDER[index + 1];
+
+}
+
+
+function getPromotionTest(rank) {
+
+  return (
+    PROMOTION_TESTS[rank]
+    ||
+    PROMOTION_TESTS.D
+  );
+
+}
+
+
+/* =========================================================
+   SAFE RANK UI HELPERS
+========================================================= */
+
+function rankElement(id) {
+
+  return document.getElementById(id);
+
+}
+
+
+function rankShow(id, visible = true) {
+
+  const element =
+    rankElement(id);
+
+  if (!element) {
+    return;
+  }
+
+  element.classList.toggle(
+    "hidden",
+    !visible
+  );
+
+}
+
+
+function rankSetText(id, value) {
+
+  const element =
+    rankElement(id);
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent =
+    value == null
+      ? ""
+      : value;
+
+}
+
+
+function rankFormatTime(seconds) {
+
+  const safeSeconds =
+    Math.max(
+      0,
+      Number(seconds) || 0
+    );
+
+  const minutes =
+    Math.floor(
+      safeSeconds / 60
+    );
+
+  const remain =
+    safeSeconds % 60;
+
+  return (
+    String(minutes)
+      .padStart(2, "0")
+    +
+    ":"
+    +
+    String(remain)
+      .padStart(2, "0")
+  );
+
+}
+
+
+/* =========================================================
+   RENDER PROMOTION PANEL
+========================================================= */
+
+function renderRankPromotion() {
+
+  const profile =
+    state.profile;
+
+  if (!profile) {
+    return;
+  }
+
+
+  const panel =
+    rankElement(
+      "rankTestPanel"
+    );
+
+  if (!panel) {
+    return;
+  }
+
+
+  const currentRank =
+    profile.rank || "D";
+
+  const nextRank =
+    getNextRank(
+      currentRank
+    );
+
+
+  if (
+    !nextRank
+    ||
+    Number(profile.level) < 100
+  ) {
+
+    panel.classList.add(
+      "hidden"
+    );
+
+    return;
+
+  }
+
+
+  rankSetText(
+    "promotionCurrentRank",
+    `${currentRank}-RANK`
+  );
+
+
+  rankSetText(
+    "promotionNextRank",
+    `${nextRank}-RANK`
+  );
+
+
+  panel.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+/* =========================================================
+   RESET TEST AREAS
+========================================================= */
+
+function resetPromotionAreas() {
+
+  rankShow(
+    "promotionFocusArea",
+    false
+  );
+
+  rankShow(
+    "promotionImpulseArea",
+    false
+  );
+
+  rankShow(
+    "promotionAttentionArea",
+    false
+  );
+
+  rankShow(
+    "promotionObservationArea",
+    false
+  );
+
+
+  const impulseTarget =
+    rankElement(
+      "promotionImpulseTarget"
+    );
+
+  if (impulseTarget) {
+
+    impulseTarget.classList.add(
+      "hidden"
+    );
+
+  }
+
+
+  const attentionButton =
+    rankElement(
+      "promotionAttentionButton"
+    );
+
+  if (attentionButton) {
+
+    attentionButton.classList.add(
+      "hidden"
+    );
+
+  }
+
+
+  const observationInput =
+    rankElement(
+      "promotionObservationInput"
+    );
+
+  if (observationInput) {
+
+    observationInput.value = "";
+
+  }
+
+}
+
+
+/* =========================================================
+   CLEAR TEST TIMER
+========================================================= */
+
+function clearPromotionTimer() {
+
+  if (promotionState.timer) {
+
+    clearInterval(
+      promotionState.timer
+    );
+
+    promotionState.timer =
+      null;
+
+  }
+
+}
+
+
+/* =========================================================
+   START RANK TEST
+========================================================= */
+
+function startRankTest() {
+
+  const profile =
+    state.profile;
+
+  if (!profile) {
+    return;
+  }
+
+
+  const currentRank =
+    profile.rank || "D";
+
+
+  const nextRank =
+    getNextRank(
+      currentRank
+    );
+
+
+  if (
+    !nextRank
+    ||
+    Number(profile.level) < 100
+  ) {
+
+    return;
+
+  }
+
+
+  clearPromotionTimer();
+
+
+  promotionState.active =
+    true;
+
+  promotionState.currentRank =
+    currentRank;
+
+  promotionState.currentIndex =
+    0;
+
+  promotionState.remainingSeconds =
+    0;
+
+  promotionState.impulseClicked =
+    false;
+
+  promotionState.attentionSignalShown =
+    false;
+
+  promotionState.attentionSignalTime =
+    null;
+
+  promotionState.attentionReactionTime =
+    null;
+
+  promotionState.results =
+    [];
+
+
+  rankShow(
+    "rankTestPanel",
+    false
+  );
+
+  rankShow(
+    "rankTestResultPanel",
+    false
+  );
+
+  rankShow(
+    "rankTestRunningPanel",
+    true
+  );
+
+
+  rankSetText(
+    "rankTestMessage",
+    ""
+  );
+
+
+  runPromotionStage();
+
+}
+
+
+/* =========================================================
+   RUN CURRENT STAGE
+========================================================= */
+
+function runPromotionStage() {
+
+  clearPromotionTimer();
+
+  resetPromotionAreas();
+
+
+  const tests =
+    getPromotionTest(
+      promotionState.currentRank
+    );
+
+
+  const test =
+    tests[
+      promotionState.currentIndex
+    ];
+
+
+  if (!test) {
+
+    finishPromotionTest();
+
+    return;
+
+  }
+
+
+  const currentRank =
+    promotionState.currentRank;
+
+  const total =
+    tests.length;
+
+
+  rankSetText(
+    "rankTestTitle",
+    `${currentRank}-RANK PROMOTION TEST`
+  );
+
+
+  rankSetText(
+    "rankTestProgress",
+    `TEST ${promotionState.currentIndex + 1} / ${total}`
+  );
+
+
+  rankSetText(
+    "rankTestObjective",
+    test.objective
+  );
+
+
+  rankSetText(
+    "rankTestQuestion",
+    test.question
+  );
+
+
+  rankSetText(
+    "rankTestMessage",
+    ""
+  );
+
+
+  rankSetText(
+    "rankTestTimer",
+    test.duration > 0
+      ? rankFormatTime(
+          test.duration
+        )
+      : "OBSERVE"
+  );
+
+
+  if (
+    test.type === "focus"
+  ) {
+
+    startFocusPromotionTest(
+      test
+    );
+
+  }
+
+  else if (
+    test.type === "impulse"
+  ) {
+
+    startImpulsePromotionTest(
+      test
+    );
+
+  }
+
+  else if (
+    test.type === "attention"
+  ) {
+
+    startAttentionPromotionTest(
+      test
+    );
+
+  }
+
+  else if (
+    test.type === "observation"
+  ) {
+
+    startObservationPromotionTest();
+
+  }
+
+}
+
+
+/* =========================================================
+   GENERIC COUNTDOWN
+========================================================= */
+
+function startPromotionCountdown(
+  seconds,
+  onFinish
+) {
+
+  promotionState.remainingSeconds =
+    seconds;
+
+
+  rankSetText(
+    "rankTestTimer",
+    rankFormatTime(
+      promotionState.remainingSeconds
+    )
+  );
+
+
+  promotionState.timer =
+    setInterval(
+      () => {
+
+        promotionState.remainingSeconds--;
+
+
+        rankSetText(
+          "rankTestTimer",
+          rankFormatTime(
+            promotionState.remainingSeconds
+          )
+        );
+
+
+        if (
+          promotionState.remainingSeconds <= 0
+        ) {
+
+          clearPromotionTimer();
+
+          onFinish();
+
+        }
+
+      },
+      1000
+    );
+
+}
+
+
+/* =========================================================
+   TEST 1
+   FOCUS MAINTENANCE
+========================================================= */
+
+function startFocusPromotionTest(
+  test
+) {
+
+  rankShow(
+    "promotionFocusArea",
+    true
+  );
+
+
+  startPromotionCountdown(
+    test.duration,
+    () => {
+
+      promotionState.results.push({
+        type: "focus",
+        completed: true,
+        duration: test.duration,
+        score: 25
+      });
+
+
+      nextPromotionStage();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   TEST 2
+   IMPULSE CONTROL
+========================================================= */
+
+function startImpulsePromotionTest(
+  test
+) {
+
+  promotionState.impulseClicked =
+    false;
+
+
+  rankShow(
+    "promotionImpulseArea",
+    true
+  );
+
+
+  const impulseTarget =
+    rankElement(
+      "promotionImpulseTarget"
+    );
+
+
+  if (impulseTarget) {
+
+    impulseTarget.onclick =
+      () => {
+
+        promotionState.impulseClicked =
+          true;
+
+
+        impulseTarget.textContent =
+          "반응 기록됨";
+
+
+        impulseTarget.classList.add(
+          "hidden"
+        );
+
+
+        rankSetText(
+          "rankTestMessage",
+          "충동 반응이 기록되었습니다. 시험은 계속됩니다."
+        );
+
+      };
+
+  }
+
+
+  const appearAfter =
+    Math.floor(
+      Math.random() * 7000
+    )
+    + 3000;
+
+
+  setTimeout(
+    () => {
+
+      if (
+        !promotionState.active
+      ) {
+        return;
+      }
+
+
+      if (
+        promotionState.currentIndex !== 1
+      ) {
+        return;
+      }
+
+
+      if (impulseTarget) {
+
+        impulseTarget.classList.remove(
+          "hidden"
+        );
+
+      }
+
+    },
+    appearAfter
+  );
+
+
+  startPromotionCountdown(
+    test.duration,
+    () => {
+
+      const score =
+        promotionState.impulseClicked
+          ? 0
+          : 25;
+
+
+      promotionState.results.push({
+        type: "impulse",
+        clicked: promotionState.impulseClicked,
+        score: score
+      });
+
+
+      nextPromotionStage();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   TEST 3
+   ATTENTION SWITCHING
+========================================================= */
+
+function startAttentionPromotionTest(
+  test
+) {
+
+  promotionState.attentionSignalShown =
+    false;
+
+  promotionState.attentionSignalTime =
+    null;
+
+  promotionState.attentionReactionTime =
+    null;
+
+
+  rankShow(
+    "promotionAttentionArea",
+    true
+  );
+
+
+  const attentionButton =
+    rankElement(
+      "promotionAttentionButton"
+    );
+
+
+  if (attentionButton) {
+
+    attentionButton.onclick =
+      () => {
+
+        if (
+          !promotionState.attentionSignalShown
+        ) {
+          return;
+        }
+
+
+        if (
+          promotionState.attentionReactionTime
+          !== null
+        ) {
+          return;
+        }
+
+
+        promotionState.attentionReactionTime =
+          Date.now()
+          -
+          promotionState.attentionSignalTime;
+
+
+        attentionButton.disabled =
+          true;
+
+
+        const reaction =
+          promotionState.attentionReactionTime;
+
+
+        let score =
+          0;
+
+
+        if (
+          reaction <= 500
+        ) {
+
+          score = 25;
+
+        }
+
+        else if (
+          reaction <= 1000
+        ) {
+
+          score = 22;
+
+        }
+
+        else if (
+          reaction <= 2000
+        ) {
+
+          score = 18;
+
+        }
+
+        else if (
+          reaction <= 3000
+        ) {
+
+          score = 12;
+
+        }
+
+        else {
+
+          score = 5;
+
+        }
+
+
+        promotionState.results.push({
+          type: "attention",
+          reaction_time_ms: reaction,
+          score: score
+        });
+
+
+        clearPromotionTimer();
+
+
+        rankSetText(
+          "rankTestTimer",
+          "SIGNAL COMPLETE"
+        );
+
+
+        setTimeout(
+          () => {
+
+            nextPromotionStage();
+
+          },
+          1000
+        );
+
+      };
+
+
+    }
+
+
+  const signalDelay =
+    Math.floor(
+      Math.random() * 4000
+    )
+    + 2000;
+
+
+  setTimeout(
+    () => {
+
+      if (
+        !promotionState.active
+      ) {
+        return;
+      }
+
+
+      if (
+        promotionState.currentIndex !== 2
+      ) {
+        return;
+      }
+
+
+      promotionState.attentionSignalShown =
+        true;
+
+
+      promotionState.attentionSignalTime =
+        Date.now();
+
+
+      if (attentionButton) {
+
+        attentionButton.disabled =
+          false;
+
+        attentionButton.classList.remove(
+          "hidden"
+        );
+
+      }
+
+
+      rankSetText(
+        "rankTestMessage",
+        "SIGNAL DETECTED"
+      );
+
+    },
+    signalDelay
+  );
+
+
+  startPromotionCountdown(
+    test.duration,
+    () => {
+
+      if (
+        promotionState.attentionReactionTime
+        === null
+      ) {
+
+        promotionState.results.push({
+          type: "attention",
+          reaction_time_ms: null,
+          score: 0
+        });
+
+
+        nextPromotionStage();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   TEST 4
+   SELF OBSERVATION
+========================================================= */
+
+function startObservationPromotionTest() {
+
+  rankShow(
+    "promotionObservationArea",
+    true
+  );
+
+
+  rankSetText(
+    "rankTestTimer",
+    "RECORD"
+  );
+
+
+  const submitButton =
+    rankElement(
+      "promotionObservationSubmit"
+    );
+
+
+  if (submitButton) {
+
+    submitButton.onclick =
+      submitPromotionObservation;
+
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT OBSERVATION
+========================================================= */
+
+function submitPromotionObservation() {
+
+  const input =
+    rankElement(
+      "promotionObservationInput"
+    );
+
+
+  const text =
+    input
+      ? input.value.trim()
+      : "";
+
+
+  if (
+    text.length < 20
+  ) {
+
+    rankSetText(
+      "rankTestMessage",
+      "최소 20자 이상 자신의 상태를 기록하십시오."
+    );
+
+    return;
+
+  }
+
+
+  const score =
+    text.length >= 100
+      ? 25
+      : text.length >= 50
+        ? 20
+        : 15;
+
+
+  promotionState.results.push({
+    type: "observation",
+    text: text,
+    length: text.length,
+    score: score
+  });
+
+
+  nextPromotionStage();
+
+}
+
+
+/* =========================================================
+   NEXT STAGE
+========================================================= */
+
+function nextPromotionStage() {
+
+  promotionState.currentIndex++;
+
+
+  runPromotionStage();
+
+}
+
+
+/* =========================================================
+   FINISH PROMOTION TEST
+========================================================= */
+
+async function finishPromotionTest() {
+
+  clearPromotionTimer();
+
+
+  promotionState.active =
+    false;
+
+
+  rankShow(
+    "rankTestRunningPanel",
+    false
+  );
+
+
+  const currentRank =
+    promotionState.currentRank
+    ||
+    state.profile?.rank
+    ||
+    "D";
+
+
+  const targetRank =
+    getNextRank(
+      currentRank
+    );
+
+
+  const totalScore =
+    promotionState.results.reduce(
+      (
+        total,
+        result
+      ) => {
+
+        return (
+          total
+          +
+          (
+            Number(
+              result.score
+            )
+            || 0
+          )
+        );
+
+      },
+      0
+    );
+
+
+  rankShow(
+    "rankTestResultPanel",
+    true
+  );
+
+
+  rankSetText(
+    "rankTestResultCurrentRank",
+    `${currentRank}-RANK`
+  );
+
+
+  rankSetText(
+    "rankTestResultTargetRank",
+    `${targetRank}-RANK`
+  );
+
+
+  rankSetText(
+    "rankTestResultBadge",
+    "PROCESSING"
+  );
+
+
+  rankSetText(
+    "rankTestScore",
+    `SCORE ${totalScore} / 100`
+  );
+
+
+  rankSetText(
+    "rankTestResultMessage",
+    "시험 결과를 서버에 기록하고 있습니다..."
+  );
+
+
+  const resultAction =
+    rankElement(
+      "rankTestResultAction"
+    );
+
+
+  if (resultAction) {
+
+    resultAction.disabled =
+      true;
+
+  }
+
+
+  /*
+    기존 승급시험 RPC를 사용한다.
+
+    기존 서버 구조를 유지하기 위해
+    p_answers 이름을 그대로 사용한다.
+
+    각 수행 결과를 서버로 전달한다.
+  */
+
+  const {
+    data,
+    error
+  } = await client.rpc(
+    "submit_rank_promotion_test",
+    {
+      p_answers:
+        promotionState.results
+    }
+  );
+
+
+  if (error) {
+
+    console.error(
+      "Rank promotion test error:",
+      error
+    );
+
+
+    rankSetText(
+      "rankTestResultBadge",
+      "SAVE ERROR"
+    );
+
+
+    rankSetText(
+      "rankTestResultMessage",
+      "시험 수행은 완료되었지만 서버 저장에 실패했습니다: "
+      + error.message
+    );
+
+
+    if (resultAction) {
+
+      resultAction.disabled =
+        false;
+
+      resultAction.textContent =
+        "게임으로 돌아가기";
+
+
+      resultAction.onclick =
+        () => {
+
+          rankShow(
+            "rankTestResultPanel",
+            false
+          );
+
+          rankShow(
+            "rankTestPanel",
+            true
+          );
+
+        };
+
+    }
+
+
+    return;
+
+  }
+
+
+  const result =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+
+  if (!result) {
+
+    rankSetText(
+      "rankTestResultBadge",
+      "ERROR"
+    );
+
+
+    rankSetText(
+      "rankTestResultMessage",
+      "서버에서 승급 결과를 받지 못했습니다."
+    );
+
+
+    if (resultAction) {
+
+      resultAction.disabled =
+        false;
+
+    }
+
+
+    return;
+
+  }
+
+
+  const passed =
+    result.result === "PASS";
+
+
+  rankSetText(
+    "rankTestResultBadge",
+    passed
+      ? "PASS"
+      : "FAIL"
+  );
+
+
+  rankSetText(
+    "rankTestScore",
+    `SCORE ${
+      result.score != null
+        ? result.score
+        : totalScore
+    } / 100`
+  );
+
+
+  rankSetText(
+    "rankTestResultMessage",
+    passed
+      ? `${targetRank}-RANK 승급이 완료되었습니다. 새로운 랭크의 성장 단계가 시작됩니다.`
+      : "이번 승급시험은 통과하지 못했습니다. 현재 랭크는 유지되며 다시 도전할 수 있습니다."
+  );
+
+
+  if (resultAction) {
+
+    resultAction.disabled =
+      false;
+
+
+    resultAction.textContent =
+      passed
+        ? "새 랭크로 게임 계속하기"
+        : "다시 시험 보기";
+
+
+    resultAction.onclick =
+      async () => {
+
+        rankShow(
+          "rankTestResultPanel",
+          false
+        );
+
+
+        if (passed) {
+
+          await loadProfile();
+
+        }
+
+        else {
+
+          rankShow(
+            "rankTestPanel",
+            true
+          );
+
+        }
+
+      };
+
+  }
+
+
+  await loadProfile();
+
+}
+
+
+/* =========================================================
+   RANK TEST CLEANUP
+========================================================= */
+
+function resetPromotionTest() {
+
+  clearPromotionTimer();
+
+
+  promotionState.active =
+    false;
+
+  promotionState.currentIndex =
+    0;
+
+  promotionState.results =
+    [];
+
+  promotionState.impulseClicked =
+    false;
+
+  promotionState.attentionSignalShown =
+    false;
+
+  promotionState.attentionSignalTime =
+    null;
+
+  promotionState.attentionReactionTime =
+    null;
+
+
+  resetPromotionAreas();
+
+}
+  
+
 async function completeQuest(code,exp){
   const {data,error}=await client.rpc("complete_simple_quest",{p_quest_code:code,p_exp:exp});
   if(error){$("questNotice").textContent=error.message;return;}

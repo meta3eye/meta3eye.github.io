@@ -3527,7 +3527,959 @@ function resetPromotionTest() {
 
 }
   
+/* =========================
+   RANK PROMOTION SYSTEM
+========================= */
 
+const RANK_ORDER = ["D", "C", "B", "A", "S"];
+
+const PROMOTION_TESTS = {
+  D: [
+    { type: "focus", objective: "집중 유지", duration: 10 },
+    { type: "impulse", objective: "충동 억제", duration: 12 },
+    { type: "attention", objective: "주의 전환", duration: 10 },
+    { type: "observation", objective: "자기 상태 관찰", duration: 0 }
+  ],
+  C: [
+    { type: "focus", objective: "집중 유지", duration: 15 },
+    { type: "impulse", objective: "충동 억제", duration: 15 },
+    { type: "attention", objective: "주의 전환", duration: 12 },
+    { type: "observation", objective: "자기 상태 관찰", duration: 0 }
+  ],
+  B: [
+    { type: "focus", objective: "집중 유지", duration: 20 },
+    { type: "impulse", objective: "충동 억제", duration: 18 },
+    { type: "attention", objective: "주의 전환", duration: 15 },
+    { type: "observation", objective: "자기 상태 관찰", duration: 0 }
+  ],
+  A: [
+    { type: "focus", objective: "집중 유지", duration: 30 },
+    { type: "impulse", objective: "충동 억제", duration: 25 },
+    { type: "attention", objective: "주의 전환", duration: 20 },
+    { type: "observation", objective: "자기 상태 관찰", duration: 0 }
+  ]
+};
+
+const QUEST_LIMITS = {
+  focus_5: 3,
+  sense_observation: 3,
+  intuition_choice: 5,
+  emotion_guess: 3,
+  life_death: 3
+};
+
+let rankTestTimer = null;
+let rankTestAttentionTimer = null;
+let rankTestStartedAt = 0;
+let rankTestElapsed = 0;
+let rankTestImpulseClicked = false;
+let rankTestAttentionReaction = null;
+
+function getNextRank(rank) {
+  const index = RANK_ORDER.indexOf(rank || "D");
+
+  if (index < 0) {
+    return "C";
+  }
+
+  if (index >= RANK_ORDER.length - 1) {
+    return null;
+  }
+
+  return RANK_ORDER[index + 1];
+}
+
+function getPromotionTest(rank) {
+  return PROMOTION_TESTS[rank] || PROMOTION_TESTS.D;
+}
+
+function clearRankTestTimers() {
+  if (rankTestTimer) {
+    clearInterval(rankTestTimer);
+    rankTestTimer = null;
+  }
+
+  if (rankTestAttentionTimer) {
+    clearTimeout(rankTestAttentionTimer);
+    rankTestAttentionTimer = null;
+  }
+}
+
+function hidePromotionAreas() {
+  [
+    "promotionFocusArea",
+    "promotionImpulseArea",
+    "promotionAttentionArea",
+    "promotionObservationArea"
+  ].forEach(id => {
+    const element = $(id);
+
+    if (element) {
+      element.classList.add("hidden");
+    }
+  });
+
+  const impulseTarget = $("promotionImpulseTarget");
+
+  if (impulseTarget) {
+    impulseTarget.classList.add("hidden");
+    impulseTarget.onclick = null;
+  }
+
+  const attentionButton = $("promotionAttentionButton");
+
+  if (attentionButton) {
+    attentionButton.classList.add("hidden");
+    attentionButton.onclick = null;
+  }
+}
+
+function formatRankTime(seconds) {
+  const value = Math.max(0, Math.floor(seconds));
+
+  return (
+    "00:" +
+    String(value).padStart(2, "0")
+  );
+}
+
+function renderRankPromotion() {
+  const profile = state.profile;
+  const panel = $("rankTestPanel");
+
+  if (!profile || !panel) {
+    return;
+  }
+
+  const currentRank =
+    profile.rank || "D";
+
+  const nextRank =
+    getNextRank(currentRank);
+
+  if (
+    !nextRank ||
+    Number(profile.level) < 100
+  ) {
+    panel.classList.add("hidden");
+    return;
+  }
+
+  const current =
+    $("promotionCurrentRank");
+
+  const next =
+    $("promotionNextRank");
+
+  if (current) {
+    current.textContent =
+      `${currentRank}-RANK`;
+  }
+
+  if (next) {
+    next.textContent =
+      `${nextRank}-RANK`;
+  }
+
+  panel.classList.remove("hidden");
+}
+
+function startRankTest() {
+  const profile = state.profile;
+
+  if (!profile) {
+    return;
+  }
+
+  const currentRank =
+    profile.rank || "D";
+
+  const nextRank =
+    getNextRank(currentRank);
+
+  if (
+    !nextRank ||
+    Number(profile.level) < 100
+  ) {
+    return;
+  }
+
+  clearRankTestTimers();
+
+  state.rankTestIndex = 0;
+  state.rankTestAnswers = [];
+  state.rankTestScores = [];
+  state.rankTestCurrentRank = currentRank;
+
+  $("rankTestPanel")?.classList.add("hidden");
+
+  $("rankTestRunningPanel")?.classList.remove("hidden");
+
+  hidePromotionAreas();
+
+  renderRankTestQuestion();
+}
+
+function updateRankTestTimer(total) {
+  const elapsed =
+    Math.floor(
+      (Date.now() - rankTestStartedAt) / 1000
+    );
+
+  rankTestElapsed = elapsed;
+
+  const timer =
+    $("rankTestTimer");
+
+  if (timer) {
+    timer.textContent =
+      formatRankTime(elapsed);
+  }
+
+  if (
+    total > 0 &&
+    elapsed >= total
+  ) {
+    clearRankTestTimers();
+
+    completeCurrentRankTest(false);
+  }
+}
+
+function completeCurrentRankTest(success) {
+  clearRankTestTimers();
+
+  const index =
+    state.rankTestIndex;
+
+  const tests =
+    getPromotionTest(
+      state.rankTestCurrentRank || "D"
+    );
+
+  const test =
+    tests[index];
+
+  if (!test) {
+    finishRankTest();
+    return;
+  }
+
+  let score =
+    success ? 100 : 0;
+
+  if (
+    test.type === "attention" &&
+    rankTestAttentionReaction !== null
+  ) {
+    score =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            100 -
+            rankTestAttentionReaction * 2
+          )
+        )
+      );
+  }
+
+  if (
+    test.type === "impulse" &&
+    rankTestImpulseClicked
+  ) {
+    score = 0;
+  }
+
+  if (test.type === "observation") {
+    const input =
+      $("promotionObservationInput");
+
+    score =
+      input &&
+      input.value.trim().length >= 20
+        ? 100
+        : 40;
+  }
+
+  state.rankTestScores.push(score);
+
+  state.rankTestAnswers.push({
+    index,
+    type: test.type,
+    score
+  });
+
+  state.rankTestIndex++;
+
+  if (
+    state.rankTestIndex >=
+    tests.length
+  ) {
+    finishRankTest();
+  } else {
+    renderRankTestQuestion();
+  }
+}
+
+function renderRankTestQuestion() {
+  clearRankTestTimers();
+
+  hidePromotionAreas();
+
+  const currentRank =
+    state.rankTestCurrentRank ||
+    state.profile?.rank ||
+    "D";
+
+  const tests =
+    getPromotionTest(currentRank);
+
+  const index =
+    state.rankTestIndex || 0;
+
+  const test =
+    tests[index];
+
+  if (!test) {
+    finishRankTest();
+    return;
+  }
+
+  const title =
+    $("rankTestTitle");
+
+  const progress =
+    $("rankTestProgress");
+
+  const objective =
+    $("rankTestObjective");
+
+  const question =
+    $("rankTestQuestion");
+
+  const message =
+    $("rankTestMessage");
+
+  if (title) {
+    title.textContent =
+      `${currentRank}-RANK PROMOTION TEST`;
+  }
+
+  if (progress) {
+    progress.textContent =
+      `TEST ${index + 1} / ${tests.length}`;
+  }
+
+  if (objective) {
+    objective.textContent =
+      test.objective;
+  }
+
+  if (message) {
+    message.textContent = "";
+  }
+
+  if (question) {
+    question.textContent = "";
+  }
+
+  rankTestStartedAt =
+    Date.now();
+
+  rankTestElapsed = 0;
+
+  rankTestImpulseClicked =
+    false;
+
+  rankTestAttentionReaction =
+    null;
+
+  if (test.type === "focus") {
+
+    $("promotionFocusArea")
+      ?.classList.remove("hidden");
+
+    if (question) {
+      question.textContent =
+        "화면 중앙의 점에 집중하십시오. 다른 행동을 하지 말고 시험 종료까지 집중을 유지하십시오.";
+    }
+
+    rankTestTimer =
+      setInterval(
+        () =>
+          updateRankTestTimer(
+            test.duration
+          ),
+        250
+      );
+
+    return;
+  }
+
+  if (test.type === "impulse") {
+
+    $("promotionImpulseArea")
+      ?.classList.remove("hidden");
+
+    if (question) {
+      question.textContent =
+        "아무 행동도 하지 말고 화면을 유지하십시오. 나타나는 요소에 반응하지 마십시오.";
+    }
+
+    const target =
+      $("promotionImpulseTarget");
+
+    if (target) {
+
+      const delay =
+        3000 +
+        Math.floor(
+          Math.random() * 4000
+        );
+
+      rankTestAttentionTimer =
+        setTimeout(() => {
+
+          target.classList.remove(
+            "hidden"
+          );
+
+          target.onclick = () => {
+
+            rankTestImpulseClicked =
+              true;
+
+            if (message) {
+              message.textContent =
+                "충동 반응이 기록되었습니다.";
+            }
+          };
+
+        }, delay);
+    }
+
+    rankTestTimer =
+      setInterval(
+        () =>
+          updateRankTestTimer(
+            test.duration
+          ),
+        250
+      );
+
+    return;
+  }
+
+  if (test.type === "attention") {
+
+    $("promotionAttentionArea")
+      ?.classList.remove("hidden");
+
+    if (question) {
+      question.textContent =
+        "화면을 주시하십시오. 신호가 나타나면 가능한 빠르게 버튼을 누르십시오.";
+    }
+
+    const button =
+      $("promotionAttentionButton");
+
+    if (button) {
+
+      const delay =
+        2000 +
+        Math.floor(
+          Math.random() * 4000
+        );
+
+      rankTestAttentionTimer =
+        setTimeout(() => {
+
+          const shownAt =
+            performance.now();
+
+          button.classList.remove(
+            "hidden"
+          );
+
+          button.onclick = () => {
+
+            rankTestAttentionReaction =
+              performance.now() -
+              shownAt;
+
+            completeCurrentRankTest(
+              true
+            );
+          };
+
+        }, delay);
+    }
+
+    rankTestTimer =
+      setInterval(
+        () =>
+          updateRankTestTimer(
+            test.duration
+          ),
+        250
+      );
+
+    return;
+  }
+
+  if (test.type === "observation") {
+
+    $("promotionObservationArea")
+      ?.classList.remove("hidden");
+
+    if (question) {
+      question.textContent =
+        "방금까지의 시험 과정에서 자신의 상태를 관찰하고 기록하십시오.";
+    }
+
+    const input =
+      $("promotionObservationInput");
+
+    if (input) {
+      input.value = "";
+    }
+
+    const submit =
+      $("promotionObservationSubmit");
+
+    if (submit) {
+      submit.onclick = () => {
+        completeCurrentRankTest(true);
+      };
+    }
+  }
+}
+
+function finishRankTest() {
+  clearRankTestTimers();
+
+  hidePromotionAreas();
+
+  $("rankTestRunningPanel")
+    ?.classList.add("hidden");
+
+  const panel =
+    $("rankTestPanel");
+
+  if (!panel) {
+    return;
+  }
+
+  const currentRank =
+    state.rankTestCurrentRank ||
+    state.profile?.rank ||
+    "D";
+
+  const nextRank =
+    getNextRank(currentRank);
+
+  const scores =
+    state.rankTestScores || [];
+
+  const score =
+    Math.round(
+      scores.reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      ) /
+      Math.max(
+        scores.length,
+        1
+      )
+    );
+
+  const passed =
+    score >= 70;
+
+  panel.innerHTML = `
+    <div class="section-title">
+      <h2>
+        ${
+          passed
+            ? "PROMOTION TEST PASSED"
+            : "PROMOTION TEST FAILED"
+        }
+      </h2>
+
+      <span class="muted">
+        ${currentRank}-RANK → ${nextRank}-RANK
+      </span>
+    </div>
+
+    <div class="rank-test-description">
+
+      <p>
+        SCORE ${score} / 100
+      </p>
+
+      <p class="muted">
+        ${
+          passed
+            ? "승급시험 기준을 충족했습니다."
+            : "승급시험 기준을 충족하지 못했습니다. 다시 도전하십시오."
+        }
+      </p>
+
+    </div>
+
+    <button
+      id="rankTestRetryButton"
+      type="button"
+    >
+      ${
+        passed
+          ? "시험 결과 확인"
+          : "다시 시험하기"
+      }
+    </button>
+  `;
+
+  panel.classList.remove(
+    "hidden"
+  );
+
+  $("rankTestRetryButton").onclick =
+    () => {
+
+      if (passed) {
+
+        panel.innerHTML = `
+          <div class="section-title">
+            <h2>TEST COMPLETE</h2>
+            <span class="muted">RESULT</span>
+          </div>
+
+          <p class="message">
+            ${currentRank}-RANK 승급 시험 통과
+            · 목표 ${nextRank}-RANK
+          </p>
+
+          <button
+            id="rankTestCloseButton"
+            type="button"
+          >
+            게임으로 돌아가기
+          </button>
+        `;
+
+        $("rankTestCloseButton").onclick =
+          () => {
+
+            panel.classList.add(
+              "hidden"
+            );
+
+            $("gamePanel")
+              ?.classList.remove(
+                "hidden"
+              );
+
+            render();
+          };
+
+      } else {
+
+        startRankTest();
+
+      }
+    };
+}
+
+function getTodayStart() {
+
+  const now =
+    new Date();
+
+  now.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  return now.toISOString();
+}
+
+async function loadQuests() {
+
+  if (!state.profile) {
+    return;
+  }
+
+  const playerLevel =
+    state.profile.level;
+
+  const {
+    data: quests,
+    error: questError
+  } =
+    await client
+      .from("quest_defs")
+      .select("*")
+      .eq("active", true)
+      .lte(
+        "min_level",
+        playerLevel
+      )
+      .order("min_level");
+
+  if (questError) {
+
+    const list =
+      $("questList");
+
+    if (list) {
+      list.textContent =
+        questError.message;
+    }
+
+    return;
+  }
+
+  const {
+    data: todayLogs,
+    error: logError
+  } =
+    await client
+      .from("quest_logs")
+      .select("quest_code")
+      .gte(
+        "completed_at",
+        getTodayStart()
+      );
+
+  if (logError) {
+    console.error(logError);
+  }
+
+  const todayCount = {};
+
+  for (
+    const log of
+    todayLogs || []
+  ) {
+
+    todayCount[
+      log.quest_code
+    ] =
+      (
+        todayCount[
+          log.quest_code
+        ] || 0
+      ) + 1;
+  }
+
+  const levelTestReady =
+    state.profile
+      .level_test_available === true;
+
+  const notice =
+    $("questNotice");
+
+  if (notice) {
+
+    notice.textContent =
+      levelTestReady
+        ? `LV.${state.profile.pending_level} 승급 시험을 통과해야 훈련을 계속할 수 있습니다.`
+        : "";
+  }
+
+  const list =
+    $("questList");
+
+  if (!list) {
+    return;
+  }
+
+  list.innerHTML =
+    (quests || [])
+      .map(q => {
+
+        const maxCount =
+          QUEST_LIMITS[q.code] || 1;
+
+        const currentCount =
+          todayCount[q.code] || 0;
+
+        const limitReached =
+          currentCount >= maxCount;
+
+        const questLocked =
+          levelTestReady ||
+          limitReached;
+
+        let buttonText =
+          "수행";
+
+        if (levelTestReady) {
+          buttonText =
+            "승급 시험 필요";
+        }
+        else if (limitReached) {
+          buttonText =
+            "오늘 완료";
+        }
+
+        if (q.code === "focus_5") {
+
+          return `
+            <div class="quest">
+
+              <div>
+
+                <h3>
+                  ${q.title}
+                </h3>
+
+                <p>
+                  ${q.grade}-RANK ·
+                  실제 5분 훈련 ·
+                  EXP ${q.base_exp}
+                </p>
+
+                <p class="quest-count">
+                  오늘
+                  ${currentCount}
+                  /
+                  ${maxCount}회
+                </p>
+
+              </div>
+
+              <button
+                class="focus-quest-button"
+                ${questLocked ? "disabled" : ""}
+              >
+                ${buttonText}
+              </button>
+
+            </div>
+          `;
+        }
+
+        if (
+          q.code ===
+          "sense_observation"
+        ) {
+
+          return `
+            <div class="quest">
+
+              <div>
+
+                <h3>
+                  ${q.title}
+                </h3>
+
+                <p>
+                  ${q.grade}-RANK ·
+                  실제 관찰 훈련 ·
+                  3~10분
+                </p>
+
+                <p class="quest-count">
+                  오늘
+                  ${currentCount}
+                  /
+                  ${maxCount}회
+                </p>
+
+              </div>
+
+              <button
+                class="sense-quest-button"
+                ${questLocked ? "disabled" : ""}
+              >
+                ${buttonText}
+              </button>
+
+            </div>
+          `;
+        }
+
+        return `
+          <div class="quest">
+
+            <div>
+
+              <h3>
+                ${q.title}
+              </h3>
+
+              <p>
+                ${q.grade}-RANK ·
+                기본 EXP ${q.base_exp}
+              </p>
+
+              <p class="quest-count">
+                오늘
+                ${currentCount}
+                /
+                ${maxCount}회
+              </p>
+
+            </div>
+
+            <button
+              data-code="${q.code}"
+              data-exp="${q.base_exp}"
+              ${questLocked ? "disabled" : ""}
+            >
+              ${buttonText}
+            </button>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+  list
+    .querySelector(
+      ".focus-quest-button"
+    )
+    ?.addEventListener(
+      "click",
+      openFocusTraining
+    );
+
+  list
+    .querySelector(
+      ".sense-quest-button"
+    )
+    ?.addEventListener(
+      "click",
+      openSenseTraining
+    );
+
+  list
+    .querySelectorAll(
+      "[data-code]"
+    )
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        completeQuest(
+          button.dataset.code,
+          Number(
+            button.dataset.exp
+          )
+        );
+
+      };
+
+    });
+}
+  
 async function completeQuest(code,exp){
   const {data,error}=await client.rpc("complete_simple_quest",{p_quest_code:code,p_exp:exp});
   if(error){$("questNotice").textContent=error.message;return;}

@@ -86,7 +86,11 @@ if (p.level_test_available) {
     ["최고 레벨",`LV.${p.highest_level}`],["연속 훈련",`${p.streak_days}일`],
     ["상태",p.status],["생성일",new Date(p.created_at).toLocaleDateString("ko-KR")]
   ].map(x=>`<div class="record-item"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");  
-  loadQuests();
+ if (typeof loadQuests === "function") {
+    loadQuests();
+  }
+
+  
 renderNextUnlock();
 renderAwakeningSystem();
 renderRankPromotion();
@@ -5488,3 +5492,92 @@ rvElement("rvFinishButton")?.addEventListener("click", finishRemoteViewing);
 
 })();
 
+window.loadQuests = window.loadQuests || (async function () {
+  if (!state || !state.profile) return;
+
+  const playerLevel = state.profile.level;
+
+  const { data: quests, error: questError } = await client
+    .from("quest_defs")
+    .select("*")
+    .eq("active", true)
+    .lte("min_level", playerLevel)
+    .order("min_level");
+
+  if (questError) {
+    const el = document.getElementById("questList");
+    if (el) el.textContent = questError.message;
+    return;
+  }
+
+  const { data: todayLogs } = await client
+    .from("quest_logs")
+    .select("quest_code")
+    .gte("completed_at", getTodayStart());
+
+  const todayCount = {};
+
+  for (const log of todayLogs || []) {
+    todayCount[log.quest_code] =
+      (todayCount[log.quest_code] || 0) + 1;
+  }
+
+  const levelTestReady =
+    state.profile.level_test_available === true;
+
+  const notice = document.getElementById("questNotice");
+
+  if (notice) {
+    notice.textContent = levelTestReady
+      ? `LV.${state.profile.pending_level} 승급 시험을 통과해야 훈련을 계속할 수 있습니다.`
+      : "";
+  }
+
+  const list = document.getElementById("questList");
+  if (!list) return;
+
+  list.innerHTML = (quests || []).map(q => {
+    const maxCount = QUEST_LIMITS[q.code] || 1;
+    const currentCount = todayCount[q.code] || 0;
+    const limitReached = currentCount >= maxCount;
+    const questLocked = levelTestReady || limitReached;
+
+    const buttonText =
+      levelTestReady
+        ? "승급 시험 필요"
+        : limitReached
+          ? "오늘 완료"
+          : "수행";
+
+    return `
+      <div class="quest">
+        <div>
+          <h3>${q.title}</h3>
+          <p>
+            ${q.grade}-RANK · 기본 EXP ${q.base_exp}
+          </p>
+          <p class="quest-count">
+            오늘 ${currentCount}/${maxCount}회
+          </p>
+        </div>
+
+        <button
+          data-code="${q.code}"
+          data-exp="${q.base_exp}"
+          ${questLocked ? "disabled" : ""}
+        >
+          ${buttonText}
+        </button>
+      </div>
+    `;
+  }).join("");
+
+  list.querySelectorAll("[data-code]").forEach(button => {
+    button.onclick = () => {
+      completeQuest(
+        button.dataset.code,
+        Number(button.dataset.exp)
+      );
+    };
+  });
+});

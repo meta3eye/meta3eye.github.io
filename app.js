@@ -2663,15 +2663,22 @@
   );
 
   $("focusBackButton")?.addEventListener(
-    "click",
-    () => {
-      show(
-        "focusTrainingPanel",
-        false
-      );
+  "click",
+  () => {
 
-      show("gamePanel", true);
+    if (focusTimerInterval) {
+      clearInterval(focusTimerInterval);
+      focusTimerInterval = null;
     }
+
+    show(
+      "focusTrainingPanel",
+      false
+    );
+
+    show("gamePanel", true);
+  }
+);
   );
 
   $("senseStartButton")?.addEventListener(

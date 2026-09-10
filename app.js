@@ -1417,6 +1417,12 @@
         target;
     }
 
+    // "점 집중"을 선택한 경우 실제 화면에 집중점을 표시
+    show(
+      "focusDotArea",
+      target === "점 집중"
+    );
+
     show("focusSetup", false);
     show("focusRunning", true);
     show("focusResult", false);
@@ -1470,54 +1476,167 @@
     }
   }
 
-  function finishFocusTraining() {
-    show("focusRunning", false);
-    show("focusResult", true);
+  function playFocusEndSound(type) {
+    if (!type || type === "silent") {
+      return;
+    }
 
     try {
       const AudioContext =
         window.AudioContext ||
         window.webkitAudioContext;
 
-      if (!AudioContext) return;
+      if (!AudioContext) {
+        return;
+      }
 
       const audioContext =
         new AudioContext();
 
-      const oscillator =
-        audioContext.createOscillator();
+      const now =
+        audioContext.currentTime;
 
-      const gain =
+      const master =
         audioContext.createGain();
 
-      oscillator.connect(gain);
-      gain.connect(
+      master.gain.setValueAtTime(
+        0.0001,
+        now
+      );
+
+      master.gain.exponentialRampToValueAtTime(
+        0.12,
+        now + 0.02
+      );
+
+      master.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 1.4
+      );
+
+      master.connect(
         audioContext.destination
       );
 
-      oscillator.frequency.value =
-        880;
+      const tones =
+        type === "beep"
+          ? [
+              {
+                frequency: 880,
+                start: 0,
+                duration: 0.22,
+                volume: 0.65
+              }
+            ]
+          : type === "lowbell"
+            ? [
+                {
+                  frequency: 330,
+                  start: 0,
+                  duration: 0.9,
+                  volume: 0.7
+                },
+                {
+                  frequency: 495,
+                  start: 0,
+                  duration: 0.65,
+                  volume: 0.22
+                }
+              ]
+            : [
+                {
+                  frequency: 660,
+                  start: 0,
+                  duration: 0.8,
+                  volume: 0.5
+                },
+                {
+                  frequency: 990,
+                  start: 0.04,
+                  duration: 0.75,
+                  volume: 0.28
+                },
+                {
+                  frequency: 1320,
+                  start: 0.08,
+                  duration: 0.55,
+                  volume: 0.12
+                }
+              ];
 
-      gain.gain.value =
-        0.15;
+      tones.forEach((tone) => {
+        const oscillator =
+          audioContext.createOscillator();
 
-      oscillator.start();
+        const gain =
+          audioContext.createGain();
+
+        const start =
+          now + tone.start;
+
+        const end =
+          start + tone.duration;
+
+        oscillator.type =
+          type === "beep"
+            ? "sine"
+            : "triangle";
+
+        oscillator.frequency.setValueAtTime(
+          tone.frequency,
+          start
+        );
+
+        gain.gain.setValueAtTime(
+          0.0001,
+          start
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+          tone.volume,
+          start + 0.015
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          end
+        );
+
+        oscillator.connect(gain);
+        gain.connect(master);
+
+        oscillator.start(start);
+        oscillator.stop(end + 0.03);
+      });
 
       setTimeout(() => {
-        oscillator.stop();
         audioContext.close();
-      }, 700);
+      }, 1700);
     } catch (error) {
       console.log(
         "알림음 재생 실패",
         error
       );
     }
+  }
+
+  function finishFocusTraining() {
+    show("focusRunning", false);
+    show("focusResult", true);
+
+    show("focusDotArea", false);
+
+    const endSound =
+      $("focusEndSound")?.value ||
+      "bell";
+
+    playFocusEndSound(endSound);
 
     alert(
       "5분 집중 훈련이 종료되었습니다."
     );
   }
+  
 
   async function completeFocusTraining() {
     const quality =

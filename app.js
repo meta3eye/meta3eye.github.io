@@ -1403,69 +1403,58 @@
   let selectedFocusExp = 10;
   let selectedFocusDuration = 300;
 
-  function startFocusTraining() {
-    const target =
-      $("focusTarget")?.value;
+function startFocusTraining() {
+  const target =
+    $("focusTarget")?.value;
 
-    const duration =
-      Number(
-        $("focusDuration")?.value
-      );
-
-    if (!target) {
-      alert("집중 대상을 선택하세요.");
-      return;
-    }
-
-    if (!duration) {
-      alert("훈련 시간을 선택하세요.");
-      return;
-    }
-
-    if (focusTimerInterval) {
-      return;
-    }
-
-    selectedFocusDuration = duration;
-    focusSeconds = duration;
-
-    // 시간에 따른 EXP
-    if (duration === 180) {
-      selectedFocusExp = 5;
-    } else if (duration === 300) {
-      selectedFocusExp = 10;
-    } else if (duration === 600) {
-      selectedFocusExp = 20;
-    }
-
-    if ($("selectedFocusTarget")) {
-      $("selectedFocusTarget").textContent =
-        target;
-    }
-
-    show("focusSetup", false);
-    show("focusRunning", true);
-    show("focusResult", false);
-
-    updateFocusTimer();
-
-    focusTimerInterval =
-      setInterval(() => {
-        focusSeconds--;
-
-        updateFocusTimer();
-
-        if (focusSeconds <= 0) {
-          clearInterval(
-            focusTimerInterval
-          );
-
-          focusTimerInterval = null;
-
-          finishFocusTraining();
-        }
-      }, 1000);
+  if (!target) {
+    alert("집중 대상을 선택하세요.");
+    return;
   }
+
+  // 감각관찰이 실행 중이면 시작하지 않음
+  if (senseTimerInterval) {
+    alert("현재 감각관찰 훈련이 진행 중입니다.");
+    return;
+  }
+
+  if (focusTimerInterval) {
+    return;
+  }
+
+  // 집중훈련은 항상 5분
+  focusSeconds = 300;
+  selectedFocusDuration = 300;
+  selectedFocusExp = 10;
+
+  if ($("selectedFocusTarget")) {
+    $("selectedFocusTarget").textContent =
+      target;
+  }
+
+  show("focusSetup", false);
+  show("focusRunning", true);
+  show("focusResult", false);
+
+  updateFocusTimer();
+
+  focusTimerInterval =
+    setInterval(() => {
+      focusSeconds--;
+
+      updateFocusTimer();
+
+      if (focusSeconds <= 0) {
+        clearInterval(
+          focusTimerInterval
+        );
+
+        focusTimerInterval = null;
+
+        finishFocusTraining();
+      }
+    }, 1000);
+}
 
   function updateFocusTimer() {
     const minutes =

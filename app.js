@@ -1400,40 +1400,54 @@
 
   let focusTimerInterval = null;
   let focusSeconds = 300;
+  let selectedFocusExp = 10;
+  let selectedFocusDuration = 300;
 
   function startFocusTraining() {
     const target =
       $("focusTarget")?.value;
+
+    const duration =
+      Number(
+        $("focusDuration")?.value
+      );
 
     if (!target) {
       alert("집중 대상을 선택하세요.");
       return;
     }
 
-    focusSeconds = 300;
+    if (!duration) {
+      alert("훈련 시간을 선택하세요.");
+      return;
+    }
+
+    if (focusTimerInterval) {
+      return;
+    }
+
+    selectedFocusDuration = duration;
+    focusSeconds = duration;
+
+    // 시간에 따른 EXP
+    if (duration === 180) {
+      selectedFocusExp = 5;
+    } else if (duration === 300) {
+      selectedFocusExp = 10;
+    } else if (duration === 600) {
+      selectedFocusExp = 20;
+    }
 
     if ($("selectedFocusTarget")) {
       $("selectedFocusTarget").textContent =
         target;
     }
 
-    // "점 집중"을 선택한 경우 실제 화면에 집중점을 표시
-    show(
-      "focusDotArea",
-      target === "점 집중"
-    );
-
     show("focusSetup", false);
     show("focusRunning", true);
     show("focusResult", false);
 
     updateFocusTimer();
-
-    if (focusTimerInterval) {
-      clearInterval(
-        focusTimerInterval
-      );
-    }
 
     focusTimerInterval =
       setInterval(() => {
@@ -1612,6 +1626,7 @@
       setTimeout(() => {
         audioContext.close();
       }, 1700);
+
     } catch (error) {
       console.log(
         "알림음 재생 실패",
@@ -1624,16 +1639,19 @@
     show("focusRunning", false);
     show("focusResult", true);
 
-    show("focusDotArea", false);
-
     const endSound =
       $("focusEndSound")?.value ||
       "bell";
 
     playFocusEndSound(endSound);
 
+    const minutes =
+      Math.round(
+        selectedFocusDuration / 60
+      );
+
     alert(
-      "5분 집중 훈련이 종료되었습니다."
+      `${minutes}분 집중 훈련이 종료되었습니다.`
     );
   }
   
@@ -1654,6 +1672,19 @@
     const target =
       $("focusTarget")?.value;
 
+        const duration =
+      Number(
+        $("focusDuration")?.value
+      );
+
+    const exp =
+      selectedFocusExp || 10;
+
+    const minutes =
+      Math.round(
+        duration / 60
+      );
+
     if (
       !quality ||
       !obstacle ||
@@ -1671,9 +1702,12 @@
         "훈련 기록을 저장하고 있습니다...";
     }
 
-    const resultData = {
+        const resultData = {
       training_type:
-        "5분 집중 훈련",
+        `${minutes}분 집중 훈련`,
+      duration_seconds:
+        duration,
+      exp,
       target,
       focus_quality: quality,
       obstacle,
@@ -1706,7 +1740,7 @@
 
     if ($("focusMessage")) {
       $("focusMessage").textContent =
-        "훈련 기록이 저장되었습니다. EXP +10";
+        `훈련 기록이 저장되었습니다. EXP +${exp}`;
     }
 
     setTimeout(() => {
@@ -1748,11 +1782,17 @@
     show("focusRunning", false);
     show("focusResult", false);
 
-    focusSeconds = 300;
+      focusSeconds = 300;
+    selectedFocusDuration = 300;
+    selectedFocusExp = 10;
 
     if ($("focusTimer")) {
       $("focusTimer").textContent =
         "05:00";
+    }
+
+    if ($("focusDuration")) {
+      $("focusDuration").value = "";
     }
 
     if ($("focusMessage")) {

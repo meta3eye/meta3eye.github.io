@@ -15,6 +15,37 @@
     rel="stylesheet"
     href="style.css"
   >
+
+  <style>
+    /* 5분 집중훈련 - 점 집중 */
+    .focus-dot-area {
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 24px 0;
+      border-radius: 16px;
+      background: #050505;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .focus-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,.35);
+    }
+
+    .focus-sound-setting {
+      margin-top: 16px;
+    }
+
+    .focus-sound-setting label {
+      display: block;
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
 
 
@@ -758,8 +789,8 @@
               특정 사물
             </option>
 
-            <option value="촛불 이미지">
-              촛불 이미지
+            <option value="점 집중">
+              점 집중
             </option>
 
             <option value="자유 집중">
@@ -767,6 +798,17 @@
             </option>
 
           </select>
+
+
+          <div class="focus-sound-setting">
+            <label for="focusEndSound">훈련 종료음</label>
+            <select id="focusEndSound">
+              <option value="bell" selected>맑은 종소리</option>
+              <option value="beep">짧은 알림음</option>
+              <option value="lowbell">낮은 종소리</option>
+              <option value="silent">무음</option>
+            </select>
+          </div>
 
 
           <div class="actions">
@@ -802,6 +844,15 @@
 
           <div id="focusTimer">
             05:00
+          </div>
+
+
+          <div
+            id="focusDotArea"
+            class="focus-dot-area hidden"
+            aria-label="점 집중 훈련 영역"
+          >
+            <div class="focus-dot" aria-hidden="true"></div>
           </div>
 
 

@@ -1806,6 +1806,48 @@ function openFocusTraining() {
   let senseSeconds = 300;
   let selectedSenseExp = 10;
 
+// 브라우저 탭을 벗어나면 진행 중인 훈련을 즉시 중지
+document.addEventListener("visibilitychange", () => {
+
+  if (document.visibilityState === "hidden") {
+
+    // 집중훈련 타이머 중지
+    if (focusTimerInterval) {
+      clearInterval(focusTimerInterval);
+      focusTimerInterval = null;
+    }
+
+    // 감각관찰 타이머 중지
+    if (senseTimerInterval) {
+      clearInterval(senseTimerInterval);
+      senseTimerInterval = null;
+    }
+
+    // 집중훈련 화면 초기화
+    show("focusSetup", true);
+    show("focusRunning", false);
+    show("focusResult", false);
+
+    // 감각관찰 화면 초기화
+    show("senseSetup", true);
+    show("senseRunning", false);
+    show("senseResult", false);
+
+    // 타이머 표시도 초기화
+    focusSeconds = 300;
+    senseSeconds = 300;
+
+    if ($("focusTimer")) {
+      $("focusTimer").textContent = "05:00";
+    }
+
+    if ($("senseTimer")) {
+      $("senseTimer").textContent = "05:00";
+    }
+  }
+});
+
+  
   function openSenseTraining() {
     if (senseTimerInterval) {
       clearInterval(

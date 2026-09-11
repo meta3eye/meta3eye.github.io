@@ -1854,6 +1854,51 @@
     render();
   }
 
+
+  /* =========================
+     V3 EVALUATION RENDER
+  ========================= */
+
+  async function renderV3Evaluation() {
+
+    const evaluation =
+      await v3LoadEvaluation();
+
+    if (!evaluation) {
+      return;
+    }
+
+    /*
+     * 현재 HTML에 V3 전용 UI가 아직 없다면
+     * 기존 화면을 건드리지 않는다.
+     *
+     * 개발자 콘솔에서 확인 가능:
+     *
+     * SPIRIT_V3.evaluate(...)
+     */
+
+    console.log(
+      "[SPIRIT SYSTEM V3]",
+      evaluation
+    );
+
+    /*
+     * 향후 UI 연결:
+     *
+     * evaluation.overall
+     * evaluation.level
+     * evaluation.recommendedRank
+     *
+     * evaluation.abilities.focus.score
+     * evaluation.abilities.focus.practice
+     * evaluation.abilities.focus.performance
+     * evaluation.abilities.focus.consistency
+     * evaluation.abilities.focus.verification
+     */
+
+    return evaluation;
+  }
+  
   /* =========================
      MAIN RENDER
   ========================= */

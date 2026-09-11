@@ -2674,7 +2674,6 @@ function startFocusTraining() {
     show("gamePanel", true);
   }
 );
-  );
 
   $("senseStartButton")?.addEventListener(
     "click",

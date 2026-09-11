@@ -1760,7 +1760,8 @@ function startFocusTraining() {
     }, 1000);
   }
 
-  function openFocusTraining() {
+
+function openFocusTraining() {
 
   // 다른 탭에서 돌아왔을 때 기존 집중 타이머 강제 종료
   if (focusTimerInterval) {
@@ -1795,6 +1796,8 @@ function startFocusTraining() {
       "";
   }
 }
+
+  
   /* =========================
      SENSE OBSERVATION
   ========================= */

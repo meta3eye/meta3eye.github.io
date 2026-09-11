@@ -1761,19 +1761,40 @@ function startFocusTraining() {
   }
 
   function openFocusTraining() {
-    show("gamePanel", false);
-    show(
-      "focusTrainingPanel",
-      true
-    );
 
-    show("focusSetup", true);
-    show("focusRunning", false);
-    show("focusResult", false);
+  // 다른 탭에서 돌아왔을 때 기존 집중 타이머 강제 종료
+  if (focusTimerInterval) {
+    clearInterval(focusTimerInterval);
+    focusTimerInterval = null;
+  }
 
-      focusSeconds = 300;
-    selectedFocusDuration = 300;
-    selectedFocusExp = 10;
+  show("gamePanel", false);
+
+  show(
+    "focusTrainingPanel",
+    true
+  );
+
+  // 항상 처음의 수행 화면으로
+  show("focusSetup", true);
+  show("focusRunning", false);
+  show("focusResult", false);
+
+  // 타이머 초기화
+  focusSeconds = 300;
+  selectedFocusDuration = 300;
+  selectedFocusExp = 10;
+
+  if ($("focusTimer")) {
+    $("focusTimer").textContent =
+      "05:00";
+  }
+
+  if ($("focusMessage")) {
+    $("focusMessage").textContent =
+      "";
+  }
+}
 
     if ($("focusTimer")) {
       $("focusTimer").textContent =

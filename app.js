@@ -1045,6 +1045,574 @@
   }
 
   /* =========================
+     V3 ABILITY EVALUATION ENGINE
+     Non-destructive layer
+  ========================= */
+
+  const ABILITY_KEYS = [
+    "perception",
+    "intuition",
+    "focus",
+    "interpretation",
+    "control"
+  ];
+
+  const ABILITY_LABELS = {
+    perception: "감지력",
+    intuition: "직관력",
+    focus: "집중력",
+    interpretation: "해석력",
+    control: "통제력"
+  };
+
+  /*
+   * V3 원칙
+   *
+   * Practice      = 얼마나 했는가
+   * Performance   = 얼마나 잘했는가
+   * Consistency   = 얼마나 안정적인가
+   * Verification  = 실제 검증이 존재하는가
+   *
+   * 기존 EXP와 별개의 평가 시스템이다.
+   */
+
+  const V3_CONFIG = {
+    maxAbilityScore: 100,
+
+    practiceWeight: 0.25,
+    performanceWeight: 0.45,
+    consistencyWeight: 0.20,
+    verificationWeight: 0.10,
+
+    inactivityDays: 30,
+    decayPerMonth: 2,
+
+    minimumTrialsForPerformance: 5,
+    minimumTrialsForConsistency: 10
+  };
+
+  const TRAINING_ABILITY_MAP = {
+
+    focus_5: {
+      focus: 1.0,
+      control: 0.25
+    },
+
+    sense_observation: {
+      perception: 1.0,
+      focus: 0.25
+    },
+
+    intuition_choice: {
+      intuition: 1.0
+    },
+
+    emotion_guess: {
+      interpretation: 0.65,
+      intuition: 0.35
+    },
+
+    life_death: {
+      perception: 0.50,
+      intuition: 0.50
+    }
+  };
+
+  /*
+   * 훈련량 점수
+   *
+   * 단순 반복으로 100점에 도달하지 않도록
+   * 로그 수에 대해 점진적 증가를 사용한다.
+   */
+  function v3PracticeScore(count) {
+
+    const n = Number(count) || 0;
+
+    if (n <= 0) return 0;
+
+    return Math.min(
+      100,
+      Math.round(
+        100 *
+        (1 - Math.exp(-n / 30))
+      )
+    );
+  }
+
+  /*
+   * 최근 훈련 여부
+   *
+   * 최근 활동이 있으면 100에 가까워지고
+   * 오래 쉬면 점차 감소한다.
+   */
+  function v3RecencyScore(lastDate) {
+
+    if (!lastDate) return 0;
+
+    const last =
+      new Date(lastDate).getTime();
+
+    if (!Number.isFinite(last)) {
+      return 0;
+    }
+
+    const days =
+      Math.max(
+        0,
+        (Date.now() - last) /
+        86400000
+      );
+
+    if (days <= 7) return 100;
+
+    if (days <= 14) return 90;
+
+    if (days <= 30) return 75;
+
+    if (days <= 60) return 55;
+
+    if (days <= 90) return 35;
+
+    return 15;
+  }
+
+  /*
+   * 기존 퀘스트 기록에서
+   * 능력별 훈련 횟수를 계산한다.
+   */
+  function v3BuildPracticeData(logs) {
+
+    const result = {};
+
+    ABILITY_KEYS.forEach(key => {
+
+      result[key] = {
+        count: 0,
+        lastDate: null,
+        recentCount: 0
+      };
+
+    });
+
+    const now =
+      Date.now();
+
+    for (const log of logs || []) {
+
+      const map =
+        TRAINING_ABILITY_MAP[
+          log.quest_code
+        ];
+
+      if (!map) continue;
+
+      const completedAt =
+        log.completed_at ||
+        log.created_at ||
+        log.timestamp;
+
+      const logTime =
+        completedAt
+          ? new Date(completedAt).getTime()
+          : NaN;
+
+      for (const ability of Object.keys(map)) {
+
+        const weight =
+          Number(map[ability]) || 0;
+
+        result[ability].count += weight;
+
+        if (
+          completedAt &&
+          (
+            !result[ability].lastDate ||
+            new Date(completedAt) >
+              new Date(result[ability].lastDate)
+          )
+        ) {
+          result[ability].lastDate =
+            completedAt;
+        }
+
+        if (
+          Number.isFinite(logTime) &&
+          now - logTime <=
+            30 * 86400000
+        ) {
+          result[ability].recentCount +=
+            weight;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /*
+   * 현재 프로필의 기존 능력치를
+   * 초기 Performance 기준점으로 사용한다.
+   *
+   * 기존 데이터를 버리지 않는다.
+   */
+  function v3ExistingPerformance(profile, ability) {
+
+    const value =
+      Number(profile?.[ability]);
+
+    if (!Number.isFinite(value)) {
+      return 1;
+    }
+
+    return Math.max(
+      1,
+      Math.min(100, value)
+    );
+  }
+
+  /*
+   * 일관성 점수.
+   *
+   * 아직 objective performance 데이터가 충분하지 않은 경우
+   * 최근 활동 안정성을 이용한 보수적 추정치를 사용한다.
+   *
+   * 향후 blind test / verification 데이터가 쌓이면
+   * 이 부분을 실제 분산 기반 계산으로 교체한다.
+   */
+  function v3ConsistencyScore(
+    count,
+    recentCount
+  ) {
+
+    if (count < 2) {
+      return 20;
+    }
+
+    const recentRatio =
+      Math.min(
+        1,
+        recentCount / Math.max(1, count)
+      );
+
+    const volume =
+      Math.min(
+        1,
+        count / 30
+      );
+
+    return Math.round(
+      30 +
+      recentRatio * 40 +
+      volume * 30
+    );
+  }
+
+  /*
+   * 검증 점수.
+   *
+   * 현재 일반 퀘스트는 객관적 정답이 없기 때문에
+   * 기본값을 낮게 잡는다.
+   *
+   * 향후 RV / blind / verification 결과가 연결되면
+   * 이 값을 실제 검증 데이터로 올린다.
+   */
+  function v3VerificationScore(
+    ability
+  ) {
+
+    /*
+     * 현재 단계에서는
+     * "훈련했다"와
+     * "검증됐다"를 구분하기 위해
+     * 일반 훈련에는 낮은 값을 준다.
+     */
+
+    return 10;
+  }
+
+  /*
+   * 최종 Ability Score
+   */
+  function v3CalculateAbilityScore({
+    practice,
+    performance,
+    consistency,
+    verification,
+    recency
+  }) {
+
+    /*
+     * 최근 활동은 Performance를 보정하는 방식으로 사용한다.
+     */
+    const adjustedPerformance =
+      performance *
+      (
+        0.70 +
+        0.30 *
+        (recency / 100)
+      );
+
+    const score =
+      practice *
+        V3_CONFIG.practiceWeight +
+
+      adjustedPerformance *
+        V3_CONFIG.performanceWeight +
+
+      consistency *
+        V3_CONFIG.consistencyWeight +
+
+      verification *
+        V3_CONFIG.verificationWeight;
+
+    return Math.max(
+      1,
+      Math.min(
+        100,
+        Math.round(score)
+      )
+    );
+  }
+
+  /*
+   * V3 전체 능력 평가
+   */
+  function v3EvaluateAbilities(
+    profile,
+    logs
+  ) {
+
+    const practiceData =
+      v3BuildPracticeData(logs);
+
+    const result = {};
+
+    for (const ability of ABILITY_KEYS) {
+
+      const data =
+        practiceData[ability];
+
+      const practice =
+        v3PracticeScore(
+          data.count
+        );
+
+      const performance =
+        v3ExistingPerformance(
+          profile,
+          ability
+        );
+
+      const consistency =
+        v3ConsistencyScore(
+          data.count,
+          data.recentCount
+        );
+
+      const verification =
+        v3VerificationScore(
+          ability
+        );
+
+      const recency =
+        v3RecencyScore(
+          data.lastDate
+        );
+
+      const score =
+        v3CalculateAbilityScore({
+          practice,
+          performance,
+          consistency,
+          verification,
+          recency
+        });
+
+      result[ability] = {
+        score,
+        practice,
+        performance,
+        consistency,
+        verification,
+        recency,
+        count: data.count,
+        lastDate: data.lastDate
+      };
+    }
+
+    return result;
+  }
+
+  /*
+   * 종합 Ability Score
+   */
+  function v3OverallAbilityScore(
+    abilities
+  ) {
+
+    const values =
+      Object.values(abilities || {})
+        .map(x => Number(x.score))
+        .filter(Number.isFinite);
+
+    if (!values.length) {
+      return 1;
+    }
+
+    return Math.round(
+      values.reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      ) / values.length
+    );
+  }
+
+  /*
+   * Ability Score → LV
+   *
+   * 단순히 score * 100으로 만들지 않는다.
+   *
+   * LV 1~100은 종합 능력의 위치를 의미한다.
+   */
+  function v3AbilityToLevel(score) {
+
+    const value =
+      Math.max(
+        1,
+        Math.min(
+          100,
+          Number(score) || 1
+        )
+      );
+
+    return Math.max(
+      1,
+      Math.min(
+        100,
+        Math.round(value)
+      )
+    );
+  }
+
+  /*
+   * 랭크 판정은 기존 rank를 자동 변경하지 않는다.
+   *
+   * "현재 능력 수준"과
+   * "공식 승급"을 분리한다.
+   */
+  function v3RecommendedRank(level) {
+
+    const lv =
+      Number(level) || 1;
+
+    if (lv >= 81) return "A";
+    if (lv >= 61) return "B";
+    if (lv >= 31) return "C";
+
+    return "D";
+  }
+
+  /*
+   * 현재 상태 분석
+   */
+  function v3EvaluateProfile(
+    profile,
+    logs
+  ) {
+
+    const abilities =
+      v3EvaluateAbilities(
+        profile,
+        logs
+      );
+
+    const overall =
+      v3OverallAbilityScore(
+        abilities
+      );
+
+    const level =
+      v3AbilityToLevel(
+        overall
+      );
+
+    const recommendedRank =
+      v3RecommendedRank(
+        level
+      );
+
+    return {
+      abilities,
+      overall,
+      level,
+      recommendedRank
+    };
+  }
+
+  /*
+   * Supabase에서 현재 사용자의
+   * 기존 quest_logs를 읽는다.
+   *
+   * 기존 테이블 구조를 수정하지 않는다.
+   */
+  async function v3LoadEvaluation() {
+
+    if (!state.user || !state.profile) {
+      return null;
+    }
+
+    const {
+      data,
+      error
+    } = await client
+      .from("quest_logs")
+      .select("*")
+      .eq(
+        "user_id",
+        state.user.id
+      )
+      .order(
+        "completed_at",
+        {
+          ascending: false
+        }
+      );
+
+    if (error) {
+
+      console.error(
+        "V3 evaluation load error:",
+        error
+      );
+
+      return null;
+    }
+
+    return v3EvaluateProfile(
+      state.profile,
+      data || []
+    );
+  }
+
+  /*
+   * 개발/검증용:
+   * window에서 확인할 수 있도록 노출한다.
+   *
+   * 운영 화면에는 표시하지 않는다.
+   */
+  window.SPIRIT_V3 = {
+    evaluate: v3EvaluateProfile,
+    calculateAbilityScore:
+      v3CalculateAbilityScore,
+    practiceScore:
+      v3PracticeScore,
+    recencyScore:
+      v3RecencyScore
+  };
+
+  
+  /* =========================
      QUEST SYSTEM
   ========================= */
 

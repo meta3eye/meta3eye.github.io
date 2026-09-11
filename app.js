@@ -1794,7 +1794,7 @@ function startFocusTraining() {
     $("focusMessage").textContent =
       "";
   }
-}
+
 
     if ($("focusTimer")) {
       $("focusTimer").textContent =

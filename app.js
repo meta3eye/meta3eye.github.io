@@ -1794,23 +1794,7 @@ function startFocusTraining() {
     $("focusMessage").textContent =
       "";
   }
-
-
-    if ($("focusTimer")) {
-      $("focusTimer").textContent =
-        "05:00";
-    }
-
-    if ($("focusDuration")) {
-      $("focusDuration").value = "";
-    }
-
-    if ($("focusMessage")) {
-      $("focusMessage").textContent =
-        "";
-    }
-  }
-
+}
   /* =========================
      SENSE OBSERVATION
   ========================= */

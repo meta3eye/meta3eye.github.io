@@ -1960,6 +1960,8 @@
     renderNextUnlock();
     renderAwakeningSystem();
     renderRankPromotion();
+
+    renderV3Evaluation();
   }
 
   /* =========================

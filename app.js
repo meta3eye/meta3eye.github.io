@@ -1827,67 +1827,73 @@ function startFocusTraining() {
     }
   }
 
-  function startSenseTraining() {
-    const target =
-      $("senseTarget")?.value;
+ function startSenseTraining() {
+  const target =
+    $("senseTarget")?.value;
 
-    const duration =
-      Number(
-        $("senseDuration")?.value
-      );
+  const duration =
+    Number(
+      $("senseDuration")?.value
+    );
 
-    if (!target) {
-      alert("관찰 대상을 선택하세요.");
-      return;
-    }
-
-    if (!duration) {
-      alert("훈련 시간을 선택하세요.");
-      return;
-    }
-
-    if (senseTimerInterval) {
-      return;
-    }
-
-    senseSeconds = duration;
-
-    if (duration === 180) {
-      selectedSenseExp = 5;
-    } else if (duration === 300) {
-      selectedSenseExp = 10;
-    } else if (duration === 600) {
-      selectedSenseExp = 20;
-    }
-
-    if ($("selectedSenseTarget")) {
-      $("selectedSenseTarget").textContent =
-        target;
-    }
-
-    show("senseSetup", false);
-    show("senseRunning", true);
-    show("senseResult", false);
-
-    updateSenseTimer();
-
-    senseTimerInterval =
-      setInterval(() => {
-        senseSeconds--;
-
-        updateSenseTimer();
-
-        if (senseSeconds <= 0) {
-          clearInterval(
-            senseTimerInterval
-          );
-
-          senseTimerInterval = null;
-
-          finishSenseTraining();
-        }
-      }, 1000);
+  if (!target) {
+    alert("관찰 대상을 선택하세요.");
+    return;
   }
+
+  if (!duration) {
+    alert("훈련 시간을 선택하세요.");
+    return;
+  }
+
+  // 집중훈련이 실행 중이면 시작하지 않음
+  if (focusTimerInterval) {
+    alert("현재 집중훈련이 진행 중입니다.");
+    return;
+  }
+
+  if (senseTimerInterval) {
+    return;
+  }
+
+  senseSeconds = duration;
+
+  if (duration === 180) {
+    selectedSenseExp = 5;
+  } else if (duration === 300) {
+    selectedSenseExp = 10;
+  } else if (duration === 600) {
+    selectedSenseExp = 20;
+  }
+
+  if ($("selectedSenseTarget")) {
+    $("selectedSenseTarget").textContent =
+      target;
+  }
+
+  show("senseSetup", false);
+  show("senseRunning", true);
+  show("senseResult", false);
+
+  updateSenseTimer();
+
+  senseTimerInterval =
+    setInterval(() => {
+      senseSeconds--;
+
+      updateSenseTimer();
+
+      if (senseSeconds <= 0) {
+        clearInterval(
+          senseTimerInterval
+        );
+
+        senseTimerInterval = null;
+
+        finishSenseTraining();
+      }
+    }, 1000);
+}
 
   function updateSenseTimer() {
     const minutes =

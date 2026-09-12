@@ -1065,6 +1065,33 @@
     control: "통제력"
   };
 
+const V3_TRAINING_MAP = {
+  focus_5: [
+    "focus",
+    "control"
+  ],
+
+  sense_observation: [
+    "perception",
+    "focus"
+  ],
+
+  intuition_choice: [
+    "intuition"
+  ],
+
+  emotion_guess: [
+    "interpretation",
+    "intuition"
+  ],
+
+  life_death: [
+    "perception",
+    "intuition"
+  ]
+};
+
+  
   /*
    * V3 원칙
    *
@@ -1783,7 +1810,8 @@ async function v3LoadEvaluation() {
   ========================= */
 
 async function renderV3Evaluation() {
-  const container = document.getElementById("v3Evaluation");
+  const container =
+    document.getElementById("v3Evaluation");
 
   if (!container) return;
 
@@ -1802,87 +1830,124 @@ async function renderV3Evaluation() {
     </div>
   `;
 
-  const evaluation = await v3EvaluateProfile();
+  try {
+    const evaluation =
+      await v3LoadEvaluation();
 
-  if (!evaluation) {
+    if (!evaluation) {
+      container.innerHTML = `
+        <div class="v3-empty">
+          V3 평가 데이터를 불러오지 못했습니다.
+        </div>
+      `;
+      return;
+    }
+
+    const abilityRows =
+      ABILITY_KEYS.map((ability) => {
+
+        const item =
+          evaluation.abilities?.[ability];
+
+        if (!item) return "";
+
+        const label =
+          ABILITY_LABELS[ability];
+
+        const practiceText =
+          item.trialCount > 0
+            ? `${item.trialCount}회`
+            : "없음";
+
+        const recencyText =
+          item.lastTrainingAt
+            ? formatV3Date(
+                item.lastTrainingAt
+              )
+            : "없음";
+
+        return `
+          <div class="v3-ability">
+            <h3>${label}</h3>
+
+            <div class="v3-row">
+              <span>훈련량</span>
+              <strong>${practiceText}</strong>
+            </div>
+
+            <div class="v3-row">
+              <span>최근 훈련</span>
+              <strong>${recencyText}</strong>
+            </div>
+
+            <div class="v3-row">
+              <span>수행능력</span>
+              <strong>
+                ${v3MeasuredText(item.performance)}
+              </strong>
+            </div>
+
+            <div class="v3-row">
+              <span>일관성</span>
+              <strong>
+                ${v3MeasuredText(item.consistency)}
+              </strong>
+            </div>
+
+            <div class="v3-row">
+              <span>검증</span>
+              <strong>
+                ${v3MeasuredText(item.verification)}
+              </strong>
+            </div>
+
+            <div class="v3-row">
+              <span>신뢰도 보정</span>
+              <strong>
+                ${v3MeasuredText(item.calibration)}
+              </strong>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+    container.innerHTML = `
+      <div class="v3-status">
+        <strong>현재 평가 상태</strong>
+        <span>훈련 데이터 기반</span>
+      </div>
+
+      <div class="v3-summary">
+        전체 훈련 기록
+        <strong>
+          ${evaluation.totalTrainingCount}회
+        </strong>
+      </div>
+
+      <div class="v3-notice">
+        현재는 훈련량과 최근성만 측정됩니다.
+        객관적 수행능력·일관성·검증 데이터가 충분히
+        축적되기 전까지 종합 능력점수는 산출하지 않습니다.
+      </div>
+
+      <div class="v3-abilities">
+        ${abilityRows}
+      </div>
+    `;
+
+  } catch (error) {
+
+    console.error(
+      "[SPIRIT SYSTEM V3] render error:",
+      error
+    );
+
     container.innerHTML = `
       <div class="v3-empty">
-        V3 평가 데이터를 불러오지 못했습니다.
+        V3 평가 중 오류가 발생했습니다.
       </div>
     `;
-    return;
   }
-
-  const abilityRows = ABILITY_KEYS.map((ability) => {
-    const item = evaluation.abilities[ability];
-    const label = ABILITY_LABELS[ability];
-
-    const practiceText = item.trialCount > 0
-      ? `${item.trialCount}회`
-      : "없음";
-
-    const recencyText = item.lastTrainingAt
-      ? formatV3Date(item.lastTrainingAt)
-      : "없음";
-
-    return `
-      <div class="v3-ability">
-        <h3>${label}</h3>
-
-        <div class="v3-row">
-          <span>훈련량</span>
-          <strong>${practiceText}</strong>
-        </div>
-
-        <div class="v3-row">
-          <span>최근 훈련</span>
-          <strong>${recencyText}</strong>
-        </div>
-
-        <div class="v3-row">
-          <span>수행능력</span>
-          <strong>${v3MeasuredText(item.performance)}</strong>
-        </div>
-
-        <div class="v3-row">
-          <span>일관성</span>
-          <strong>${v3MeasuredText(item.consistency)}</strong>
-        </div>
-
-        <div class="v3-row">
-          <span>검증</span>
-          <strong>${v3MeasuredText(item.verification)}</strong>
-        </div>
-
-        <div class="v3-row">
-          <span>신뢰도 보정</span>
-          <strong>${v3MeasuredText(item.calibration)}</strong>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  container.innerHTML = `
-    <div class="v3-status">
-      <strong>현재 평가 상태</strong>
-      <span>훈련 데이터 기반</span>
-    </div>
-
-    <div class="v3-summary">
-      전체 훈련 기록
-      <strong>${evaluation.totalTrainingCount}회</strong>
-    </div>
-
-    <div class="v3-notice">
-      현재는 훈련량과 최근성만 측정됩니다.
-      객관적 수행능력·일관성·검증 데이터가 충분히 축적되기 전까지
-      종합 능력점수는 산출하지 않습니다.
-    </div>
-
-    <div class="v3-abilities">
-      ${abilityRows}
-    </div>
-  `;
 }
 
   function v3MeasuredText(value) {

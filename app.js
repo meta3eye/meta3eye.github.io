@@ -1497,45 +1497,27 @@ async function v3EvaluateProfile() {
    *
    * 기존 테이블 구조를 수정하지 않는다.
    */
-  async function v3LoadEvaluation() {
+async function v3LoadEvaluation() {
 
-    if (!state.user || !state.profile) {
-      return null;
-    }
-
-    const {
-      data,
-      error
-    } = await client
-      .from("quest_logs")
-      .select("*")
-      .eq(
-        "user_id",
-        state.user.id
-      )
-      .order(
-        "completed_at",
-        {
-          ascending: false
-        }
-      );
-
-    if (error) {
-
-      console.error(
-        "V3 evaluation load error:",
-        error
-      );
-
-      return null;
-    }
-
-    return v3EvaluateProfile(
-      state.profile,
-      data || []
-    );
+  if (!state.user?.id) {
+    return null;
   }
 
+  try {
+    return await v3EvaluateProfile();
+
+  } catch (error) {
+
+    console.error(
+      "[SPIRIT SYSTEM V3] evaluation error:",
+      error
+    );
+
+    return null;
+  }
+}
+
+  
   /*
    * 개발/검증용:
    * window에서 확인할 수 있도록 노출한다.

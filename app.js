@@ -1249,63 +1249,6 @@
     return result;
   }
 
-  /*
-   * 현재 프로필의 기존 능력치를
-   * 초기 Performance 기준점으로 사용한다.
-   *
-   * 기존 데이터를 버리지 않는다.
-   */
-  function v3ExistingPerformance(profile, ability) {
-
-    const value =
-      Number(profile?.[ability]);
-
-    if (!Number.isFinite(value)) {
-      return 1;
-    }
-
-    return Math.max(
-      1,
-      Math.min(100, value)
-    );
-  }
-
-  /*
-   * 일관성 점수.
-   *
-   * 아직 objective performance 데이터가 충분하지 않은 경우
-   * 최근 활동 안정성을 이용한 보수적 추정치를 사용한다.
-   *
-   * 향후 blind test / verification 데이터가 쌓이면
-   * 이 부분을 실제 분산 기반 계산으로 교체한다.
-   */
-  function v3ConsistencyScore(
-    count,
-    recentCount
-  ) {
-
-    if (count < 2) {
-      return 20;
-    }
-
-    const recentRatio =
-      Math.min(
-        1,
-        recentCount / Math.max(1, count)
-      );
-
-    const volume =
-      Math.min(
-        1,
-        count / 30
-      );
-
-    return Math.round(
-      30 +
-      recentRatio * 40 +
-      volume * 30
-    );
-  }
 
   /*
    * 검증 점수.

@@ -1307,38 +1307,75 @@ function v3BuildPracticeData(logs) {
     return 10;
   }
 
- function v3CalculateAbilityScore(ability, logs) {
+function v3CalculateAbilityScore(ability, logs) {
   const abilityLogs = (logs || []).filter((log) => {
     const code = log?.quest_code;
-    return V3_TRAINING_MAP[code]?.includes(ability);
+
+    return V3_TRAINING_MAP[code]?.[ability] > 0;
   });
 
-  const practice = v3PracticeScore(abilityLogs.length);
+  const practice = v3PracticeScore(
+    abilityLogs.length
+  );
 
- const recency = v3RecencyScore(abilityLogs);
+  const recency = v3RecencyScore(
+    abilityLogs
+  );
+
+  const selfReportLogs = abilityLogs.filter((log) => {
+    return (
+      log?.result &&
+      typeof log.result === "object"
+    );
+  });
+
+  const measuredSelfReport =
+    selfReportLogs.length > 0;
 
   return {
     ability,
+
     practice,
-   recency: recency.score,
-lastTrainingAt: recency.lastTrainingAt,
-daysSinceLastTraining: recency.daysSinceLastTraining,
+
+    recency: recency.score,
+
+    lastTrainingAt:
+      recency.lastTrainingAt,
+
+    daysSinceLastTraining:
+      recency.daysSinceLastTraining,
+
     performance: null,
+
     consistency: null,
+
     verification: null,
+
     calibration: null,
+
     total: null,
+
     measured: {
       practice: abilityLogs.length > 0,
+
       performance: false,
+
+      selfReport: measuredSelfReport,
+
       consistency: false,
+
       verification: false,
+
       calibration: false
     },
-    trialCount: abilityLogs.length
+
+    trialCount:
+      abilityLogs.length,
+
+    selfReportCount:
+      selfReportLogs.length
   };
 }
-
   /*
    * V3 전체 능력 평가
    */
@@ -1866,12 +1903,31 @@ async function renderV3Evaluation() {
               <strong>${recencyText}</strong>
             </div>
 
-            <div class="v3-row">
-              <span>수행능력</span>
-              <strong>
-                ${v3MeasuredText(item.performance)}
-              </strong>
-            </div>
+          <div class="v3-row">
+  <span>수행능력</span>
+  <strong>
+    ${
+      item.performance !== null
+        ? v3MeasuredText(item.performance)
+        : (
+            item.selfReportCount > 0
+              ? "자기보고 데이터 확보"
+              : "미측정"
+          )
+    }
+  </strong>
+</div>
+
+<div class="v3-row">
+  <span>수행기록</span>
+  <strong>
+    ${
+      item.selfReportCount > 0
+        ? `${item.selfReportCount}회`
+        : "없음"
+    }
+  </strong>
+</div>
 
             <div class="v3-row">
               <span>일관성</span>

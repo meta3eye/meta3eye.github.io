@@ -1118,32 +1118,31 @@ const V3_TRAINING_MAP = {
     minimumTrialsForConsistency: 10
   };
 
-  const TRAINING_ABILITY_MAP = {
+ const V3_TRAINING_MAP = {
+  focus_5: [
+    "focus",
+    "control"
+  ],
 
-    focus_5: {
-      focus: 1.0,
-      control: 0.25
-    },
+  sense_observation: [
+    "perception",
+    "focus"
+  ],
 
-    sense_observation: {
-      perception: 1.0,
-      focus: 0.25
-    },
+  intuition_choice: [
+    "intuition"
+  ],
 
-    intuition_choice: {
-      intuition: 1.0
-    },
+  emotion_guess: [
+    "interpretation",
+    "intuition"
+  ],
 
-    emotion_guess: {
-      interpretation: 0.65,
-      intuition: 0.35
-    },
-
-    life_death: {
-      perception: 0.50,
-      intuition: 0.50
-    }
-  };
+  life_death: [
+    "perception",
+    "intuition"
+  ]
+};
 
   /*
    * 훈련량 점수
@@ -1228,75 +1227,62 @@ function v3RecencyScore(logs) {
    * 기존 퀘스트 기록에서
    * 능력별 훈련 횟수를 계산한다.
    */
-  function v3BuildPracticeData(logs) {
+function v3BuildPracticeData(logs) {
+  const result = {};
 
-    const result = {};
+  ABILITY_KEYS.forEach((ability) => {
+    result[ability] = {
+      count: 0,
+      lastDate: null,
+      recentCount: 0
+    };
+  });
 
-    ABILITY_KEYS.forEach(key => {
+  const now = Date.now();
 
-      result[key] = {
-        count: 0,
-        lastDate: null,
-        recentCount: 0
-      };
+  for (const log of logs || []) {
+    const code = log?.quest_code;
+    const abilities =
+      V3_TRAINING_MAP[code] || [];
 
-    });
+    const completedAt =
+      log?.completed_at ||
+      log?.created_at ||
+      log?.timestamp;
 
-    const now =
-      Date.now();
+    const logTime =
+      completedAt
+        ? new Date(completedAt).getTime()
+        : NaN;
 
-    for (const log of logs || []) {
+    for (const ability of abilities) {
+      if (!result[ability]) continue;
 
-      const map =
-        TRAINING_ABILITY_MAP[
-          log.quest_code
-        ];
+      result[ability].count += 1;
 
-      if (!map) continue;
+      if (
+        completedAt &&
+        (
+          !result[ability].lastDate ||
+          new Date(completedAt) >
+            new Date(result[ability].lastDate)
+        )
+      ) {
+        result[ability].lastDate =
+          completedAt;
+      }
 
-      const completedAt =
-        log.completed_at ||
-        log.created_at ||
-        log.timestamp;
-
-      const logTime =
-        completedAt
-          ? new Date(completedAt).getTime()
-          : NaN;
-
-      for (const ability of Object.keys(map)) {
-
-        const weight =
-          Number(map[ability]) || 0;
-
-        result[ability].count += weight;
-
-        if (
-          completedAt &&
-          (
-            !result[ability].lastDate ||
-            new Date(completedAt) >
-              new Date(result[ability].lastDate)
-          )
-        ) {
-          result[ability].lastDate =
-            completedAt;
-        }
-
-        if (
-          Number.isFinite(logTime) &&
-          now - logTime <=
-            30 * 86400000
-        ) {
-          result[ability].recentCount +=
-            weight;
-        }
+      if (
+        Number.isFinite(logTime) &&
+        now - logTime <= 30 * 86400000
+      ) {
+        result[ability].recentCount += 1;
       }
     }
-
-    return result;
   }
 
+  return result;
+}
 
   /*
    * 검증 점수.

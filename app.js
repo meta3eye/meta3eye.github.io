@@ -1065,7 +1065,7 @@
     control: "통제력"
   };
 
-const V3_TRAINING_MAP = {
+const  = {
   focus_5: [
     "focus",
     "control"
@@ -1217,7 +1217,7 @@ function v3BuildPracticeData(logs) {
   for (const log of logs || []) {
     const code = log?.quest_code;
     const abilities =
-      V3_TRAINING_MAP[code] || [];
+      [code] || [];
 
     const completedAt =
       log?.completed_at ||
@@ -1285,7 +1285,7 @@ function v3CalculateAbilityScore(ability, logs) {
   const abilityLogs = (logs || []).filter((log) => {
     const code = log?.quest_code;
 
-    return V3_TRAINING_MAP[code]?.[ability] > 0;
+    return [code]?.[ability] > 0;
   });
 
   const practice = v3PracticeScore(
@@ -1378,7 +1378,7 @@ function v3EvaluateAbilities(
         (logs || []).filter((log) => {
           const code = log?.quest_code;
 
-          return V3_TRAINING_MAP[code]?.includes(
+          return [code]?.includes(
             ability
           );
         })

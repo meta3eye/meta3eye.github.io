@@ -1064,8 +1064,7 @@
     interpretation: "해석력",
     control: "통제력"
   };
-
-const  = {
+const V3_TRAINING_MAP = {
   focus_5: [
     "focus",
     "control"
@@ -1090,7 +1089,6 @@ const  = {
     "intuition"
   ]
 };
-
   
   /*
    * V3 원칙
@@ -1216,9 +1214,9 @@ function v3BuildPracticeData(logs) {
 
   for (const log of logs || []) {
     const code = log?.quest_code;
-    const abilities =
-      [code] || [];
-
+  const abilities =
+  V3_TRAINING_MAP[code] || [];
+    
     const completedAt =
       log?.completed_at ||
       log?.created_at ||
@@ -1281,11 +1279,14 @@ function v3BuildPracticeData(logs) {
     return 10;
   }
 
+
 function v3CalculateAbilityScore(ability, logs) {
   const abilityLogs = (logs || []).filter((log) => {
     const code = log?.quest_code;
 
-    return [code]?.[ability] > 0;
+    return (
+      V3_TRAINING_MAP[code]?.includes(ability)
+    );
   });
 
   const practice = v3PracticeScore(
@@ -1296,22 +1297,31 @@ function v3CalculateAbilityScore(ability, logs) {
     abilityLogs
   );
 
-  const selfReportLogs = abilityLogs.filter((log) => {
-    return (
-      log?.result &&
-      typeof log.result === "object"
-    );
-  });
+  const selfReportLogs =
+    abilityLogs.filter((log) => {
+      let result = log?.result;
 
-  const measuredSelfReport =
-    selfReportLogs.length > 0;
+      if (typeof result === "string") {
+        try {
+          result = JSON.parse(result);
+        } catch (error) {
+          result = null;
+        }
+      }
+
+      return (
+        result &&
+        typeof result === "object"
+      );
+    });
 
   return {
     ability,
 
     practice,
 
-    recency: recency.score,
+    recency:
+      recency.score,
 
     lastTrainingAt:
       recency.lastTrainingAt,
@@ -1330,11 +1340,13 @@ function v3CalculateAbilityScore(ability, logs) {
     total: null,
 
     measured: {
-      practice: abilityLogs.length > 0,
+      practice:
+        abilityLogs.length > 0,
 
       performance: false,
 
-      selfReport: measuredSelfReport,
+      selfReport:
+        selfReportLogs.length > 0,
 
       consistency: false,
 
@@ -1350,6 +1362,8 @@ function v3CalculateAbilityScore(ability, logs) {
       selfReportLogs.length
   };
 }
+
+  
   /*
    * V3 전체 능력 평가
    */
@@ -1378,8 +1392,9 @@ function v3EvaluateAbilities(
         (logs || []).filter((log) => {
           const code = log?.quest_code;
 
-          return [code]?.includes(
-            ability
+      return V3_TRAINING_MAP[code]?.includes(
+  ability
+);
           );
         })
       );

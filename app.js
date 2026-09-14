@@ -1118,32 +1118,6 @@ const V3_TRAINING_MAP = {
     minimumTrialsForConsistency: 10
   };
 
- const V3_TRAINING_MAP = {
-  focus_5: [
-    "focus",
-    "control"
-  ],
-
-  sense_observation: [
-    "perception",
-    "focus"
-  ],
-
-  intuition_choice: [
-    "intuition"
-  ],
-
-  emotion_guess: [
-    "interpretation",
-    "intuition"
-  ],
-
-  life_death: [
-    "perception",
-    "intuition"
-  ]
-};
-
   /*
    * 훈련량 점수
    *

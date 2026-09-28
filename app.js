@@ -2147,19 +2147,14 @@ async function renderV3Evaluation() {
 }
 
   
-
-
-  /* =========================================
+/* =========================
    V3 FOCUS PERFORMANCE TEST
-========================================= */
+   중앙 지속주의력 측정
+========================= */
 
 let v3PerformanceState = null;
 let v3PerformanceTimer = null;
 
-
-/*
- * V3 집중력 수행 테스트 시작
- */
 function startV3FocusPerformanceTest() {
 
   const area =
@@ -2176,15 +2171,7 @@ function startV3FocusPerformanceTest() {
     return;
   }
 
-  if (!state.user?.id) {
-    area.classList.remove("hidden");
-
-    area.innerHTML = `
-      <div class="v3-empty">
-        로그인 후 테스트를 시작할 수 있습니다.
-      </div>
-    `;
-
+  if (v3PerformanceState) {
     return;
   }
 
@@ -2193,17 +2180,25 @@ function startV3FocusPerformanceTest() {
   area.classList.remove("hidden");
 
   area.innerHTML = `
-    <div class="v3-performance-status">
+    <div class="v3-performance-center">
 
-      <p>
-        집중력 수행 테스트를 준비합니다.
-      </p>
+      <div class="v3-performance-status">
+        준비하십시오.
+      </div>
 
-      <strong
+      <div
+        class="v3-performance-countdown"
         id="v3PerformanceCountdown"
       >
         3
-      </strong>
+      </div>
+
+      <p class="v3-performance-instruction">
+        중앙의 자극을 주의 깊게 관찰하십시오.
+        <br>
+        <strong>●</strong>가 나타날 때만
+        중앙을 클릭하십시오.
+      </p>
 
     </div>
   `;
@@ -2221,7 +2216,6 @@ function startV3FocusPerformanceTest() {
         );
 
       if (element) {
-
         element.textContent =
           countdown > 0
             ? countdown
@@ -2241,9 +2235,6 @@ function startV3FocusPerformanceTest() {
 }
 
 
-/*
- * 실제 수행 테스트
- */
 function runV3FocusPerformanceTest() {
 
   const area =
@@ -2256,11 +2247,14 @@ function runV3FocusPerformanceTest() {
   }
 
   /*
-   * 총 30회 자극
-   * 목표 자극 8회
+   * 총 60회
+   * 목표 자극 15회
+   * 비목표 자극 45회
    */
-  const totalTrials = 30;
-  const targetTrials = 8;
+
+  const totalTrials = 60;
+
+  const targetTrials = 15;
 
   const sequence = [];
 
@@ -2317,27 +2311,27 @@ function runV3FocusPerformanceTest() {
 
     reactionTimes: [],
 
-    targetCount:
-      targetTrials,
+    earlyReactionTimes: [],
+
+    lateReactionTimes: [],
+
+    targetCount: targetTrials,
 
     nonTargetCount:
       totalTrials -
       targetTrials,
 
-    stimulusStartedAt:
-      null,
+    stimulusStartedAt: null,
 
-    responded:
-      false
+    stimulusVisible: false,
+
+    responded: false
   };
 
   showNextV3PerformanceStimulus();
 }
 
 
-/*
- * 다음 자극 표시
- */
 function showNextV3PerformanceStimulus() {
 
   const area =
@@ -2353,9 +2347,7 @@ function showNextV3PerformanceStimulus() {
   }
 
   /*
-   * 이전 자극이 목표였는데
-   * 반응하지 않은 경우
-   * miss 처리
+   * 이전 자극 처리
    */
   if (
     v3PerformanceState.index > 0
@@ -2379,7 +2371,7 @@ function showNextV3PerformanceStimulus() {
   }
 
   /*
-   * 모든 자극 종료
+   * 모든 테스트 종료
    */
   if (
     v3PerformanceState.index >=
@@ -2396,72 +2388,128 @@ function showNextV3PerformanceStimulus() {
       v3PerformanceState.index
     ];
 
-  v3PerformanceState.responded =
-    false;
-
+  /*
+   * 중앙 테스트 화면
+   */
   area.innerHTML = `
 
-    <div class="v3-performance-progress">
+    <div class="v3-performance-center">
 
-      ${v3PerformanceState.index + 1}
-      /
-      ${v3PerformanceState.sequence.length}
+      <div class="v3-performance-progress">
+        ${v3PerformanceState.index + 1}
+        /
+        ${v3PerformanceState.sequence.length}
+      </div>
+
+      <div
+        class="v3-performance-stimulus-area"
+        id="v3PerformanceStimulusArea"
+      >
+
+        <div
+          class="v3-performance-stimulus"
+          id="v3PerformanceStimulus"
+        >
+          ${
+            isTarget
+              ? "●"
+              : "○"
+          }
+        </div>
+
+      </div>
 
     </div>
-
-    <div
-      class="v3-performance-stimulus"
-      id="v3PerformanceStimulus"
-    >
-      ${isTarget ? "●" : "○"}
-    </div>
-
-    <button
-      type="button"
-      id="v3PerformanceResponse"
-    >
-      목표 자극
-    </button>
 
   `;
 
-  const responseButton =
+  const stimulusArea =
     document.getElementById(
-      "v3PerformanceResponse"
+      "v3PerformanceStimulusArea"
     );
 
-  if (responseButton) {
+  if (stimulusArea) {
 
-    responseButton.onclick =
+    stimulusArea.onclick =
       recordV3PerformanceResponse;
   }
 
+  /*
+   * 자극이 나타난 정확한 시각
+   */
   v3PerformanceState
     .stimulusStartedAt =
       performance.now();
 
+  v3PerformanceState
+    .stimulusVisible =
+      true;
+
+  v3PerformanceState.responded =
+    false;
+
   /*
-   * 1초 후 다음 자극
+   * 자극은 약 200ms만 표시
    */
   v3PerformanceTimer =
     setTimeout(() => {
 
-      v3PerformanceState.index++;
+      if (
+        !v3PerformanceState
+      ) {
+        return;
+      }
 
-      showNextV3PerformanceStimulus();
+      v3PerformanceState
+        .stimulusVisible =
+          false;
 
-    }, 1000);
+      const stimulus =
+        document.getElementById(
+          "v3PerformanceStimulus"
+        );
+
+      if (stimulus) {
+        stimulus.textContent = "";
+      }
+
+      /*
+       * 다음 자극까지
+       * 불규칙한 간격
+       */
+      const delay =
+        600 +
+        Math.floor(
+          Math.random() * 801
+        );
+
+      v3PerformanceTimer =
+        setTimeout(() => {
+
+          if (
+            !v3PerformanceState
+          ) {
+            return;
+          }
+
+          v3PerformanceState.index++;
+
+          showNextV3PerformanceStimulus();
+
+        }, delay);
+
+    }, 200);
 }
 
 
-/*
- * 사용자가 버튼을 눌렀을 때
- */
 function recordV3PerformanceResponse() {
 
   if (
     !v3PerformanceState ||
-    v3PerformanceState.responded
+    !v3PerformanceState
+      .stimulusVisible ||
+    v3PerformanceState
+      .responded
   ) {
     return;
   }
@@ -2487,6 +2535,26 @@ function recordV3PerformanceResponse() {
       .reactionTimes
       .push(reactionTime);
 
+    /*
+     * 전반부 / 후반부
+     */
+    if (
+      v3PerformanceState.index <
+      v3PerformanceState
+        .sequence.length / 2
+    ) {
+
+      v3PerformanceState
+        .earlyReactionTimes
+        .push(reactionTime);
+
+    } else {
+
+      v3PerformanceState
+        .lateReactionTimes
+        .push(reactionTime);
+    }
+
   } else {
 
     v3PerformanceState
@@ -2495,9 +2563,6 @@ function recordV3PerformanceResponse() {
 }
 
 
-/*
- * 테스트 종료 및 저장
- */
 async function finishV3FocusPerformanceTest() {
 
   if (v3PerformanceTimer) {
@@ -2509,49 +2574,104 @@ async function finishV3FocusPerformanceTest() {
     v3PerformanceTimer = null;
   }
 
-  const testState =
+  const stateData =
     v3PerformanceState;
 
   v3PerformanceState = null;
 
-  if (!testState) {
+  if (!stateData) {
     return;
   }
 
-  const targetCount =
-    testState.targetCount;
-
-  const nonTargetCount =
-    testState.nonTargetCount;
-
+  /*
+   * 적중률
+   */
   const hitRate =
-    targetCount > 0
-      ? testState.hits /
-        targetCount
+    stateData.targetCount > 0
+      ? stateData.hits /
+        stateData.targetCount
       : 0;
 
+  /*
+   * 오반응률
+   */
   const falseAlarmRate =
-    nonTargetCount > 0
-      ? testState.falseAlarms /
-        nonTargetCount
+    stateData.nonTargetCount > 0
+      ? stateData.falseAlarms /
+        stateData.nonTargetCount
       : 0;
 
+  /*
+   * 평균 반응시간
+   */
   const averageReaction =
-    testState.reactionTimes.length > 0
-      ? testState.reactionTimes.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        testState.reactionTimes.length
+    stateData.reactionTimes.length > 0
+      ? stateData.reactionTimes
+          .reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+        stateData.reactionTimes.length
       : null;
 
   /*
-   * 내부 수행지표
+   * 전반부 평균
+   */
+  const earlyAverage =
+    stateData
+      .earlyReactionTimes.length > 0
+      ? stateData
+          .earlyReactionTimes
+          .reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+        stateData
+          .earlyReactionTimes
+          .length
+      : null;
+
+  /*
+   * 후반부 평균
+   */
+  const lateAverage =
+    stateData
+      .lateReactionTimes.length > 0
+      ? stateData
+          .lateReactionTimes
+          .reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+        stateData
+          .lateReactionTimes
+          .length
+      : null;
+
+  /*
+   * 후반부 성능 변화
    *
-   * 정답률 70%
-   * 오반응 20%
-   * 반응속도 10%
+   * 양수:
+   * 후반부 반응이 느려짐
+   *
+   * 음수:
+   * 후반부가 더 빨라짐
+   */
+  const latePerformanceChange =
+    earlyAverage !== null &&
+    lateAverage !== null
+      ? lateAverage -
+        earlyAverage
+      : null;
+
+  /*
+   * 반응속도 점수
+   *
+   * 250ms 이하 = 높은 반응속도
+   * 1000ms 이상 = 낮은 반응속도
    */
   let reactionScore = 0;
 
@@ -2565,42 +2685,60 @@ async function finishV3FocusPerformanceTest() {
         Math.min(
           1,
           1 -
-          (
-            averageReaction - 200
-          ) / 1000
+            (
+              averageReaction - 250
+            ) /
+              750
         )
       );
   }
 
-  const internalScore =
+  /*
+   * 기본 수행점수
+   *
+   * 적중 60%
+   * 오반응 억제 25%
+   * 반응속도 15%
+   */
+  const score =
     Math.round(
-      hitRate * 70 +
-      (1 - falseAlarmRate) * 20 +
-      reactionScore * 10
+      (
+        hitRate * 60
+      ) +
+      (
+        (1 - falseAlarmRate) *
+        25
+      ) +
+      (
+        reactionScore * 15
+      )
     );
 
   const resultData = {
 
-    training_type:
-      "V3 집중력 수행 테스트",
+    test_type:
+      "V3 중앙 지속주의력 수행 테스트",
+
+    test_version:
+      "V3.1",
 
     total_trials:
-      testState.sequence.length,
+      stateData.sequence.length,
 
     target_trials:
-      targetCount,
+      stateData.targetCount,
 
     non_target_trials:
-      nonTargetCount,
+      stateData.nonTargetCount,
 
     hits:
-      testState.hits,
+      stateData.hits,
 
     misses:
-      testState.misses,
+      stateData.misses,
 
     false_alarms:
-      testState.falseAlarms,
+      stateData.falseAlarms,
 
     hit_rate:
       Number(
@@ -2623,51 +2761,70 @@ async function finishV3FocusPerformanceTest() {
             averageReaction
           ),
 
+    early_average_reaction_ms:
+      earlyAverage === null
+        ? null
+        : Math.round(
+            earlyAverage
+          ),
+
+    late_average_reaction_ms:
+      lateAverage === null
+        ? null
+        : Math.round(
+            lateAverage
+          ),
+
+    late_performance_change_ms:
+      latePerformanceChange === null
+        ? null
+        : Math.round(
+            latePerformanceChange
+          ),
+
     internal_score:
-      internalScore,
+      score,
 
     completed_at:
       new Date().toISOString()
   };
 
+  /*
+   * 결과 화면
+   */
   const area =
     document.getElementById(
       "v3FocusPerformanceArea"
     );
 
-  /*
-   * 우선 결과 표시
-   */
   if (area) {
 
     area.innerHTML = `
 
       <div class="v3-performance-result">
 
-        <h4>
-          테스트 완료
-        </h4>
+        <h4>측정 완료</h4>
 
         <p>
           정답 반응:
           <strong>
-            ${testState.hits}
+            ${stateData.hits}
           </strong>
           /
-          ${targetCount}
+          ${stateData.targetCount}
         </p>
 
         <p>
-          놓친 목표 자극:
+          놓친 목표:
           <strong>
-            ${testState.misses}
+            ${stateData.misses}
           </strong>
         </p>
 
         <p>
           오반응:
           <strong>
-            ${testState.falseAlarms}
+            ${stateData.falseAlarms}
           </strong>
         </p>
 
@@ -2685,19 +2842,48 @@ async function finishV3FocusPerformanceTest() {
         </p>
 
         <p>
-          이번 수행지표:
+          전반부 평균:
           <strong>
-            ${internalScore}점
+            ${
+              earlyAverage === null
+                ? "측정 실패"
+                : `${Math.round(
+                    earlyAverage
+                  )}ms`
+            }
           </strong>
         </p>
 
-        <p class="v3-performance-description">
-          동일 테스트가 최소 5회 축적되기 전에는
-          정식 수행능력 점수로 확정하지 않습니다.
+        <p>
+          후반부 평균:
+          <strong>
+            ${
+              lateAverage === null
+                ? "측정 실패"
+                : `${Math.round(
+                    lateAverage
+                  )}ms`
+            }
+          </strong>
         </p>
 
-        <p id="v3PerformanceSaveMessage">
-          결과를 저장하고 있습니다...
+        <p>
+          내부 수행지표:
+          <strong>
+            ${score}
+          </strong>
+        </p>
+
+        <p class="muted">
+          동일 테스트를 최소 5회 반복한 뒤
+          수행능력 분석에 반영합니다.
+        </p>
+
+        <p
+          id="v3PerformanceSaveStatus"
+          class="muted"
+        >
+          측정 결과를 저장하고 있습니다...
         </p>
 
       </div>
@@ -2706,40 +2892,28 @@ async function finishV3FocusPerformanceTest() {
   }
 
   /*
-   * V3 전용 기록 저장
-   *
-   * 기존 EXP / 레벨 / 랭크에는
-   * 영향을 주지 않는다.
+   * 현재는 기존 quest_logs 직접 INSERT가
+   * RLS에서 차단되었으므로
+   * 저장 전용 RPC를 호출한다.
    */
   const {
+    data,
     error
-  } = await client
-    .from("quest_logs")
-    .insert({
+  } = await client.rpc(
+    "save_v3_focus_performance",
+    {
+      p_score:
+        score,
 
-      user_id:
-        state.user.id,
+      p_result:
+        resultData
+    }
+  );
 
-      quest_code:
-        "v3_focus_performance",
-
-      grade:
-        "V3",
-
-      exp_gained:
-        0,
-
-      score:
-        internalScore,
-
-      result:
-        JSON.stringify(
-          resultData
-        ),
-
-      completed_at:
-        new Date().toISOString()
-    });
+  const saveStatus =
+    document.getElementById(
+      "v3PerformanceSaveStatus"
+    );
 
   if (error) {
 
@@ -2748,33 +2922,20 @@ async function finishV3FocusPerformanceTest() {
       error
     );
 
-    const saveMessage =
-      document.getElementById(
-        "v3PerformanceSaveMessage"
-      );
+    if (saveStatus) {
 
-    if (saveMessage) {
-
-      saveMessage.textContent =
-        "측정은 완료되었지만 서버 저장에 실패했습니다: " +
+      saveStatus.textContent =
+        "측정은 완료되었지만 서버 저장에 실패했습니다. " +
         error.message;
     }
 
     return;
   }
 
-  /*
-   * 저장 성공
-   */
-  const saveMessage =
-    document.getElementById(
-      "v3PerformanceSaveMessage"
-    );
+  if (saveStatus) {
 
-  if (saveMessage) {
-
-    saveMessage.textContent =
-      "수행 결과가 저장되었습니다.";
+    saveStatus.textContent =
+      "측정 기록이 저장되었습니다.";
   }
 
   /*
@@ -2782,7 +2943,7 @@ async function finishV3FocusPerformanceTest() {
    */
   await renderV3Evaluation();
 }
-  
+
 
   function v3MeasuredText(value) {
   if (value === null || value === undefined) {

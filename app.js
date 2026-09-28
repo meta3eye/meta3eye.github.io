@@ -1070,6 +1070,11 @@ const V3_TRAINING_MAP = {
     "control"
   ],
 
+ v3_focus_performance: [
+    "focus"
+  ],
+
+  
   sense_observation: [
     "perception",
     "focus"
@@ -1281,29 +1286,52 @@ function v3BuildPracticeData(logs) {
 
 
 function v3CalculateAbilityScore(ability, logs) {
-  const abilityLogs = (logs || []).filter((log) => {
-    const code = log?.quest_code;
 
-    return (
-      V3_TRAINING_MAP[code]?.includes(ability)
+  const allAbilityLogs =
+    (logs || []).filter((log) => {
+
+      const code =
+        log?.quest_code;
+
+      return V3_TRAINING_MAP[code]?.includes(
+        ability
+      );
+    });
+
+  // 일반 훈련 기록
+  const practiceLogs =
+    allAbilityLogs.filter((log) => {
+      return log?.quest_code !==
+        "v3_focus_performance";
+    });
+
+  // V3 수행능력 테스트 기록
+  const performanceLogs =
+    allAbilityLogs.filter((log) => {
+      return log?.quest_code ===
+        "v3_focus_performance";
+    });
+
+  const practice =
+    v3PracticeScore(
+      practiceLogs.length
     );
-  });
 
-  const practice = v3PracticeScore(
-    abilityLogs.length
-  );
-
-  const recency = v3RecencyScore(
-    abilityLogs
-  );
+  const recency =
+    v3RecencyScore(
+      practiceLogs
+    );
 
   const selfReportLogs =
-    abilityLogs.filter((log) => {
-      let result = log?.result;
+    practiceLogs.filter((log) => {
+
+      let result =
+        log?.result;
 
       if (typeof result === "string") {
         try {
-          result = JSON.parse(result);
+          result =
+            JSON.parse(result);
         } catch (error) {
           result = null;
         }
@@ -1314,6 +1342,49 @@ function v3CalculateAbilityScore(ability, logs) {
         typeof result === "object"
       );
     });
+
+  /*
+   * 수행능력
+   *
+   * V3 수행 테스트가 5회 이상
+   * 축적되었을 때만 정식 Performance로 인정한다.
+   */
+
+  let performance = null;
+
+  if (
+    performanceLogs.length >=
+    V3_CONFIG.minimumTrialsForPerformance
+  ) {
+
+    const scores =
+      performanceLogs
+        .map((log) => {
+
+          const value =
+            Number(log?.score);
+
+          return Number.isFinite(value)
+            ? value
+            : null;
+
+        })
+        .filter(
+          Number.isFinite
+        );
+
+    if (scores.length >=
+      V3_CONFIG.minimumTrialsForPerformance
+    ) {
+
+      performance =
+        scores.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        ) / scores.length;
+    }
+  }
 
   return {
     ability,
@@ -1329,7 +1400,7 @@ function v3CalculateAbilityScore(ability, logs) {
     daysSinceLastTraining:
       recency.daysSinceLastTraining,
 
-    performance: null,
+    performance,
 
     consistency: null,
 
@@ -1340,29 +1411,36 @@ function v3CalculateAbilityScore(ability, logs) {
     total: null,
 
     measured: {
-      practice:
-        abilityLogs.length > 0,
 
-      performance: false,
+      practice:
+        practiceLogs.length > 0,
+
+      performance:
+        performance !== null,
 
       selfReport:
         selfReportLogs.length > 0,
 
-      consistency: false,
+      consistency:
+        false,
 
-      verification: false,
+      verification:
+        false,
 
-      calibration: false
+      calibration:
+        false
     },
 
     trialCount:
-      abilityLogs.length,
+      practiceLogs.length,
 
     selfReportCount:
-      selfReportLogs.length
+      selfReportLogs.length,
+
+    performanceTrialCount:
+      performanceLogs.length
   };
 }
-
   
   /*
    * V3 전체 능력 평가
@@ -1561,16 +1639,22 @@ async function v3LoadEvaluation() {
    *
    * 운영 화면에는 표시하지 않는다.
    */
-  window.SPIRIT_V3 = {
-    evaluate: v3EvaluateProfile,
-    calculateAbilityScore:
-      v3CalculateAbilityScore,
-    practiceScore:
-      v3PracticeScore,
-    recencyScore:
-      v3RecencyScore
-  };
+window.SPIRIT_V3 = {
+  evaluate:
+    v3EvaluateProfile,
 
+  calculateAbilityScore:
+    v3CalculateAbilityScore,
+
+  practiceScore:
+    v3PracticeScore,
+
+  recencyScore:
+    v3RecencyScore,
+
+  startFocusPerformanceTest:
+    startV3FocusPerformanceTest
+};
   
   /* =========================
      QUEST SYSTEM
@@ -1864,9 +1948,22 @@ async function renderV3Evaluation() {
         const label =
           ABILITY_LABELS[ability];
 
+        const trialCount =
+          Number(item.trialCount) || 0;
+
+        const performanceTrialCount =
+          Number(
+            item.performanceTrialCount
+          ) || 0;
+
+        const selfReportCount =
+          Number(
+            item.selfReportCount
+          ) || 0;
+
         const practiceText =
-          item.trialCount > 0
-            ? `${item.trialCount}회`
+          trialCount > 0
+            ? `${trialCount}회`
             : "없음";
 
         const recencyText =
@@ -1876,66 +1973,95 @@ async function renderV3Evaluation() {
               )
             : "없음";
 
+        let performanceText;
+
+        if (
+          item.performance !== null &&
+          item.performance !== undefined
+        ) {
+          performanceText =
+            v3MeasuredText(
+              item.performance
+            );
+        } else if (
+          performanceTrialCount > 0
+        ) {
+          performanceText =
+            `${performanceTrialCount}회 기록 / 5회 필요`;
+        } else if (
+          selfReportCount > 0
+        ) {
+          performanceText =
+            "자기보고 데이터 확보";
+        } else {
+          performanceText =
+            "미측정";
+        }
+
         return `
           <div class="v3-ability">
+
             <h3>${label}</h3>
 
             <div class="v3-row">
               <span>훈련량</span>
-              <strong>${practiceText}</strong>
+              <strong>
+                ${practiceText}
+              </strong>
             </div>
 
             <div class="v3-row">
               <span>최근 훈련</span>
-              <strong>${recencyText}</strong>
+              <strong>
+                ${recencyText}
+              </strong>
             </div>
 
-          <div class="v3-row">
-  <span>수행능력</span>
-  <strong>
-    ${
-      item.performance !== null
-        ? v3MeasuredText(item.performance)
-        : (
-            item.selfReportCount > 0
-              ? "자기보고 데이터 확보"
-              : "미측정"
-          )
-    }
-  </strong>
-</div>
+            <div class="v3-row">
+              <span>수행능력</span>
+              <strong>
+                ${performanceText}
+              </strong>
+            </div>
 
-<div class="v3-row">
-  <span>수행기록</span>
-  <strong>
-    ${
-      item.selfReportCount > 0
-        ? `${item.selfReportCount}회`
-        : "없음"
-    }
-  </strong>
-</div>
+            <div class="v3-row">
+              <span>수행기록</span>
+              <strong>
+                ${
+                  performanceTrialCount > 0
+                    ? `V3 테스트 ${performanceTrialCount}회`
+                    : "없음"
+                }
+              </strong>
+            </div>
 
             <div class="v3-row">
               <span>일관성</span>
               <strong>
-                ${v3MeasuredText(item.consistency)}
+                ${v3MeasuredText(
+                  item.consistency
+                )}
               </strong>
             </div>
 
             <div class="v3-row">
               <span>검증</span>
               <strong>
-                ${v3MeasuredText(item.verification)}
+                ${v3MeasuredText(
+                  item.verification
+                )}
               </strong>
             </div>
 
             <div class="v3-row">
               <span>신뢰도 보정</span>
               <strong>
-                ${v3MeasuredText(item.calibration)}
+                ${v3MeasuredText(
+                  item.calibration
+                )}
               </strong>
             </div>
+
           </div>
         `;
       }).join("");
@@ -1954,7 +2080,7 @@ async function renderV3Evaluation() {
       </div>
 
       <div class="v3-notice">
-        현재는 훈련량과 최근성만 측정됩니다.
+        현재는 훈련량과 최근성을 기본으로 측정합니다.
         객관적 수행능력·일관성·검증 데이터가 충분히
         축적되기 전까지 종합 능력점수는 산출하지 않습니다.
       </div>
@@ -1962,7 +2088,48 @@ async function renderV3Evaluation() {
       <div class="v3-abilities">
         ${abilityRows}
       </div>
+
+      <div class="v3-performance-test">
+
+        <h3>V3 PERFORMANCE TEST</h3>
+
+        <p>
+          집중력 수행을 실제 반응 데이터로 측정합니다.
+        </p>
+
+        <p class="v3-performance-description">
+          목표 자극이 나타날 때만 버튼을 누르십시오.
+          일반 훈련 기록과 별도로 저장됩니다.
+        </p>
+
+        <button
+          id="v3FocusPerformanceStart"
+          type="button"
+        >
+          집중력 수행 테스트 시작
+        </button>
+
+        <div
+          id="v3FocusPerformanceArea"
+          class="hidden"
+        ></div>
+
+      </div>
     `;
+
+    const performanceStartButton =
+      document.getElementById(
+        "v3FocusPerformanceStart"
+      );
+
+    if (
+      performanceStartButton &&
+      typeof startV3FocusPerformanceTest ===
+        "function"
+    ) {
+      performanceStartButton.onclick =
+        startV3FocusPerformanceTest;
+    }
 
   } catch (error) {
 
@@ -1978,6 +2145,573 @@ async function renderV3Evaluation() {
     `;
   }
 }
+
+/* =========================
+   V3 FOCUS PERFORMANCE TEST
+========================= */
+
+let v3PerformanceState = null;
+let v3PerformanceTimer = null;
+
+function startV3FocusPerformanceTest() {
+
+  const area =
+    document.getElementById(
+      "v3FocusPerformanceArea"
+    );
+
+  const button =
+    document.getElementById(
+      "v3FocusPerformanceStart"
+    );
+
+  if (!area || !button) {
+    return;
+  }
+
+  button.disabled = true;
+
+  area.classList.remove("hidden");
+
+  area.innerHTML = `
+    <div class="v3-performance-status">
+      준비하십시오.
+      <strong id="v3PerformanceCountdown">
+        3
+      </strong>
+    </div>
+  `;
+
+  let countdown = 3;
+
+  const countdownTimer =
+    setInterval(() => {
+
+      countdown--;
+
+      const element =
+        document.getElementById(
+          "v3PerformanceCountdown"
+        );
+
+      if (element) {
+        element.textContent =
+          countdown > 0
+            ? countdown
+            : "시작";
+      }
+
+      if (countdown <= 0) {
+
+        clearInterval(
+          countdownTimer
+        );
+
+        runV3FocusPerformanceTest();
+      }
+
+    }, 1000);
+}
+
+
+function runV3FocusPerformanceTest() {
+
+  const area =
+    document.getElementById(
+      "v3FocusPerformanceArea"
+    );
+
+  if (!area) {
+    return;
+  }
+
+  /*
+   * 30회 자극
+   * 목표 자극 8회
+   */
+
+  const totalTrials = 30;
+
+  const targetTrials = 8;
+
+  const sequence = [];
+
+  for (
+    let i = 0;
+    i < targetTrials;
+    i++
+  ) {
+    sequence.push(true);
+  }
+
+  while (
+    sequence.length <
+    totalTrials
+  ) {
+    sequence.push(false);
+  }
+
+  /*
+   * 매번 다른 순서
+   */
+
+  for (
+    let i = sequence.length - 1;
+    i > 0;
+    i--
+  ) {
+
+    const j =
+      Math.floor(
+        Math.random() *
+        (i + 1)
+      );
+
+    [
+      sequence[i],
+      sequence[j]
+    ] = [
+      sequence[j],
+      sequence[i]
+    ];
+  }
+
+  v3PerformanceState = {
+
+    sequence,
+
+    index: 0,
+
+    hits: 0,
+
+    misses: 0,
+
+    falseAlarms: 0,
+
+    reactionTimes: [],
+
+    targetCount: targetTrials,
+
+    nonTargetCount:
+      totalTrials -
+      targetTrials,
+
+    stimulusStartedAt: null,
+
+    responded: false
+  };
+
+  showNextV3PerformanceStimulus();
+}
+
+
+function showNextV3PerformanceStimulus() {
+
+  const area =
+    document.getElementById(
+      "v3FocusPerformanceArea"
+    );
+
+  if (!area ||
+      !v3PerformanceState) {
+    return;
+  }
+
+  /*
+   * 이전 자극의 미응답 처리
+   */
+
+  if (
+    v3PerformanceState.index > 0
+  ) {
+
+    const previousIndex =
+      v3PerformanceState.index - 1;
+
+    const previousTarget =
+      v3PerformanceState.sequence[
+        previousIndex
+      ];
+
+    if (
+      previousTarget &&
+      !v3PerformanceState.responded
+    ) {
+
+      v3PerformanceState.misses++;
+    }
+  }
+
+  if (
+    v3PerformanceState.index >=
+    v3PerformanceState.sequence.length
+  ) {
+
+    finishV3FocusPerformanceTest();
+
+    return;
+  }
+
+  const isTarget =
+    v3PerformanceState.sequence[
+      v3PerformanceState.index
+    ];
+
+  v3PerformanceState.responded =
+    false;
+
+  area.innerHTML = `
+
+    <div class="v3-performance-progress">
+      TEST
+      ${
+        v3PerformanceState.index + 1
+      }
+      /
+      ${
+        v3PerformanceState.sequence.length
+      }
+    </div>
+
+    <div
+      class="v3-performance-stimulus"
+      id="v3PerformanceStimulus"
+    >
+      ${isTarget ? "●" : "○"}
+    </div>
+
+    <button
+      type="button"
+      id="v3PerformanceResponse"
+    >
+      목표 자극
+    </button>
+
+  `;
+
+  const responseButton =
+    document.getElementById(
+      "v3PerformanceResponse"
+    );
+
+  if (responseButton) {
+
+    responseButton.onclick =
+      recordV3PerformanceResponse;
+  }
+
+  v3PerformanceState
+    .stimulusStartedAt =
+      performance.now();
+
+  /*
+   * 자극은 1초 후 다음 자극으로 넘어간다.
+   */
+
+  v3PerformanceTimer =
+    setTimeout(() => {
+
+      v3PerformanceState.index++;
+
+      showNextV3PerformanceStimulus();
+
+    }, 1000);
+}
+
+
+function recordV3PerformanceResponse() {
+
+  if (
+    !v3PerformanceState ||
+    v3PerformanceState.responded
+  ) {
+    return;
+  }
+
+  v3PerformanceState.responded =
+    true;
+
+  const isTarget =
+    v3PerformanceState.sequence[
+      v3PerformanceState.index
+    ];
+
+  const reactionTime =
+    performance.now() -
+    v3PerformanceState
+      .stimulusStartedAt;
+
+  if (isTarget) {
+
+    v3PerformanceState.hits++;
+
+    v3PerformanceState
+      .reactionTimes
+      .push(reactionTime);
+
+  } else {
+
+    v3PerformanceState
+      .falseAlarms++;
+  }
+}
+
+
+async function finishV3FocusPerformanceTest() {
+
+  if (v3PerformanceTimer) {
+
+    clearTimeout(
+      v3PerformanceTimer
+    );
+
+    v3PerformanceTimer = null;
+  }
+
+  const stateData =
+    v3PerformanceState;
+
+  v3PerformanceState = null;
+
+  if (!stateData) {
+    return;
+  }
+
+  const hitRate =
+    stateData.targetCount > 0
+      ? stateData.hits /
+        stateData.targetCount
+      : 0;
+
+  const falseAlarmRate =
+    stateData.nonTargetCount > 0
+      ? stateData.falseAlarms /
+        stateData.nonTargetCount
+      : 0;
+
+  const averageReaction =
+    stateData.reactionTimes.length > 0
+      ? stateData.reactionTimes
+          .reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+        stateData.reactionTimes.length
+      : null;
+
+  /*
+   * 반응속도는 200ms를 빠른 기준,
+   * 1200ms 이상을 하한으로 사용한다.
+   * 이 값은 앱 내부 수행지표이며
+   * 임상/심리검사 점수가 아니다.
+   */
+
+  let reactionScore = 0;
+
+  if (
+    averageReaction !== null
+  ) {
+
+    reactionScore =
+      Math.max(
+        0,
+        Math.min(
+          1,
+          1 -
+            (
+              averageReaction - 200
+            ) /
+              1000
+        )
+      );
+  }
+
+  const score =
+    Math.round(
+      (
+        hitRate * 70
+      ) +
+      (
+        (1 - falseAlarmRate) *
+        20
+      ) +
+      (
+        reactionScore * 10
+      )
+    );
+
+  const resultData = {
+
+    test_type:
+      "V3 집중력 수행 테스트",
+
+    total_trials:
+      stateData.sequence.length,
+
+    target_trials:
+      stateData.targetCount,
+
+    hits:
+      stateData.hits,
+
+    misses:
+      stateData.misses,
+
+    false_alarms:
+      stateData.falseAlarms,
+
+    hit_rate:
+      Number(
+        (
+          hitRate * 100
+        ).toFixed(2)
+      ),
+
+    false_alarm_rate:
+      Number(
+        (
+          falseAlarmRate * 100
+        ).toFixed(2)
+      ),
+
+    average_reaction_ms:
+      averageReaction === null
+        ? null
+        : Math.round(
+            averageReaction
+          ),
+
+    internal_score:
+      score,
+
+    completed_at:
+      new Date().toISOString()
+  };
+
+  const area =
+    document.getElementById(
+      "v3FocusPerformanceArea"
+    );
+
+  if (area) {
+
+    area.innerHTML = `
+
+      <div class="v3-performance-result">
+
+        <h4>테스트 완료</h4>
+
+        <p>
+          정답 반응:
+          <strong>
+            ${stateData.hits}
+          </strong>
+          /
+          ${stateData.targetCount}
+        </p>
+
+        <p>
+          오반응:
+          <strong>
+            ${stateData.falseAlarms}
+          </strong>
+        </p>
+
+        <p>
+          평균 반응시간:
+          <strong>
+            ${
+              averageReaction === null
+                ? "측정 실패"
+                : `${Math.round(
+                    averageReaction
+                  )}ms`
+            }
+          </strong>
+        </p>
+
+        <p>
+          내부 수행점수:
+          <strong>
+            ${score}점
+          </strong>
+        </p>
+
+        <p class="muted">
+          수행능력은 동일 테스트를
+          최소 5회 반복한 뒤 정식 평가에 반영됩니다.
+        </p>
+
+      </div>
+
+    `;
+  }
+
+  /*
+   * V3 수행 기록을 quest_logs에 저장한다.
+   * EXP는 지급하지 않는다.
+   */
+
+  const {
+    error
+  } = await client
+    .from("quest_logs")
+    .insert({
+
+      user_id:
+        state.user.id,
+
+      quest_code:
+        "v3_focus_performance",
+
+      grade:
+        "V3",
+
+      exp_gained:
+        0,
+
+      score:
+        score,
+
+      result:
+        JSON.stringify(
+          resultData
+        ),
+
+      completed_at:
+        new Date().toISOString()
+    });
+
+  if (error) {
+
+    console.error(
+      "[SPIRIT SYSTEM V3] performance save error:",
+      error
+    );
+
+    if (area) {
+
+      area.innerHTML += `
+
+        <p>
+          수행 결과는 측정되었지만
+          서버 저장에 실패했습니다.
+        </p>
+
+      `;
+    }
+
+    return;
+  }
+
+  /*
+   * V3 화면 다시 계산
+   */
+
+  await renderV3Evaluation();
+}
+  
 
   function v3MeasuredText(value) {
   if (value === null || value === undefined) {

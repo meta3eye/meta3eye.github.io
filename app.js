@@ -1369,10 +1369,7 @@ function v3CalculateAbilityScore(ability, logs) {
    */
 
 
-function v3EvaluateAbilities(
-  profile,
-  logs
-) {
+function v3EvaluateAbilities(profile, logs) {
   const practiceData =
     v3BuildPracticeData(logs);
 
@@ -1392,9 +1389,8 @@ function v3EvaluateAbilities(
         (logs || []).filter((log) => {
           const code = log?.quest_code;
 
-      return V3_TRAINING_MAP[code]?.includes(
-  ability
-);
+          return V3_TRAINING_MAP[code]?.includes(
+            ability
           );
         })
       );
@@ -1417,6 +1413,8 @@ function v3EvaluateAbilities(
   return result;
 }
 
+
+  
   
   /*
    * 종합 Ability Score

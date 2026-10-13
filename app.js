@@ -1996,43 +1996,121 @@ async function renderV3Evaluation() {
 
 
 /* =========================
-   FOCUS LAB
+   FOCUS LAB 2.0
    집중력 검증실
-
-   일반 훈련과 독립된 수행능력 측정
 ========================= */
+
+const LAB_SHAPES = [
+  { id: "circle", symbol: "●", name: "채워진 원" },
+  { id: "circleOpen", symbol: "○", name: "빈 원" },
+  { id: "square", symbol: "■", name: "채워진 네모" },
+  { id: "squareOpen", symbol: "□", name: "빈 네모" },
+  { id: "star", symbol: "★", name: "채워진 별" },
+  { id: "starOpen", symbol: "☆", name: "빈 별" },
+  { id: "triangle", symbol: "▲", name: "채워진 삼각형" },
+  { id: "triangleOpen", symbol: "△", name: "빈 삼각형" },
+  { id: "diamond", symbol: "◆", name: "채워진 마름모" },
+  { id: "diamondOpen", symbol: "◇", name: "빈 마름모" },
+  { id: "heart", symbol: "♥", name: "채워진 하트" },
+  { id: "heartOpen", symbol: "♡", name: "빈 하트" },
+  { id: "cross", symbol: "✚", name: "십자" },
+  { id: "hexagon", symbol: "⬢", name: "육각형" },
+  { id: "hexagonOpen", symbol: "⬡", name: "빈 육각형" },
+  { id: "arrow", symbol: "➤", name: "화살표" }
+];
+
+const LAB_MODES = {
+  basic: {
+    name: "기본 · 지속주의력",
+    shapeCount: 4,
+    switches: 0,
+    multiplier: 1,
+    minGap: 700,
+    maxGap: 2000
+  },
+  applied1: {
+    name: "응용 기본 · 목표 전환",
+    shapeCount: 6,
+    switches: 1,
+    multiplier: 1.10,
+    minGap: 600,
+    maxGap: 2200
+  },
+  applied2: {
+    name: "응용 중급 · 다중 전환",
+    shapeCount: 10,
+    switches: 3,
+    multiplier: 1.25,
+    minGap: 500,
+    maxGap: 2400
+  },
+  applied3: {
+    name: "응용 고급 · 복합 전환",
+    shapeCount: 16,
+    switches: 5,
+    multiplier: 1.40,
+    minGap: 400,
+    maxGap: 2600
+  }
+};
 
 let focusLab = null;
 let focusLabTimers = [];
 let focusLabSaving = false;
 
-const labLater = (fn, ms) => {
+function labRandom(min, max) {
+  return Math.floor(
+    Math.random() * (max - min + 1)
+  ) + min;
+}
+
+function labShuffle(array) {
+  const result = [...array];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = labRandom(0, i);
+
+    [result[i], result[j]] =
+      [result[j], result[i]];
+  }
+
+  return result;
+}
+
+function labLater(fn, ms) {
   const id = setTimeout(fn, ms);
   focusLabTimers.push(id);
   return id;
-};
+}
 
 function labClearTimers() {
   focusLabTimers.forEach(clearTimeout);
   focusLabTimers = [];
 }
 
+function labAverage(values) {
+  if (!values.length) return null;
+
+  return Math.round(
+    values.reduce((a, b) => a + b, 0) /
+    values.length
+  );
+}
+
 
 /* =========================
-   독립 패널 설치
+   패널 및 전용 화면 설치
 ========================= */
 
 function installFocusLab() {
 
   if ($("focusLabPanel")) return;
 
-  const quest =
-    $("questList")?.closest(".panel");
+  const quest = $("questList")?.closest(".panel");
 
   if (!quest) return;
 
-  const panel =
-    document.createElement("div");
+  const panel = document.createElement("div");
 
   panel.id = "focusLabPanel";
   panel.className = "panel";
@@ -2045,46 +2123,36 @@ function installFocusLab() {
 
     <div class="quest">
       <div>
-        <h3>중앙 지속주의력 측정</h3>
+        <h3>집중력 및 목표 전환 측정</h3>
 
         <p>
-          목표를 놓치지 않는 정확도,
-          불필요한 반응을 억제하는 능력,
-          반응속도와 후반부 집중 유지력을 기록합니다.
+          목표 감지, 반응 억제, 지속주의력,
+          목표 전환 적응력을 측정합니다.
         </p>
 
         <p class="muted">
-          총 60회 자극 · 반복 측정으로 자신의 변화 확인
+          기본 / 응용 기본 / 응용 중급 / 응용 고급
         </p>
 
         <p class="muted">
-          일반 훈련 EXP 및 랭크와 별도 관리
+          30회 또는 60회 선택 · EXP와 별도
         </p>
       </div>
 
-      <button
-        type="button"
-        id="focusLabOpen"
-      >
+      <button id="focusLabOpen" type="button">
         수행
       </button>
     </div>
   `;
 
-  quest.insertAdjacentElement(
-    "afterend",
-    panel
-  );
+  quest.insertAdjacentElement("afterend", panel);
 
   $("focusLabOpen").onclick = openFocusLab;
 
 
-  /* 전용 화면 디자인 */
-
   if (!$("focusLabStyle")) {
 
-    const style =
-      document.createElement("style");
+    const style = document.createElement("style");
 
     style.id = "focusLabStyle";
 
@@ -2100,10 +2168,10 @@ function installFocusLab() {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 24px;
         box-sizing: border-box;
-        font-family: inherit;
+        padding: 24px;
         text-align: center;
+        font-family: inherit;
       }
 
       #focusLabOverlay[hidden] {
@@ -2116,7 +2184,7 @@ function installFocusLab() {
         border-radius: 10px;
         border: 1px solid #64748b;
         background: #273d61;
-        color: #fff;
+        color: white;
         font: inherit;
       }
 
@@ -2127,28 +2195,49 @@ function installFocusLab() {
 
       #focusLabTop {
         position: absolute;
-        top: 22px;
-        left: 24px;
-        right: 24px;
+        top: 18px;
+        left: 20px;
+        right: 20px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 15px;
+        justify-content: space-between;
+        gap: 12px;
+        z-index: 2;
       }
 
       #focusLabBody {
         width: 100%;
         max-width: 750px;
+        max-height: 85vh;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 18px;
+        gap: 16px;
       }
 
       #focusLabBody p {
         line-height: 1.7;
-        margin: 5px 0;
+        margin: 4px 0;
+      }
+
+      #focusLabBody select {
+        width: 100%;
+        max-width: 420px;
+        padding: 13px;
+        border-radius: 8px;
+        background: #17243a;
+        color: white;
+        border: 1px solid #64748b;
+        font: inherit;
+      }
+
+      #focusLabBody label {
+        width: 100%;
+        max-width: 420px;
+        text-align: left;
+        font-weight: bold;
       }
 
       #focusLabBody .lab-muted {
@@ -2160,20 +2249,20 @@ function installFocusLab() {
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-
-        font-size: clamp(110px, 19vmin, 210px);
-        line-height: 1;
-
-        width: 240px;
-        height: 240px;
-
+        width: min(260px, 60vw);
+        height: min(260px, 60vw);
         display: flex;
         align-items: center;
         justify-content: center;
-
+        font-size: clamp(110px, 19vmin, 205px);
+        line-height: 1;
+        color: #ffffff;
+        font-family:
+          "Segoe UI Symbol",
+          "Noto Sans Symbols 2",
+          sans-serif;
         user-select: none;
         pointer-events: none;
-        color: #fff;
       }
 
       #focusLabOverlay.lab-running {
@@ -2187,10 +2276,21 @@ function installFocusLab() {
       }
 
       #focusLabOverlay .lab-result {
-        text-align: left;
-        max-width: 500px;
         width: 100%;
-        line-height: 1.9;
+        max-width: 520px;
+        text-align: left;
+        line-height: 2;
+      }
+
+      #focusLabOverlay .lab-target {
+        font-size: 95px;
+        line-height: 1.3;
+        color: #ffffff;
+      }
+
+      #focusLabOverlay .lab-switch {
+        font-size: 24px;
+        color: #a5c8ff;
       }
 
     `;
@@ -2199,27 +2299,19 @@ function installFocusLab() {
   }
 
 
-  /* 전용 전체 화면 생성 */
-
-  const overlay =
-    document.createElement("div");
+  const overlay = document.createElement("div");
 
   overlay.id = "focusLabOverlay";
   overlay.hidden = true;
 
   overlay.innerHTML = `
     <div id="focusLabTop">
-      <strong>
-        FOCUS LAB · 집중력 검증실
-      </strong>
+      <strong>FOCUS LAB</strong>
 
       <div>
         <span id="focusLabProgress"></span>
 
-        <button
-          id="focusLabClose"
-          type="button"
-        >
+        <button id="focusLabClose" type="button">
           닫기
         </button>
       </div>
@@ -2238,13 +2330,11 @@ function installFocusLab() {
   $("focusLabClose").onclick = closeFocusLab;
 
 
-  /* 마우스 왼쪽 클릭 반응 */
-
   overlay.addEventListener("click", e => {
 
     if (
-      focusLab?.phase === "running" &&
       e.button === 0 &&
+      focusLab?.phase === "running" &&
       !e.target.closest("button")
     ) {
       recordV3PerformanceResponse();
@@ -2253,14 +2343,11 @@ function installFocusLab() {
   });
 
 
-  /* 스페이스바 반응 */
-
   document.addEventListener("keydown", e => {
 
     if (
       e.code !== "Space" ||
-      !focusLab ||
-      focusLab.phase !== "running"
+      focusLab?.phase !== "running"
     ) {
       return;
     }
@@ -2274,8 +2361,6 @@ function installFocusLab() {
   });
 
 
-  /* 다른 화면으로 이동하면 측정 중단 */
-
   document.addEventListener(
     "visibilitychange",
     () => {
@@ -2285,7 +2370,7 @@ function installFocusLab() {
         focusLab?.phase === "running"
       ) {
         abortFocusLab(
-          "다른 화면으로 이동하여 측정이 중단되었습니다. 기록은 저장되지 않습니다."
+          "화면을 벗어나 측정이 중단되었습니다."
         );
       }
 
@@ -2296,7 +2381,7 @@ function installFocusLab() {
 
     if (focusLab?.phase === "running") {
       abortFocusLab(
-        "창의 초점이 변경되어 측정이 중단되었습니다. 기록은 저장되지 않습니다."
+        "창의 초점이 변경되어 측정이 중단되었습니다."
       );
     }
 
@@ -2306,12 +2391,14 @@ function installFocusLab() {
 
 
 /* =========================
-   검증실 입장
+   검사 설정 화면
 ========================= */
 
 function openFocusLab() {
 
   installFocusLab();
+
+  if (focusLabSaving) return;
 
   labClearTimers();
 
@@ -2327,82 +2414,560 @@ function openFocusLab() {
 
   $("focusLabStimulus").textContent = "";
 
-  $("focusLabProgress").textContent =
-    "측정 안내";
+  $("focusLabProgress").textContent = "설정";
 
   $("focusLabBody").innerHTML = `
 
-    <h1>중앙 지속주의력 측정</h1>
+    <h1>집중력 검증실</h1>
 
     <p>
-      이 검사는 얼마나 빨리 누르는지만
-      평가하는 게임이 아닙니다.
+      목표 도형을 정확히 감지하고
+      불필요한 반응을 억제하는 능력을 측정합니다.
+    </p>
+
+    <label for="labMode">측정 과정</label>
+
+    <select id="labMode">
+      <option value="basic">
+        기본 · 지속주의력
+      </option>
+
+      <option value="applied1">
+        응용 기본 · 목표 1회 전환
+      </option>
+
+      <option value="applied2">
+        응용 중급 · 목표 3회 전환
+      </option>
+
+      <option value="applied3">
+        응용 고급 · 목표 5회 전환
+      </option>
+    </select>
+
+    <label for="labCount">측정 횟수</label>
+
+    <select id="labCount">
+      <option value="30">30회 · 간편 측정</option>
+      <option value="60">60회 · 정밀 측정</option>
+    </select>
+
+    <p class="lab-muted">
+      매번 목표 도형과 출현 순서,
+      대기 시간이 새롭게 결정됩니다.
     </p>
 
     <p>
-      목표를 정확히 알아차리는 능력,
-      불필요한 반응을 억제하는 능력,
-      그리고 집중력을 끝까지 유지하는 정도를
-      기록합니다.
-    </p>
-
-    <hr style="width:100%;opacity:.25">
-
-    <h2>반응 방법</h2>
-
-    <p>
-      목표
-      <strong style="font-size:38px">●</strong>
-      가 나타날 때만 반응하세요.
-    </p>
-
-    <p>
-      비목표
-      <strong style="font-size:38px">○</strong>
-      에는 반응하지 마세요.
-    </p>
-
-    <p>
-      <strong>
-        스페이스바(SPACE) 또는
-        마우스 왼쪽 클릭
-      </strong>
+      <strong>반응 방법</strong>
+      <br>
+      SPACE 또는 마우스 왼쪽 클릭
     </p>
 
     <p class="lab-muted">
-      두 방법 중 편한 방법 하나를 사용하십시오.
-      음성이나 박수는 사용하지 않습니다.
+      목표가 아닌 도형에는 반응하지 마세요.
+      응용 과정에서는 중간에 새로운 목표가 안내됩니다.
     </p>
 
-    <p class="lab-muted">
-      자극은 화면 정중앙에 200ms 동안 나타납니다.
-      자극이 사라지더라도 출현 후 800ms까지
-      반응할 수 있습니다.
-    </p>
-
-    <p class="lab-muted">
-      총 60회 측정합니다.
-      같은 조건으로 반복 측정하면
-      자신의 집중력 변화 추이를 비교할 수 있습니다.
-    </p>
-
-    <button
-      id="focusLabBegin"
-      type="button"
-    >
-      설명 확인 · 측정 시작
+    <button id="labPrepare" type="button">
+      검사 준비
     </button>
   `;
 
-  $("focusLabBegin").onclick =
-    startV3FocusPerformanceTest;
+  $("labPrepare").onclick = prepareFocusLab;
 
 }
 
 
 /* =========================
-   검증실 닫기
+   검사 준비
 ========================= */
+
+function prepareFocusLab() {
+
+  const modeKey = $("labMode").value;
+  const total = Number($("labCount").value);
+
+  const config = LAB_MODES[modeKey];
+
+  const shapes = labShuffle(
+    LAB_SHAPES
+  ).slice(0, config.shapeCount);
+
+  const targets = labShuffle(shapes).slice(
+    0,
+    config.switches + 1
+  );
+
+  /*
+    목표 전환 구간은 균등한 기본 길이를 갖는다.
+    실제 도형 순서와 출현 간격은 무작위다.
+  */
+
+  const sections = config.switches + 1;
+
+  const boundaries = [];
+
+  for (let i = 1; i < sections; i++) {
+    boundaries.push(
+      Math.floor(total * i / sections)
+    );
+  }
+
+  focusLab = {
+    phase: "ready",
+    modeKey,
+    config,
+    total,
+    shapes,
+    targets,
+    boundaries,
+    section: 0,
+    index: 0,
+    hits: 0,
+    misses: 0,
+    falseAlarms: 0,
+    reactionTimes: [],
+    early: [],
+    late: [],
+    switchHits: 0,
+    switchTargets: 0,
+    trials: [],
+    windowOpen: false,
+    responded: false,
+    startedAt: 0
+  };
+
+  showFocusLabTarget();
+
+}
+
+
+/* =========================
+   목표 안내
+========================= */
+
+function showFocusLabTarget() {
+
+  const s = focusLab;
+
+  if (!s) return;
+
+  s.phase = "ready";
+
+  const target = s.targets[s.section];
+
+  $("focusLabProgress").textContent =
+    `${s.config.name} · ${s.total}회`;
+
+  $("focusLabStimulus").textContent = "";
+
+  $("focusLabBody").innerHTML = `
+
+    <h2>
+      ${
+        s.section === 0
+          ? "이번 검사의 목표"
+          : "목표 도형 변경"
+      }
+    </h2>
+
+    <div class="lab-target">
+      ${target.symbol}
+    </div>
+
+    <h3>${target.name}</h3>
+
+    <p>
+      지금부터 이 도형이 나올 때만 반응하십시오.
+    </p>
+
+    <p>
+      SPACE 또는 마우스 왼쪽 클릭
+    </p>
+
+    <p class="lab-muted">
+      이전 목표는 더 이상 정답이 아닙니다.
+    </p>
+
+    <button id="labTargetConfirm" type="button">
+      목표 확인 · 계속하기
+    </button>
+  `;
+
+  $("labTargetConfirm").onclick = () => {
+    startV3FocusPerformanceTest();
+  };
+
+}
+
+
+/* =========================
+   카운트다운
+========================= */
+
+function startV3FocusPerformanceTest() {
+
+  if (
+    !focusLab ||
+    focusLab.phase !== "ready"
+  ) {
+    return;
+  }
+
+  focusLab.phase = "countdown";
+
+  let count = 3;
+
+  $("focusLabBody").innerHTML = `
+    <h2>화면 중앙을 응시하세요</h2>
+
+    <h1 id="labCountdown">3</h1>
+
+    <p>
+      목표 도형에만 반응하십시오.
+    </p>
+  `;
+
+  function tick() {
+
+    if (focusLab?.phase !== "countdown") {
+      return;
+    }
+
+    count--;
+
+    if (count <= 0) {
+      runV3FocusPerformanceTest();
+      return;
+    }
+
+    $("labCountdown").textContent = count;
+
+    labLater(tick, 1000);
+  }
+
+  labLater(tick, 1000);
+
+}
+
+
+/* =========================
+   자극 배열 생성
+========================= */
+
+function labBuildSequence(s) {
+
+  const sequence = [];
+
+  const sectionStarts = [
+    0,
+    ...s.boundaries
+  ];
+
+  const sectionEnds = [
+    ...s.boundaries,
+    s.total
+  ];
+
+  for (
+    let section = 0;
+    section < sectionStarts.length;
+    section++
+  ) {
+
+    const length =
+      sectionEnds[section] -
+      sectionStarts[section];
+
+    const target =
+      s.targets[section];
+
+    const targetCount =
+      Math.max(1, Math.round(length * 0.25));
+
+    const pool = [];
+
+    for (let i = 0; i < targetCount; i++) {
+      pool.push(target);
+    }
+
+    const distractors =
+      s.shapes.filter(
+        shape => shape.id !== target.id
+      );
+
+    while (pool.length < length) {
+
+      pool.push(
+        distractors[
+          labRandom(0, distractors.length - 1)
+        ]
+      );
+
+    }
+
+    sequence.push(
+      ...labShuffle(pool)
+    );
+  }
+
+  return sequence;
+}
+
+
+/* =========================
+   실제 측정 실행
+========================= */
+
+function runV3FocusPerformanceTest() {
+
+  const s = focusLab;
+
+  if (!s) return;
+
+  if (!s.sequence) {
+    s.sequence = labBuildSequence(s);
+  }
+
+  s.phase = "running";
+
+  $("focusLabBody").innerHTML = "";
+
+  $("focusLabOverlay").classList.add(
+    "lab-running"
+  );
+
+  /*
+    시작 직후 자극을 표시하지 않고
+    첫 대기 시간을 적용한다.
+  */
+
+  labLater(
+    showNextV3PerformanceStimulus,
+    labRandom(
+      s.config.minGap,
+      s.config.maxGap
+    )
+  );
+
+}
+
+
+/* =========================
+   다음 자극
+========================= */
+
+function showNextV3PerformanceStimulus() {
+
+  const s = focusLab;
+
+  if (
+    !s ||
+    s.phase !== "running"
+  ) {
+    return;
+  }
+
+  if (s.index >= s.total) {
+    finishV3FocusPerformanceTest();
+    return;
+  }
+
+  /*
+    목표 전환 위치에 도달하면
+    검사 시간을 멈추고 새 목표를 안내한다.
+  */
+
+  if (
+    s.boundaries.includes(s.index)
+  ) {
+
+    s.section++;
+
+    $("focusLabOverlay").classList.remove(
+      "lab-running"
+    );
+
+    showFocusLabTarget();
+
+    return;
+  }
+
+  const stimulus = s.sequence[s.index];
+
+  const target = s.targets[s.section];
+
+  s.currentTarget =
+    stimulus.id === target.id;
+
+  s.responded = false;
+
+  s.windowOpen = true;
+
+  s.startedAt = performance.now();
+
+  $("focusLabProgress").textContent =
+    `${s.index + 1} / ${s.total}`;
+
+  $("focusLabStimulus").textContent =
+    stimulus.symbol;
+
+
+  /* 도형은 200ms 표시 */
+
+  labLater(() => {
+
+    if (
+      focusLab === s &&
+      s.phase === "running"
+    ) {
+      $("focusLabStimulus").textContent = "";
+    }
+
+  }, 200);
+
+
+  /* 반응은 800ms까지 인정 */
+
+  labLater(() => {
+
+    if (
+      focusLab !== s ||
+      s.phase !== "running"
+    ) {
+      return;
+    }
+
+    s.windowOpen = false;
+
+    if (
+      s.currentTarget &&
+      !s.responded
+    ) {
+      s.misses++;
+    }
+
+    if (
+      s.section > 0 &&
+      s.currentTarget
+    ) {
+      s.switchTargets++;
+
+      if (s.responded) {
+        s.switchHits++;
+      }
+    }
+
+    s.trials.push({
+      index: s.index,
+      section: s.section,
+      stimulus: stimulus.id,
+      target: target.id,
+      is_target: s.currentTarget,
+      responded: s.responded
+    });
+
+    s.index++;
+
+    /*
+      다음 도형 출현 간격은 매번 무작위.
+    */
+
+    const gap = labRandom(
+      s.config.minGap,
+      s.config.maxGap
+    );
+
+    labLater(
+      showNextV3PerformanceStimulus,
+      gap
+    );
+
+  }, 800);
+
+}
+
+
+/* =========================
+   반응 기록
+========================= */
+
+function recordV3PerformanceResponse() {
+
+  const s = focusLab;
+
+  if (
+    !s ||
+    s.phase !== "running" ||
+    !s.windowOpen ||
+    s.responded
+  ) {
+    return;
+  }
+
+  s.responded = true;
+
+  const rt = Math.round(
+    performance.now() - s.startedAt
+  );
+
+  if (s.currentTarget) {
+
+    s.hits++;
+
+    s.reactionTimes.push(rt);
+
+    if (s.index < s.total / 2) {
+      s.early.push(rt);
+    } else {
+      s.late.push(rt);
+    }
+
+  } else {
+
+    s.falseAlarms++;
+
+  }
+
+}
+
+
+/* =========================
+   측정 중단 및 종료
+========================= */
+
+function abortFocusLab(message) {
+
+  labClearTimers();
+
+  if (!focusLab) return;
+
+  focusLab.phase = "aborted";
+
+  $("focusLabOverlay").classList.remove(
+    "lab-running"
+  );
+
+  $("focusLabStimulus").textContent = "";
+
+  $("focusLabBody").innerHTML = `
+
+    <h2>측정 중단</h2>
+
+    <p>${message}</p>
+
+    <p class="lab-muted">
+      중단된 측정은 저장하지 않습니다.
+    </p>
+
+    <button id="labRetry" type="button">
+      다시 시작
+    </button>
+  `;
+
+  $("labRetry").onclick = openFocusLab;
+
+}
 
 function closeFocusLab() {
 
@@ -2422,283 +2987,7 @@ function closeFocusLab() {
 
 
 /* =========================
-   측정 중단
-========================= */
-
-function abortFocusLab(message) {
-
-  labClearTimers();
-
-  if (!focusLab) return;
-
-  focusLab.phase = "aborted";
-
-  $("focusLabOverlay").classList.remove(
-    "lab-running"
-  );
-
-  $("focusLabStimulus").textContent = "";
-
-  $("focusLabBody").innerHTML = `
-    <h2>측정 중단</h2>
-
-    <p>${message}</p>
-
-    <button
-      id="focusLabRetry"
-      type="button"
-    >
-      다시 시작
-    </button>
-  `;
-
-  $("focusLabRetry").onclick = openFocusLab;
-
-}
-
-
-/* =========================
-   측정 시작 및 카운트다운
-========================= */
-
-function startV3FocusPerformanceTest() {
-
-  if (
-    !focusLab ||
-    focusLab.phase !== "intro"
-  ) {
-    return;
-  }
-
-  focusLab.phase = "countdown";
-
-  let count = 3;
-
-  $("focusLabBody").innerHTML = `
-    <h2>화면 중앙을 응시하세요</h2>
-
-    <h1 id="focusLabCountdown">3</h1>
-
-    <p>
-      ●에만 SPACE 또는 왼쪽 클릭
-    </p>
-  `;
-
-  function tick() {
-
-    if (focusLab?.phase !== "countdown") {
-      return;
-    }
-
-    count--;
-
-    if (count === 0) {
-      runV3FocusPerformanceTest();
-      return;
-    }
-
-    $("focusLabCountdown").textContent =
-      count;
-
-    labLater(tick, 1000);
-  }
-
-  labLater(tick, 1000);
-
-}
-
-
-/* =========================
-   실제 측정 실행
-========================= */
-
-function runV3FocusPerformanceTest() {
-
-  const sequence =
-    Array(15).fill(true)
-      .concat(Array(45).fill(false));
-
-  /* 무작위 배열 */
-
-  for (
-    let i = sequence.length - 1;
-    i > 0;
-    i--
-  ) {
-
-    const j =
-      Math.floor(
-        Math.random() * (i + 1)
-      );
-
-    [
-      sequence[i],
-      sequence[j]
-    ] = [
-      sequence[j],
-      sequence[i]
-    ];
-
-  }
-
-  focusLab = {
-    phase: "running",
-    sequence,
-    index: 0,
-    hits: 0,
-    misses: 0,
-    falseAlarms: 0,
-    rt: [],
-    early: [],
-    late: [],
-    trials: [],
-    responded: false,
-    startedAt: 0,
-    windowOpen: false
-  };
-
-  $("focusLabBody").innerHTML = "";
-
-  $("focusLabOverlay").classList.add(
-    "lab-running"
-  );
-
-  showNextV3PerformanceStimulus();
-
-}
-
-
-/* =========================
-   중앙 자극 표시
-========================= */
-
-function showNextV3PerformanceStimulus() {
-
-  const s = focusLab;
-
-  if (
-    !s ||
-    s.phase !== "running"
-  ) {
-    return;
-  }
-
-  if (s.index >= s.sequence.length) {
-    finishV3FocusPerformanceTest();
-    return;
-  }
-
-  s.responded = false;
-  s.windowOpen = true;
-  s.startedAt = performance.now();
-
-  $("focusLabProgress").textContent =
-    `${s.index + 1} / ${s.sequence.length}`;
-
-  $("focusLabStimulus").textContent =
-    s.sequence[s.index]
-      ? "●"
-      : "○";
-
-
-  /* 200ms 후 자극 숨김 */
-
-  labLater(() => {
-
-    if (focusLab === s) {
-      $("focusLabStimulus").textContent = "";
-    }
-
-  }, 200);
-
-
-  /* 800ms 후 반응 허용 시간 종료 */
-
-  labLater(() => {
-
-    if (
-      focusLab !== s ||
-      s.phase !== "running"
-    ) {
-      return;
-    }
-
-    s.windowOpen = false;
-
-    const target =
-      s.sequence[s.index];
-
-    if (target && !s.responded) {
-      s.misses++;
-    }
-
-    s.trials.push({
-      target,
-      responded: s.responded
-    });
-
-    s.index++;
-
-    const gap =
-      600 +
-      Math.floor(Math.random() * 801);
-
-    labLater(
-      showNextV3PerformanceStimulus,
-      gap
-    );
-
-  }, 800);
-
-}
-
-
-/* =========================
-   키보드 / 마우스 반응 기록
-========================= */
-
-function recordV3PerformanceResponse() {
-
-  const s = focusLab;
-
-  if (
-    !s ||
-    s.phase !== "running" ||
-    !s.windowOpen ||
-    s.responded
-  ) {
-    return;
-  }
-
-  s.responded = true;
-
-  const rt =
-    Math.round(
-      performance.now() - s.startedAt
-    );
-
-  if (s.sequence[s.index]) {
-
-    s.hits++;
-    s.rt.push(rt);
-
-    if (s.index < 30) {
-      s.early.push(rt);
-    } else {
-      s.late.push(rt);
-    }
-
-  } else {
-
-    s.falseAlarms++;
-
-  }
-
-}
-
-
-/* =========================
-   측정 종료 및 서버 저장
+   결과 계산 및 저장
 ========================= */
 
 async function finishV3FocusPerformanceTest() {
@@ -2726,22 +3015,28 @@ async function finishV3FocusPerformanceTest() {
     "측정 완료";
 
 
-  /* 평균 계산 */
+  const targets =
+    s.trials.filter(t => t.is_target).length;
 
-  const avg = a =>
-    a.length
-      ? Math.round(
-          a.reduce((x, y) => x + y, 0) /
-          a.length
-        )
-      : null;
+  const nonTargets =
+    s.total - targets;
 
-  const hitRate = s.hits / 15;
+  const hitRate =
+    targets ? s.hits / targets : 0;
 
   const falseRate =
-    s.falseAlarms / 45;
+    nonTargets
+      ? s.falseAlarms / nonTargets
+      : 0;
 
-  const mean = avg(s.rt);
+  const mean =
+    labAverage(s.reactionTimes);
+
+  const early =
+    labAverage(s.early);
+
+  const late =
+    labAverage(s.late);
 
   const reactionScore =
     mean === null
@@ -2754,61 +3049,120 @@ async function finishV3FocusPerformanceTest() {
           )
         );
 
-  const score =
-    Math.round(
+  /*
+    기본 과정은 전환 항목을 제외한다.
+    응용 과정은 목표 전환 적응력을 반영한다.
+  */
+
+  let rawScore;
+
+  if (s.modeKey === "basic") {
+
+    rawScore =
       hitRate * 60 +
       (1 - falseRate) * 25 +
-      reactionScore * 15
-    );
+      reactionScore * 15;
 
-  const early = avg(s.early);
-  const late = avg(s.late);
+  } else {
 
+    const switchRate =
+      s.switchTargets
+        ? s.switchHits / s.switchTargets
+        : 0;
 
-  /* 기존 Supabase 기록 구조 유지 */
+    rawScore =
+      hitRate * 45 +
+      (1 - falseRate) * 25 +
+      reactionScore * 15 +
+      switchRate * 15;
+
+  }
+
+  const score = Math.round(rawScore);
+
+  const achievementScore = Math.round(
+    score * s.config.multiplier
+  );
+
 
   const resultData = {
 
     test_type:
-      "중앙 지속주의력 측정",
+      "FOCUS LAB 집중력 검증",
 
     test_version:
-      "FOCUS-LAB-1.0",
+      "FOCUS-LAB-2.0",
 
-    total_trials: 60,
+    mode:
+      s.modeKey,
 
-    target_trials: 15,
+    mode_name:
+      s.config.name,
 
-    non_target_trials: 45,
+    difficulty_multiplier:
+      s.config.multiplier,
 
-    hits: s.hits,
+    total_trials:
+      s.total,
 
-    misses: s.misses,
+    target_trials:
+      targets,
 
-    false_alarms: s.falseAlarms,
+    non_target_trials:
+      nonTargets,
+
+    target_switches:
+      s.config.switches,
+
+    shape_count:
+      s.shapes.length,
+
+    shape_pool:
+      s.shapes.map(shape => shape.id),
+
+    target_sequence:
+      s.targets.map(shape => shape.id),
+
+    hits:
+      s.hits,
+
+    misses:
+      s.misses,
+
+    false_alarms:
+      s.falseAlarms,
 
     hit_rate:
-      Number(
-        (hitRate * 100).toFixed(2)
-      ),
+      Number((hitRate * 100).toFixed(2)),
 
     false_alarm_rate:
-      Number(
-        (falseRate * 100).toFixed(2)
-      ),
+      Number((falseRate * 100).toFixed(2)),
 
-    average_reaction_ms: mean,
+    average_reaction_ms:
+      mean,
 
-    early_average_reaction_ms: early,
+    early_average_reaction_ms:
+      early,
 
-    late_average_reaction_ms: late,
+    late_average_reaction_ms:
+      late,
 
     late_performance_change_ms:
       early === null || late === null
         ? null
         : late - early,
 
-    internal_score: score,
+    switch_hits:
+      s.switchHits,
+
+    switch_target_count:
+      s.switchTargets,
+
+    internal_score:
+      score,
+
+    achievement_score:
+      achievementScore,
 
     completed_at:
       new Date().toISOString()
@@ -2816,16 +3170,20 @@ async function finishV3FocusPerformanceTest() {
   };
 
 
-  /* 결과 화면 */
-
   $("focusLabBody").innerHTML = `
 
     <h1>집중력 측정 결과</h1>
 
+    <h3>${s.config.name}</h3>
+
     <div class="lab-result">
 
+      측정 횟수:
+      <strong>${s.total}회</strong>
+      <br>
+
       목표 반응:
-      <strong>${s.hits}/15</strong>
+      <strong>${s.hits}/${targets}</strong>
       <br>
 
       놓친 목표:
@@ -2833,34 +3191,44 @@ async function finishV3FocusPerformanceTest() {
       <br>
 
       불필요한 반응:
-      <strong>${s.falseAlarms}/45</strong>
+      <strong>${s.falseAlarms}/${nonTargets}</strong>
       <br>
 
       평균 반응시간:
       <strong>
-        ${
-          mean === null
-            ? "측정 없음"
-            : mean + "ms"
-        }
+        ${mean === null ? "-" : mean + "ms"}
       </strong>
       <br>
 
-      전반부 / 후반부 반응시간:
+      전반부 / 후반부:
       <strong>
-        ${early ?? "-"} / ${late ?? "-"} ms
+        ${early ?? "-"} /
+        ${late ?? "-"} ms
       </strong>
       <br>
 
-      내부 수행지표:
+      목표 전환:
+      <strong>${s.config.switches}회</strong>
+      <br>
+
+      순수 수행점수:
       <strong>${score}/100</strong>
+      <br>
+
+      도전 성취점수:
+      <strong>${achievementScore}점</strong>
 
     </div>
 
     <p class="lab-muted">
-      같은 조건으로 최소 5회 측정하여
-      개인 내 변화 추이를 확인합니다.
-      이 지표는 초감각 능력의 증거가 아닙니다.
+      순수 수행점수는 실제 측정 결과입니다.
+      도전 성취점수는 난이도 가중치를 적용한
+      게임 내 성취지표입니다.
+    </p>
+
+    <p class="lab-muted">
+      서로 다른 과정이나 측정 횟수의 점수는
+      직접 비교하지 않습니다.
     </p>
 
     <p id="focusLabSaveStatus">
@@ -2877,23 +3245,27 @@ async function finishV3FocusPerformanceTest() {
   `;
 
 
-  /* Supabase RPC 저장 */
+  /*
+    기존 Supabase RPC 유지.
+    내부 점수는 0~100만 저장한다.
+    성취점수와 난이도 정보는 result JSON에 저장한다.
+  */
 
   focusLabSaving = true;
 
-  let error;
+  let error = null;
 
   try {
 
-    ({
-      error
-    } = await client.rpc(
+    const response = await client.rpc(
       "save_v3_focus_performance",
       {
         p_score: score,
         p_result: resultData
       }
-    ));
+    );
+
+    error = response.error;
 
   } catch (e) {
 
@@ -2919,6 +3291,7 @@ async function finishV3FocusPerformanceTest() {
   };
 
 }
+
 
 
   function v3MeasuredText(value) {

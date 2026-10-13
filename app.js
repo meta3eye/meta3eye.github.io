@@ -4217,17 +4217,27 @@ async function finishV3FocusPerformanceTest(){
   let error=null;
   let data=null;
 
-  try{
+ 
     const r=await client.rpc(
-      'submit_focus_lab_v3',
-      {
-        p_mode:s.modeKey,
-        p_trials:resultData.trials,
-        p_target_sequence:resultData.target_sequence,
-        p_shape_pool:resultData.shape_pool,
-        p_total:s.total
-      }
+      s.modeKey==='master'
+        ?'submit_focus_lab_master'
+        :'submit_focus_lab_v3',
+
+      s.modeKey==='master'
+        ?{
+            p_trials:resultData.trials,
+            p_target_sequence:resultData.target_sequence,
+            p_shape_pool:resultData.shape_pool
+          }
+        :{
+            p_mode:s.modeKey,
+            p_trials:resultData.trials,
+            p_target_sequence:resultData.target_sequence,
+            p_shape_pool:resultData.shape_pool,
+            p_total:s.total
+          }
     );
+
 
     error=r.error;
     data=r.data;

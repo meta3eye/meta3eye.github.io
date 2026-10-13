@@ -2517,6 +2517,321 @@ async function labDashboardLoad(){
 }
 
 
+/* =========================
+   FOCUS LAB 3.2
+   독립 입장 화면 / 성장 분석 분리
+========================= */
+
+function labInstallRooms(){
+
+  if(document.getElementById('labHubOverlay'))return;
+
+  const css=document.createElement('style');
+  css.id='labRoomsStyle';
+
+  css.textContent=`
+    .lab-room{
+      position:fixed;
+      inset:0;
+      z-index:2147482990;
+      background:#080f1c;
+      color:#f2f7ff;
+      overflow-y:auto;
+      padding:22px;
+      box-sizing:border-box;
+    }
+
+    .lab-room[hidden]{
+      display:none!important;
+    }
+
+    .lab-room-inner{
+      max-width:850px;
+      margin:0 auto;
+      padding:24px 0 60px;
+    }
+
+    .lab-room-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:30px;
+    }
+
+    .lab-room button{
+      font:inherit;
+      cursor:pointer;
+      border:1px solid #577394;
+      border-radius:10px;
+      background:#203c60;
+      color:white;
+      padding:12px 18px;
+    }
+
+    .lab-room button:hover{
+      background:#2d527e;
+    }
+
+    .lab-room-title{
+      font-size:clamp(25px,5vw,39px);
+      margin:8px 0;
+    }
+
+    .lab-room-sub{
+      color:#b4c6df;
+      line-height:1.7;
+    }
+
+    .lab-room-cards{
+      display:grid;
+      grid-template-columns:
+        repeat(auto-fit,minmax(240px,1fr));
+      gap:15px;
+      margin-top:28px;
+    }
+
+    .lab-room-card{
+      background:#101f34!important;
+      border:1px solid #304763!important;
+      border-radius:16px!important;
+      padding:24px!important;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:13px;
+      text-align:left;
+      min-height:190px;
+    }
+
+    .lab-room-card strong{
+      font-size:23px;
+    }
+
+    .lab-room-card span{
+      color:#b4c6df;
+      line-height:1.5;
+    }
+
+    #labGrowthRoom #labGrowthPanel{
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      padding:0;
+      margin:0;
+      width:100%;
+      max-width:100%;
+    }
+
+    @media(max-width:500px){
+      .lab-room{
+        padding:14px;
+      }
+
+      .lab-room-inner{
+        padding-top:12px;
+      }
+    }
+  `;
+
+  document.head.appendChild(css);
+
+  /* 검증실 입구 */
+
+  const hub=document.createElement('section');
+
+  hub.id='labHubOverlay';
+  hub.className='lab-room';
+  hub.hidden=true;
+
+  hub.innerHTML=`
+    <div class="lab-room-inner">
+
+      <div class="lab-room-head">
+        <strong>
+          SPIRIT SYSTEM / FOCUS LAB
+        </strong>
+
+        <button id="labHubExit" type="button">
+          ← 메인으로
+        </button>
+      </div>
+
+      <p class="lab-room-sub">
+        INDEPENDENT FOCUS TRAINING
+      </p>
+
+      <h1 class="lab-room-title">
+        집중력 검증실
+      </h1>
+
+      <p id="labHubStats" class="lab-room-sub">
+        성장 정보를 불러오는 중...
+      </p>
+
+      <div class="lab-room-cards">
+
+        <button
+          id="labHubTest"
+          class="lab-room-card"
+          type="button"
+        >
+          <strong>◈ 집중력 검사</strong>
+
+          <span>
+            일반 3단계 · 응용 3단계
+            <br>
+            도형 반응 검사에 입장합니다.
+          </span>
+
+          <b>검사 시작 →</b>
+        </button>
+
+        <button
+          id="labHubGrowth"
+          class="lab-room-card"
+          type="button"
+        >
+          <strong>↗ 성장 분석</strong>
+
+          <span>
+            검사 기록 · 점수 추이 · 반응 패턴
+            <br>
+            나의 성장 기록을 확인합니다.
+          </span>
+
+          <b>기록 보기 →</b>
+        </button>
+
+      </div>
+    </div>
+  `;
+
+  /* 성장 분석 전용 화면 */
+
+  const growth=document.createElement('section');
+
+  growth.id='labGrowthRoom';
+  growth.className='lab-room';
+  growth.hidden=true;
+
+  growth.innerHTML=`
+    <div class="lab-room-inner">
+
+      <div class="lab-room-head">
+        <strong>
+          FOCUS GROWTH / HISTORY
+        </strong>
+
+        <button id="labGrowthBack" type="button">
+          ← 검증실로
+        </button>
+      </div>
+
+      <div id="labGrowthMount"></div>
+
+    </div>
+  `;
+
+  document.body.append(hub,growth);
+
+  /*
+   기존 3.1 성장 분석 패널을
+   메인 화면에서 전용 화면으로 이동
+  */
+
+  const panel=document.getElementById('labGrowthPanel');
+
+  if(panel){
+    document
+      .getElementById('labGrowthMount')
+      .appendChild(panel);
+  }
+
+  /* 버튼 연결 */
+
+  document.getElementById('labHubExit').onclick=
+    labCloseRooms;
+
+  document.getElementById('labHubTest').onclick=()=>{
+    labCloseRooms();
+    openFocusLab();
+  };
+
+  document.getElementById('labHubGrowth').onclick=
+    labOpenGrowth;
+
+  document.getElementById('labGrowthBack').onclick=
+    labOpenHub;
+}
+
+
+/* 모든 연구실 화면 닫기 */
+
+function labCloseRooms(){
+
+  const hub=document.getElementById('labHubOverlay');
+  const growth=document.getElementById('labGrowthRoom');
+
+  if(hub)hub.hidden=true;
+  if(growth)growth.hidden=true;
+
+  document.body.style.overflow='';
+}
+
+
+/* 집중력 검증실 입장 */
+
+async function labOpenHub(){
+
+  labInstallRooms();
+  labCloseRooms();
+
+  const hub=document.getElementById('labHubOverlay');
+
+  hub.hidden=false;
+
+  document.body.style.overflow='hidden';
+
+  const stats=document.getElementById('labHubStats');
+
+  try{
+
+    const p=await labLoadProfile();
+
+    if(!hub.hidden){
+
+      stats.textContent=
+        `FOCUS LV.${p.level} · `+
+        `EXP ${p.exp}/${labExpNeed(p.level)} · `+
+        `최고 LV.${p.max_level} · `+
+        `검사 ${p.total_tests}회`;
+
+    }
+
+  }catch(e){
+
+    stats.textContent=
+      '성장 기록 조회 실패: '+e.message;
+
+  }
+}
+
+
+/* 성장 분석 전용 화면 열기 */
+
+function labOpenGrowth(){
+
+  labInstallRooms();
+  labCloseRooms();
+
+  document.getElementById('labGrowthRoom').hidden=false;
+
+  document.body.style.overflow='hidden';
+
+  labDashboardLoad();
+}
+
   
 function installFocusLab(){
   if($('focusLabPanel'))return;

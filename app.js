@@ -2859,9 +2859,15 @@ function installFocusLab(){
   `;
 
  
+
 quest.insertAdjacentElement('afterend',panel);
-$('focusLabOpen').onclick=openFocusLab;
+
+$('focusLabOpen').textContent='입장 →';
+$('focusLabOpen').onclick=labOpenHub;
+
 labDashboardInstall();
+labInstallRooms();
+
 
 
   if(!$('focusLabStyle')){

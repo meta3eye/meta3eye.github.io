@@ -2938,10 +2938,20 @@ async function finishV3FocusPerformanceTest() {
       "측정 기록이 저장되었습니다.";
   }
 
-  /*
-   * V3 평가 다시 계산
-   */
-  await renderV3Evaluation();
+ /*
+ * 측정 결과 화면을 유지한다.
+ * 최신 평가는 다음 화면 갱신 시 반영된다.
+ */
+
+const startButton =
+  document.getElementById(
+    "v3FocusPerformanceStart"
+  );
+
+if (startButton) {
+  startButton.disabled = false;
+  startButton.textContent = "다시 측정하기";
+}
 }
 
 

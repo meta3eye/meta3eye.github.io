@@ -3647,10 +3647,19 @@ function prepareFocusLab(){
   const c=LAB_MODES[modeKey];
   const total=Number($('labCount').value);
 
+ 
   if(
-    !c||
-    labProfile.max_level<c.level||
-    !(c.switches?[40,80]:[30,60]).includes(total)
+    !c ||
+    (
+      modeKey==='master'
+        ? (
+            Number(labProfile.level)<90 ||
+            Boolean(labProfile.master_at)
+          )
+        : Number(labProfile.max_level)<c.level
+    ) ||
+    !(c.switches?[40,80]:[30,60]).includes(total) ||
+    (modeKey==='master' && total!==80)
   )return;
 
   const shapes=labShuffle(LAB_SHAPES).slice(0,c.shapes);

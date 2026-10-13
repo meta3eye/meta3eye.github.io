@@ -1899,383 +1899,627 @@ window.SPIRIT_V3 = {
   }
 
 
-  /* =========================
-     V3 EVALUATION RENDER
-  ========================= */
+
+/* =========================
+   V3 EVALUATION RENDER
+========================= */
 
 async function renderV3Evaluation() {
-  const container =
-    document.getElementById("v3Evaluation");
+  const container = $("v3Evaluation");
 
-  if (!container) return;
+  if (!container || !state.user?.id) return;
 
-  if (!state.user?.id) {
-    container.innerHTML = `
-      <div class="v3-empty">
-        로그인 후 V3 평가 데이터를 확인할 수 있습니다.
-      </div>
-    `;
+  // 집중력 검증실은 평가 데이터 로딩과 관계없이 표시한다.
+  installFocusLab();
+
+  container.textContent =
+    "측정 기록을 분석하고 있습니다...";
+
+  const evaluation = await v3LoadEvaluation();
+
+  if (!evaluation) {
+    container.textContent =
+      "측정 기록을 불러오지 못했습니다.";
     return;
   }
 
+  const rows = ABILITY_KEYS.map(key => {
+    const item = evaluation.abilities?.[key];
+
+    if (!item) return "";
+
+    const perf = item.performance == null
+      ? (
+          item.performanceTrialCount
+            ? `${item.performanceTrialCount}/5회 축적 중`
+            : "미측정"
+        )
+      : `${Math.round(item.performance)}점 (내부 수행지표)`;
+
+    return `
+      <div class="v3-ability">
+        <h3>${ABILITY_LABELS[key]}</h3>
+
+        <div class="v3-row">
+          <span>일반 훈련</span>
+          <strong>${item.trialCount}회</strong>
+        </div>
+
+        <div class="v3-row">
+          <span>최근 훈련</span>
+          <strong>
+            ${
+              item.lastTrainingAt
+                ? formatV3Date(item.lastTrainingAt)
+                : "없음"
+            }
+          </strong>
+        </div>
+
+        <div class="v3-row">
+          <span>수행 측정</span>
+          <strong>${perf}</strong>
+        </div>
+
+        <div class="v3-row">
+          <span>일관성 / 독립 검증</span>
+          <strong>미측정</strong>
+        </div>
+      </div>
+    `;
+  }).join("");
+
   container.innerHTML = `
-    <div class="v3-loading">
-      훈련 데이터를 분석하고 있습니다...
+    <div class="v3-status">
+      <strong>능력 평가 현황</strong>
+      <span>
+        일반 훈련과 수행 측정은 별도 집계합니다.
+      </span>
+    </div>
+
+    <div class="v3-summary">
+      전체 기록
+      <strong>${evaluation.totalTrainingCount}회</strong>
+    </div>
+
+    <div class="v3-abilities">
+      ${rows}
+    </div>
+
+    <p class="muted">
+      수행지표는 목표 반응 정확도, 오반응 및
+      반응속도를 종합한 내부 지표입니다.
+      초감각 능력의 증거를 의미하지 않습니다.
+    </p>
+  `;
+}
+
+
+/* =========================
+   FOCUS LAB
+   집중력 검증실
+
+   일반 훈련과 독립된 수행능력 측정
+========================= */
+
+let focusLab = null;
+let focusLabTimers = [];
+let focusLabSaving = false;
+
+const labLater = (fn, ms) => {
+  const id = setTimeout(fn, ms);
+  focusLabTimers.push(id);
+  return id;
+};
+
+function labClearTimers() {
+  focusLabTimers.forEach(clearTimeout);
+  focusLabTimers = [];
+}
+
+
+/* =========================
+   독립 패널 설치
+========================= */
+
+function installFocusLab() {
+
+  if ($("focusLabPanel")) return;
+
+  const quest =
+    $("questList")?.closest(".panel");
+
+  if (!quest) return;
+
+  const panel =
+    document.createElement("div");
+
+  panel.id = "focusLabPanel";
+  panel.className = "panel";
+
+  panel.innerHTML = `
+    <div class="section-title">
+      <h2>FOCUS LAB · 집중력 검증실</h2>
+      <span class="muted">수행능력 측정</span>
+    </div>
+
+    <div class="quest">
+      <div>
+        <h3>중앙 지속주의력 측정</h3>
+
+        <p>
+          목표를 놓치지 않는 정확도,
+          불필요한 반응을 억제하는 능력,
+          반응속도와 후반부 집중 유지력을 기록합니다.
+        </p>
+
+        <p class="muted">
+          총 60회 자극 · 반복 측정으로 자신의 변화 확인
+        </p>
+
+        <p class="muted">
+          일반 훈련 EXP 및 랭크와 별도 관리
+        </p>
+      </div>
+
+      <button
+        type="button"
+        id="focusLabOpen"
+      >
+        수행
+      </button>
     </div>
   `;
 
-  try {
-    const evaluation =
-      await v3LoadEvaluation();
+  quest.insertAdjacentElement(
+    "afterend",
+    panel
+  );
 
-    if (!evaluation) {
-      container.innerHTML = `
-        <div class="v3-empty">
-          V3 평가 데이터를 불러오지 못했습니다.
-        </div>
-      `;
+  $("focusLabOpen").onclick = openFocusLab;
+
+
+  /* 전용 화면 디자인 */
+
+  if (!$("focusLabStyle")) {
+
+    const style =
+      document.createElement("style");
+
+    style.id = "focusLabStyle";
+
+    style.textContent = `
+
+      #focusLabOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483000;
+        background: #080e19;
+        color: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+        font-family: inherit;
+        text-align: center;
+      }
+
+      #focusLabOverlay[hidden] {
+        display: none !important;
+      }
+
+      #focusLabOverlay button {
+        cursor: pointer;
+        padding: 13px 22px;
+        border-radius: 10px;
+        border: 1px solid #64748b;
+        background: #273d61;
+        color: #fff;
+        font: inherit;
+      }
+
+      #focusLabOverlay button:disabled {
+        opacity: .5;
+        cursor: default;
+      }
+
+      #focusLabTop {
+        position: absolute;
+        top: 22px;
+        left: 24px;
+        right: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+      }
+
+      #focusLabBody {
+        width: 100%;
+        max-width: 750px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      #focusLabBody p {
+        line-height: 1.7;
+        margin: 5px 0;
+      }
+
+      #focusLabBody .lab-muted {
+        color: #b8c7d9;
+      }
+
+      #focusLabStimulus {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+
+        font-size: clamp(110px, 19vmin, 210px);
+        line-height: 1;
+
+        width: 240px;
+        height: 240px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        user-select: none;
+        pointer-events: none;
+        color: #fff;
+      }
+
+      #focusLabOverlay.lab-running {
+        cursor: pointer;
+        user-select: none;
+      }
+
+      #focusLabProgress {
+        font-variant-numeric: tabular-nums;
+        color: #d5e1f2;
+      }
+
+      #focusLabOverlay .lab-result {
+        text-align: left;
+        max-width: 500px;
+        width: 100%;
+        line-height: 1.9;
+      }
+
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
+  /* 전용 전체 화면 생성 */
+
+  const overlay =
+    document.createElement("div");
+
+  overlay.id = "focusLabOverlay";
+  overlay.hidden = true;
+
+  overlay.innerHTML = `
+    <div id="focusLabTop">
+      <strong>
+        FOCUS LAB · 집중력 검증실
+      </strong>
+
+      <div>
+        <span id="focusLabProgress"></span>
+
+        <button
+          id="focusLabClose"
+          type="button"
+        >
+          닫기
+        </button>
+      </div>
+    </div>
+
+    <div id="focusLabBody"></div>
+
+    <div
+      id="focusLabStimulus"
+      aria-hidden="true"
+    ></div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  $("focusLabClose").onclick = closeFocusLab;
+
+
+  /* 마우스 왼쪽 클릭 반응 */
+
+  overlay.addEventListener("click", e => {
+
+    if (
+      focusLab?.phase === "running" &&
+      e.button === 0 &&
+      !e.target.closest("button")
+    ) {
+      recordV3PerformanceResponse();
+    }
+
+  });
+
+
+  /* 스페이스바 반응 */
+
+  document.addEventListener("keydown", e => {
+
+    if (
+      e.code !== "Space" ||
+      !focusLab ||
+      focusLab.phase !== "running"
+    ) {
       return;
     }
 
-    const abilityRows =
-      ABILITY_KEYS.map((ability) => {
+    e.preventDefault();
 
-        const item =
-          evaluation.abilities?.[ability];
-
-        if (!item) return "";
-
-        const label =
-          ABILITY_LABELS[ability];
-
-        const trialCount =
-          Number(item.trialCount) || 0;
-
-        const performanceTrialCount =
-          Number(
-            item.performanceTrialCount
-          ) || 0;
-
-        const selfReportCount =
-          Number(
-            item.selfReportCount
-          ) || 0;
-
-        const practiceText =
-          trialCount > 0
-            ? `${trialCount}회`
-            : "없음";
-
-        const recencyText =
-          item.lastTrainingAt
-            ? formatV3Date(
-                item.lastTrainingAt
-              )
-            : "없음";
-
-        let performanceText;
-
-        if (
-          item.performance !== null &&
-          item.performance !== undefined
-        ) {
-          performanceText =
-            v3MeasuredText(
-              item.performance
-            );
-        } else if (
-          performanceTrialCount > 0
-        ) {
-          performanceText =
-            `${performanceTrialCount}회 기록 / 5회 필요`;
-        } else if (
-          selfReportCount > 0
-        ) {
-          performanceText =
-            "자기보고 데이터 확보";
-        } else {
-          performanceText =
-            "미측정";
-        }
-
-        return `
-          <div class="v3-ability">
-
-            <h3>${label}</h3>
-
-            <div class="v3-row">
-              <span>훈련량</span>
-              <strong>
-                ${practiceText}
-              </strong>
-            </div>
-
-            <div class="v3-row">
-              <span>최근 훈련</span>
-              <strong>
-                ${recencyText}
-              </strong>
-            </div>
-
-            <div class="v3-row">
-              <span>수행능력</span>
-              <strong>
-                ${performanceText}
-              </strong>
-            </div>
-
-            <div class="v3-row">
-              <span>수행기록</span>
-              <strong>
-                ${
-                  performanceTrialCount > 0
-                    ? `V3 테스트 ${performanceTrialCount}회`
-                    : "없음"
-                }
-              </strong>
-            </div>
-
-            <div class="v3-row">
-              <span>일관성</span>
-              <strong>
-                ${v3MeasuredText(
-                  item.consistency
-                )}
-              </strong>
-            </div>
-
-            <div class="v3-row">
-              <span>검증</span>
-              <strong>
-                ${v3MeasuredText(
-                  item.verification
-                )}
-              </strong>
-            </div>
-
-            <div class="v3-row">
-              <span>신뢰도 보정</span>
-              <strong>
-                ${v3MeasuredText(
-                  item.calibration
-                )}
-              </strong>
-            </div>
-
-          </div>
-        `;
-      }).join("");
-
-    container.innerHTML = `
-      <div class="v3-status">
-        <strong>현재 평가 상태</strong>
-        <span>훈련 데이터 기반</span>
-      </div>
-
-      <div class="v3-summary">
-        전체 훈련 기록
-        <strong>
-          ${evaluation.totalTrainingCount}회
-        </strong>
-      </div>
-
-      <div class="v3-notice">
-        현재는 훈련량과 최근성을 기본으로 측정합니다.
-        객관적 수행능력·일관성·검증 데이터가 충분히
-        축적되기 전까지 종합 능력점수는 산출하지 않습니다.
-      </div>
-
-      <div class="v3-abilities">
-        ${abilityRows}
-      </div>
-
-      <div class="v3-performance-test">
-
-        <h3>V3 PERFORMANCE TEST</h3>
-
-        <p>
-          집중력 수행을 실제 반응 데이터로 측정합니다.
-        </p>
-
-        <p class="v3-performance-description">
-          목표 자극이 나타날 때만 버튼을 누르십시오.
-          일반 훈련 기록과 별도로 저장됩니다.
-        </p>
-
-        <button
-          id="v3FocusPerformanceStart"
-          type="button"
-        >
-          집중력 수행 테스트 시작
-        </button>
-
-        <div
-          id="v3FocusPerformanceArea"
-          class="hidden"
-        ></div>
-
-      </div>
-    `;
-
-    const performanceStartButton =
-      document.getElementById(
-        "v3FocusPerformanceStart"
-      );
-
-    if (
-      performanceStartButton &&
-      typeof startV3FocusPerformanceTest ===
-        "function"
-    ) {
-      performanceStartButton.onclick =
-        startV3FocusPerformanceTest;
+    if (!e.repeat) {
+      recordV3PerformanceResponse();
     }
 
-  } catch (error) {
+  });
 
-    console.error(
-      "[SPIRIT SYSTEM V3] render error:",
-      error
-    );
 
-    container.innerHTML = `
-      <div class="v3-empty">
-        V3 평가 중 오류가 발생했습니다.
-      </div>
-    `;
-  }
+  /* 다른 화면으로 이동하면 측정 중단 */
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+
+      if (
+        document.hidden &&
+        focusLab?.phase === "running"
+      ) {
+        abortFocusLab(
+          "다른 화면으로 이동하여 측정이 중단되었습니다. 기록은 저장되지 않습니다."
+        );
+      }
+
+    }
+  );
+
+  window.addEventListener("blur", () => {
+
+    if (focusLab?.phase === "running") {
+      abortFocusLab(
+        "창의 초점이 변경되어 측정이 중단되었습니다. 기록은 저장되지 않습니다."
+      );
+    }
+
+  });
+
 }
 
-  
+
 /* =========================
-   V3 FOCUS PERFORMANCE TEST
-   중앙 지속주의력 측정
+   검증실 입장
 ========================= */
 
-let v3PerformanceState = null;
-let v3PerformanceTimer = null;
+function openFocusLab() {
+
+  installFocusLab();
+
+  labClearTimers();
+
+  focusLab = {
+    phase: "intro"
+  };
+
+  $("focusLabOverlay").hidden = false;
+
+  $("focusLabOverlay").classList.remove(
+    "lab-running"
+  );
+
+  $("focusLabStimulus").textContent = "";
+
+  $("focusLabProgress").textContent =
+    "측정 안내";
+
+  $("focusLabBody").innerHTML = `
+
+    <h1>중앙 지속주의력 측정</h1>
+
+    <p>
+      이 검사는 얼마나 빨리 누르는지만
+      평가하는 게임이 아닙니다.
+    </p>
+
+    <p>
+      목표를 정확히 알아차리는 능력,
+      불필요한 반응을 억제하는 능력,
+      그리고 집중력을 끝까지 유지하는 정도를
+      기록합니다.
+    </p>
+
+    <hr style="width:100%;opacity:.25">
+
+    <h2>반응 방법</h2>
+
+    <p>
+      목표
+      <strong style="font-size:38px">●</strong>
+      가 나타날 때만 반응하세요.
+    </p>
+
+    <p>
+      비목표
+      <strong style="font-size:38px">○</strong>
+      에는 반응하지 마세요.
+    </p>
+
+    <p>
+      <strong>
+        스페이스바(SPACE) 또는
+        마우스 왼쪽 클릭
+      </strong>
+    </p>
+
+    <p class="lab-muted">
+      두 방법 중 편한 방법 하나를 사용하십시오.
+      음성이나 박수는 사용하지 않습니다.
+    </p>
+
+    <p class="lab-muted">
+      자극은 화면 정중앙에 200ms 동안 나타납니다.
+      자극이 사라지더라도 출현 후 800ms까지
+      반응할 수 있습니다.
+    </p>
+
+    <p class="lab-muted">
+      총 60회 측정합니다.
+      같은 조건으로 반복 측정하면
+      자신의 집중력 변화 추이를 비교할 수 있습니다.
+    </p>
+
+    <button
+      id="focusLabBegin"
+      type="button"
+    >
+      설명 확인 · 측정 시작
+    </button>
+  `;
+
+  $("focusLabBegin").onclick =
+    startV3FocusPerformanceTest;
+
+}
+
+
+/* =========================
+   검증실 닫기
+========================= */
+
+function closeFocusLab() {
+
+  if (focusLabSaving) return;
+
+  labClearTimers();
+
+  focusLab = null;
+
+  $("focusLabOverlay").hidden = true;
+
+  $("focusLabOverlay").classList.remove(
+    "lab-running"
+  );
+
+}
+
+
+/* =========================
+   측정 중단
+========================= */
+
+function abortFocusLab(message) {
+
+  labClearTimers();
+
+  if (!focusLab) return;
+
+  focusLab.phase = "aborted";
+
+  $("focusLabOverlay").classList.remove(
+    "lab-running"
+  );
+
+  $("focusLabStimulus").textContent = "";
+
+  $("focusLabBody").innerHTML = `
+    <h2>측정 중단</h2>
+
+    <p>${message}</p>
+
+    <button
+      id="focusLabRetry"
+      type="button"
+    >
+      다시 시작
+    </button>
+  `;
+
+  $("focusLabRetry").onclick = openFocusLab;
+
+}
+
+
+/* =========================
+   측정 시작 및 카운트다운
+========================= */
 
 function startV3FocusPerformanceTest() {
 
-  const area =
-    document.getElementById(
-      "v3FocusPerformanceArea"
-    );
-
-  const button =
-    document.getElementById(
-      "v3FocusPerformanceStart"
-    );
-
-  if (!area || !button) {
+  if (
+    !focusLab ||
+    focusLab.phase !== "intro"
+  ) {
     return;
   }
 
-  if (v3PerformanceState) {
-    return;
-  }
+  focusLab.phase = "countdown";
 
-  button.disabled = true;
+  let count = 3;
 
-  area.classList.remove("hidden");
+  $("focusLabBody").innerHTML = `
+    <h2>화면 중앙을 응시하세요</h2>
 
-  area.innerHTML = `
-    <div class="v3-performance-center">
+    <h1 id="focusLabCountdown">3</h1>
 
-      <div class="v3-performance-status">
-        준비하십시오.
-      </div>
-
-      <div
-        class="v3-performance-countdown"
-        id="v3PerformanceCountdown"
-      >
-        3
-      </div>
-
-      <p class="v3-performance-instruction">
-        중앙의 자극을 주의 깊게 관찰하십시오.
-        <br>
-        <strong>●</strong>가 나타날 때만
-        중앙을 클릭하십시오.
-      </p>
-
-    </div>
+    <p>
+      ●에만 SPACE 또는 왼쪽 클릭
+    </p>
   `;
 
-  let countdown = 3;
+  function tick() {
 
-  const countdownTimer =
-    setInterval(() => {
+    if (focusLab?.phase !== "countdown") {
+      return;
+    }
 
-      countdown--;
+    count--;
 
-      const element =
-        document.getElementById(
-          "v3PerformanceCountdown"
-        );
+    if (count === 0) {
+      runV3FocusPerformanceTest();
+      return;
+    }
 
-      if (element) {
-        element.textContent =
-          countdown > 0
-            ? countdown
-            : "시작";
-      }
+    $("focusLabCountdown").textContent =
+      count;
 
-      if (countdown <= 0) {
+    labLater(tick, 1000);
+  }
 
-        clearInterval(
-          countdownTimer
-        );
+  labLater(tick, 1000);
 
-        runV3FocusPerformanceTest();
-      }
-
-    }, 1000);
 }
 
 
+/* =========================
+   실제 측정 실행
+========================= */
+
 function runV3FocusPerformanceTest() {
 
-  const area =
-    document.getElementById(
-      "v3FocusPerformanceArea"
-    );
+  const sequence =
+    Array(15).fill(true)
+      .concat(Array(45).fill(false));
 
-  if (!area) {
-    return;
-  }
+  /* 무작위 배열 */
 
-  /*
-   * 총 60회
-   * 목표 자극 15회
-   * 비목표 자극 45회
-   */
-
-  const totalTrials = 60;
-
-  const targetTrials = 15;
-
-  const sequence = [];
-
-  for (
-    let i = 0;
-    i < targetTrials;
-    i++
-  ) {
-    sequence.push(true);
-  }
-
-  while (
-    sequence.length <
-    totalTrials
-  ) {
-    sequence.push(false);
-  }
-
-  /*
-   * 무작위 순서
-   */
   for (
     let i = sequence.length - 1;
     i > 0;
@@ -2284,8 +2528,7 @@ function runV3FocusPerformanceTest() {
 
     const j =
       Math.floor(
-        Math.random() *
-        (i + 1)
+        Math.random() * (i + 1)
       );
 
     [
@@ -2295,663 +2538,386 @@ function runV3FocusPerformanceTest() {
       sequence[j],
       sequence[i]
     ];
+
   }
 
-  v3PerformanceState = {
-
+  focusLab = {
+    phase: "running",
     sequence,
-
     index: 0,
-
     hits: 0,
-
     misses: 0,
-
     falseAlarms: 0,
-
-    reactionTimes: [],
-
-    earlyReactionTimes: [],
-
-    lateReactionTimes: [],
-
-    targetCount: targetTrials,
-
-    nonTargetCount:
-      totalTrials -
-      targetTrials,
-
-    stimulusStartedAt: null,
-
-    stimulusVisible: false,
-
-    responded: false
+    rt: [],
+    early: [],
+    late: [],
+    trials: [],
+    responded: false,
+    startedAt: 0,
+    windowOpen: false
   };
 
+  $("focusLabBody").innerHTML = "";
+
+  $("focusLabOverlay").classList.add(
+    "lab-running"
+  );
+
   showNextV3PerformanceStimulus();
+
 }
 
+
+/* =========================
+   중앙 자극 표시
+========================= */
 
 function showNextV3PerformanceStimulus() {
 
-  const area =
-    document.getElementById(
-      "v3FocusPerformanceArea"
-    );
+  const s = focusLab;
 
   if (
-    !area ||
-    !v3PerformanceState
+    !s ||
+    s.phase !== "running"
   ) {
     return;
   }
 
-  /*
-   * 이전 자극 처리
-   */
-  if (
-    v3PerformanceState.index > 0
-  ) {
+  if (s.index >= s.sequence.length) {
+    finishV3FocusPerformanceTest();
+    return;
+  }
 
-    const previousIndex =
-      v3PerformanceState.index - 1;
+  s.responded = false;
+  s.windowOpen = true;
+  s.startedAt = performance.now();
 
-    const previousTarget =
-      v3PerformanceState.sequence[
-        previousIndex
-      ];
+  $("focusLabProgress").textContent =
+    `${s.index + 1} / ${s.sequence.length}`;
+
+  $("focusLabStimulus").textContent =
+    s.sequence[s.index]
+      ? "●"
+      : "○";
+
+
+  /* 200ms 후 자극 숨김 */
+
+  labLater(() => {
+
+    if (focusLab === s) {
+      $("focusLabStimulus").textContent = "";
+    }
+
+  }, 200);
+
+
+  /* 800ms 후 반응 허용 시간 종료 */
+
+  labLater(() => {
 
     if (
-      previousTarget &&
-      !v3PerformanceState.responded
+      focusLab !== s ||
+      s.phase !== "running"
     ) {
-
-      v3PerformanceState.misses++;
+      return;
     }
-  }
 
-  /*
-   * 모든 테스트 종료
-   */
-  if (
-    v3PerformanceState.index >=
-    v3PerformanceState.sequence.length
-  ) {
+    s.windowOpen = false;
 
-    finishV3FocusPerformanceTest();
+    const target =
+      s.sequence[s.index];
 
-    return;
-  }
+    if (target && !s.responded) {
+      s.misses++;
+    }
 
-  const isTarget =
-    v3PerformanceState.sequence[
-      v3PerformanceState.index
-    ];
+    s.trials.push({
+      target,
+      responded: s.responded
+    });
 
-  /*
-   * 중앙 테스트 화면
-   */
-  area.innerHTML = `
+    s.index++;
 
-    <div class="v3-performance-center">
+    const gap =
+      600 +
+      Math.floor(Math.random() * 801);
 
-      <div class="v3-performance-progress">
-        ${v3PerformanceState.index + 1}
-        /
-        ${v3PerformanceState.sequence.length}
-      </div>
-
-      <div
-        class="v3-performance-stimulus-area"
-        id="v3PerformanceStimulusArea"
-      >
-
-        <div
-          class="v3-performance-stimulus"
-          id="v3PerformanceStimulus"
-        >
-          ${
-            isTarget
-              ? "●"
-              : "○"
-          }
-        </div>
-
-      </div>
-
-    </div>
-
-  `;
-
-  const stimulusArea =
-    document.getElementById(
-      "v3PerformanceStimulusArea"
+    labLater(
+      showNextV3PerformanceStimulus,
+      gap
     );
 
-  if (stimulusArea) {
+  }, 800);
 
-    stimulusArea.onclick =
-      recordV3PerformanceResponse;
-  }
-
-  /*
-   * 자극이 나타난 정확한 시각
-   */
-  v3PerformanceState
-    .stimulusStartedAt =
-      performance.now();
-
-  v3PerformanceState
-    .stimulusVisible =
-      true;
-
-  v3PerformanceState.responded =
-    false;
-
-  /*
-   * 자극은 약 200ms만 표시
-   */
-  v3PerformanceTimer =
-    setTimeout(() => {
-
-      if (
-        !v3PerformanceState
-      ) {
-        return;
-      }
-
-      v3PerformanceState
-        .stimulusVisible =
-          false;
-
-      const stimulus =
-        document.getElementById(
-          "v3PerformanceStimulus"
-        );
-
-      if (stimulus) {
-        stimulus.textContent = "";
-      }
-
-      /*
-       * 다음 자극까지
-       * 불규칙한 간격
-       */
-      const delay =
-        600 +
-        Math.floor(
-          Math.random() * 801
-        );
-
-      v3PerformanceTimer =
-        setTimeout(() => {
-
-          if (
-            !v3PerformanceState
-          ) {
-            return;
-          }
-
-          v3PerformanceState.index++;
-
-          showNextV3PerformanceStimulus();
-
-        }, delay);
-
-    }, 200);
 }
 
 
+/* =========================
+   키보드 / 마우스 반응 기록
+========================= */
+
 function recordV3PerformanceResponse() {
 
+  const s = focusLab;
+
   if (
-    !v3PerformanceState ||
-    !v3PerformanceState
-      .stimulusVisible ||
-    v3PerformanceState
-      .responded
+    !s ||
+    s.phase !== "running" ||
+    !s.windowOpen ||
+    s.responded
   ) {
     return;
   }
 
-  v3PerformanceState.responded =
-    true;
+  s.responded = true;
 
-  const isTarget =
-    v3PerformanceState.sequence[
-      v3PerformanceState.index
-    ];
+  const rt =
+    Math.round(
+      performance.now() - s.startedAt
+    );
 
-  const reactionTime =
-    performance.now() -
-    v3PerformanceState
-      .stimulusStartedAt;
+  if (s.sequence[s.index]) {
 
-  if (isTarget) {
+    s.hits++;
+    s.rt.push(rt);
 
-    v3PerformanceState.hits++;
-
-    v3PerformanceState
-      .reactionTimes
-      .push(reactionTime);
-
-    /*
-     * 전반부 / 후반부
-     */
-    if (
-      v3PerformanceState.index <
-      v3PerformanceState
-        .sequence.length / 2
-    ) {
-
-      v3PerformanceState
-        .earlyReactionTimes
-        .push(reactionTime);
-
+    if (s.index < 30) {
+      s.early.push(rt);
     } else {
-
-      v3PerformanceState
-        .lateReactionTimes
-        .push(reactionTime);
+      s.late.push(rt);
     }
 
   } else {
 
-    v3PerformanceState
-      .falseAlarms++;
+    s.falseAlarms++;
+
   }
+
 }
 
 
+/* =========================
+   측정 종료 및 서버 저장
+========================= */
+
 async function finishV3FocusPerformanceTest() {
 
-  if (v3PerformanceTimer) {
+  const s = focusLab;
 
-    clearTimeout(
-      v3PerformanceTimer
-    );
-
-    v3PerformanceTimer = null;
-  }
-
-  const stateData =
-    v3PerformanceState;
-
-  v3PerformanceState = null;
-
-  if (!stateData) {
+  if (
+    !s ||
+    s.phase !== "running"
+  ) {
     return;
   }
 
-  /*
-   * 적중률
-   */
-  const hitRate =
-    stateData.targetCount > 0
-      ? stateData.hits /
-        stateData.targetCount
-      : 0;
+  labClearTimers();
 
-  /*
-   * 오반응률
-   */
-  const falseAlarmRate =
-    stateData.nonTargetCount > 0
-      ? stateData.falseAlarms /
-        stateData.nonTargetCount
-      : 0;
+  s.phase = "result";
 
-  /*
-   * 평균 반응시간
-   */
-  const averageReaction =
-    stateData.reactionTimes.length > 0
-      ? stateData.reactionTimes
-          .reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) /
-        stateData.reactionTimes.length
-      : null;
+  $("focusLabOverlay").classList.remove(
+    "lab-running"
+  );
 
-  /*
-   * 전반부 평균
-   */
-  const earlyAverage =
-    stateData
-      .earlyReactionTimes.length > 0
-      ? stateData
-          .earlyReactionTimes
-          .reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) /
-        stateData
-          .earlyReactionTimes
-          .length
-      : null;
+  $("focusLabStimulus").textContent = "";
 
-  /*
-   * 후반부 평균
-   */
-  const lateAverage =
-    stateData
-      .lateReactionTimes.length > 0
-      ? stateData
-          .lateReactionTimes
-          .reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) /
-        stateData
-          .lateReactionTimes
-          .length
-      : null;
+  $("focusLabProgress").textContent =
+    "측정 완료";
 
-  /*
-   * 후반부 성능 변화
-   *
-   * 양수:
-   * 후반부 반응이 느려짐
-   *
-   * 음수:
-   * 후반부가 더 빨라짐
-   */
-  const latePerformanceChange =
-    earlyAverage !== null &&
-    lateAverage !== null
-      ? lateAverage -
-        earlyAverage
-      : null;
 
-  /*
-   * 반응속도 점수
-   *
-   * 250ms 이하 = 높은 반응속도
-   * 1000ms 이상 = 낮은 반응속도
-   */
-  let reactionScore = 0;
+  /* 평균 계산 */
 
-  if (
-    averageReaction !== null
-  ) {
-
-    reactionScore =
-      Math.max(
-        0,
-        Math.min(
-          1,
-          1 -
-            (
-              averageReaction - 250
-            ) /
-              750
+  const avg = a =>
+    a.length
+      ? Math.round(
+          a.reduce((x, y) => x + y, 0) /
+          a.length
         )
-      );
-  }
+      : null;
 
-  /*
-   * 기본 수행점수
-   *
-   * 적중 60%
-   * 오반응 억제 25%
-   * 반응속도 15%
-   */
+  const hitRate = s.hits / 15;
+
+  const falseRate =
+    s.falseAlarms / 45;
+
+  const mean = avg(s.rt);
+
+  const reactionScore =
+    mean === null
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            1 - (mean - 250) / 750
+          )
+        );
+
   const score =
     Math.round(
-      (
-        hitRate * 60
-      ) +
-      (
-        (1 - falseAlarmRate) *
-        25
-      ) +
-      (
-        reactionScore * 15
-      )
+      hitRate * 60 +
+      (1 - falseRate) * 25 +
+      reactionScore * 15
     );
+
+  const early = avg(s.early);
+  const late = avg(s.late);
+
+
+  /* 기존 Supabase 기록 구조 유지 */
 
   const resultData = {
 
     test_type:
-      "V3 중앙 지속주의력 수행 테스트",
+      "중앙 지속주의력 측정",
 
     test_version:
-      "V3.1",
+      "FOCUS-LAB-1.0",
 
-    total_trials:
-      stateData.sequence.length,
+    total_trials: 60,
 
-    target_trials:
-      stateData.targetCount,
+    target_trials: 15,
 
-    non_target_trials:
-      stateData.nonTargetCount,
+    non_target_trials: 45,
 
-    hits:
-      stateData.hits,
+    hits: s.hits,
 
-    misses:
-      stateData.misses,
+    misses: s.misses,
 
-    false_alarms:
-      stateData.falseAlarms,
+    false_alarms: s.falseAlarms,
 
     hit_rate:
       Number(
-        (
-          hitRate * 100
-        ).toFixed(2)
+        (hitRate * 100).toFixed(2)
       ),
 
     false_alarm_rate:
       Number(
-        (
-          falseAlarmRate * 100
-        ).toFixed(2)
+        (falseRate * 100).toFixed(2)
       ),
 
-    average_reaction_ms:
-      averageReaction === null
-        ? null
-        : Math.round(
-            averageReaction
-          ),
+    average_reaction_ms: mean,
 
-    early_average_reaction_ms:
-      earlyAverage === null
-        ? null
-        : Math.round(
-            earlyAverage
-          ),
+    early_average_reaction_ms: early,
 
-    late_average_reaction_ms:
-      lateAverage === null
-        ? null
-        : Math.round(
-            lateAverage
-          ),
+    late_average_reaction_ms: late,
 
     late_performance_change_ms:
-      latePerformanceChange === null
+      early === null || late === null
         ? null
-        : Math.round(
-            latePerformanceChange
-          ),
+        : late - early,
 
-    internal_score:
-      score,
+    internal_score: score,
 
     completed_at:
       new Date().toISOString()
+
   };
 
-  /*
-   * 결과 화면
-   */
-  const area =
-    document.getElementById(
-      "v3FocusPerformanceArea"
-    );
 
-  if (area) {
+  /* 결과 화면 */
 
-    area.innerHTML = `
+  $("focusLabBody").innerHTML = `
 
-      <div class="v3-performance-result">
+    <h1>집중력 측정 결과</h1>
 
-        <h4>측정 완료</h4>
+    <div class="lab-result">
 
-        <p>
-          정답 반응:
-          <strong>
-            ${stateData.hits}
-          </strong>
-          /
-          ${stateData.targetCount}
-        </p>
+      목표 반응:
+      <strong>${s.hits}/15</strong>
+      <br>
 
-        <p>
-          놓친 목표:
-          <strong>
-            ${stateData.misses}
-          </strong>
-        </p>
+      놓친 목표:
+      <strong>${s.misses}</strong>
+      <br>
 
-        <p>
-          오반응:
-          <strong>
-            ${stateData.falseAlarms}
-          </strong>
-        </p>
+      불필요한 반응:
+      <strong>${s.falseAlarms}/45</strong>
+      <br>
 
-        <p>
-          평균 반응시간:
-          <strong>
-            ${
-              averageReaction === null
-                ? "측정 실패"
-                : `${Math.round(
-                    averageReaction
-                  )}ms`
-            }
-          </strong>
-        </p>
+      평균 반응시간:
+      <strong>
+        ${
+          mean === null
+            ? "측정 없음"
+            : mean + "ms"
+        }
+      </strong>
+      <br>
 
-        <p>
-          전반부 평균:
-          <strong>
-            ${
-              earlyAverage === null
-                ? "측정 실패"
-                : `${Math.round(
-                    earlyAverage
-                  )}ms`
-            }
-          </strong>
-        </p>
+      전반부 / 후반부 반응시간:
+      <strong>
+        ${early ?? "-"} / ${late ?? "-"} ms
+      </strong>
+      <br>
 
-        <p>
-          후반부 평균:
-          <strong>
-            ${
-              lateAverage === null
-                ? "측정 실패"
-                : `${Math.round(
-                    lateAverage
-                  )}ms`
-            }
-          </strong>
-        </p>
+      내부 수행지표:
+      <strong>${score}/100</strong>
 
-        <p>
-          내부 수행지표:
-          <strong>
-            ${score}
-          </strong>
-        </p>
+    </div>
 
-        <p class="muted">
-          동일 테스트를 최소 5회 반복한 뒤
-          수행능력 분석에 반영합니다.
-        </p>
+    <p class="lab-muted">
+      같은 조건으로 최소 5회 측정하여
+      개인 내 변화 추이를 확인합니다.
+      이 지표는 초감각 능력의 증거가 아닙니다.
+    </p>
 
-        <p
-          id="v3PerformanceSaveStatus"
-          class="muted"
-        >
-          측정 결과를 저장하고 있습니다...
-        </p>
+    <p id="focusLabSaveStatus">
+      서버에 저장하고 있습니다...
+    </p>
 
-      </div>
+    <button
+      id="focusLabReturn"
+      type="button"
+      disabled
+    >
+      결과 확인 후 돌아가기
+    </button>
+  `;
 
-    `;
-  }
 
-  /*
-   * 현재는 기존 quest_logs 직접 INSERT가
-   * RLS에서 차단되었으므로
-   * 저장 전용 RPC를 호출한다.
-   */
-  const {
-    data,
-    error
-  } = await client.rpc(
-    "save_v3_focus_performance",
-    {
-      p_score:
-        score,
+  /* Supabase RPC 저장 */
 
-      p_result:
-        resultData
-    }
-  );
+  focusLabSaving = true;
 
-  const saveStatus =
-    document.getElementById(
-      "v3PerformanceSaveStatus"
-    );
+  let error;
 
-  if (error) {
+  try {
 
-    console.error(
-      "[SPIRIT SYSTEM V3] performance save error:",
+    ({
       error
-    );
+    } = await client.rpc(
+      "save_v3_focus_performance",
+      {
+        p_score: score,
+        p_result: resultData
+      }
+    ));
 
-    if (saveStatus) {
+  } catch (e) {
 
-      saveStatus.textContent =
-        "측정은 완료되었지만 서버 저장에 실패했습니다. " +
-        error.message;
-    }
+    error = e;
 
-    return;
   }
 
-  if (saveStatus) {
+  focusLabSaving = false;
 
-    saveStatus.textContent =
-      "측정 기록이 저장되었습니다.";
-  }
+  $("focusLabSaveStatus").textContent =
+    error
+      ? `서버 저장 실패: ${error.message || error}`
+      : "측정 기록이 서버에 저장되었습니다.";
 
- /*
- * 측정 결과 화면을 유지한다.
- * 최신 평가는 다음 화면 갱신 시 반영된다.
- */
+  $("focusLabReturn").disabled = false;
 
-const startButton =
-  document.getElementById(
-    "v3FocusPerformanceStart"
-  );
+  $("focusLabReturn").onclick = () => {
 
-if (startButton) {
-  startButton.disabled = false;
-  startButton.textContent = "다시 측정하기";
-}
+    closeFocusLab();
+
+    renderV3Evaluation();
+
+  };
+
 }
 
 

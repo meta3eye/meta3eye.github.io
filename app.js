@@ -2782,6 +2782,10 @@ function labCloseRooms(){
 
 /* 집중력 검증실 입장 */
 
+/* =========================
+   FOCUS LAB 3.4
+   검증실 입구 / 성장 현황 / 최근 검사
+========================= */
 
 async function labOpenHub(){
 
@@ -2791,6 +2795,8 @@ async function labOpenHub(){
   const hub=document.getElementById('labHubOverlay');
   const stats=document.getElementById('labHubStats');
 
+  if(!hub||!stats)return;
+
   hub.hidden=false;
   document.body.style.overflow='hidden';
 
@@ -2798,89 +2804,126 @@ async function labOpenHub(){
 
   try{
 
+    /* 1. 독립 FOCUS 프로필 조회 */
+
     const p=await labLoadProfile();
 
-    // 조회 도중 다른 화면으로 이동했으면
-    // 이전 화면의 결과를 다시 표시하지 않는다.
     if(hub.hidden)return;
 
-    const level=Number(p.level)||1;
-    const exp=Number(p.exp)||0;
-    const highest=Number(p.max_level)||1;
-    const total=Number(p.total_tests)||0;
+    const level=Math.max(1,Number(p.level)||1);
+    const exp=Math.max(0,Number(p.exp)||0);
+    const highest=Math.max(1,Number(p.max_level)||1);
+    const total=Math.max(0,Number(p.total_tests)||0);
 
     const needed=labExpNeed(level);
 
     const percent=Math.max(
       0,
-      Math.min(100,exp/needed*100)
+      Math.min(100,(exp/needed)*100)
     );
 
+    /* 2. 다음 검사 과정 해금 정보 */
+
     const next=Object.values(LAB_MODES)
+      .sort((a,b)=>a.level-b.level)
       .find(mode=>mode.level>highest);
 
-    const nextText=next
-      ?`다음 해금 · ${next.name} / LV.${next.level}`
-      :'모든 검사 과정 해금 완료';
+    const nextName=next
+      ?next.name
+      :'ALL COURSES UNLOCKED';
+
+    const nextLevel=next
+      ?`LV.${next.level}`
+      :'MASTER';
+
+    const remaining=next
+      ?Math.max(0,next.level-level)
+      :0;
+
+    /* 3. 성장 현황 카드 */
 
     stats.innerHTML=`
+
       <div style="
-        margin-top:20px;
-        padding:22px;
-        border:1px solid #304763;
-        border-radius:15px;
-        background:#101f34;
+        margin-top:22px;
+        padding:24px;
+        background:linear-gradient(
+          145deg,
+          #142842,
+          #101d30 70%
+        );
+        border:1px solid #365474;
+        border-radius:18px;
+        box-shadow:0 12px 35px #00000022;
         text-align:left;
       ">
+
+        <div style="
+          color:#94b5d8;
+          font-size:11px;
+          font-weight:700;
+          letter-spacing:2px;
+        ">
+          PERSONAL FOCUS PROGRESS
+        </div>
 
         <div style="
           display:flex;
           justify-content:space-between;
           align-items:flex-end;
-          gap:12px;
+          gap:15px;
+          margin-top:18px;
         ">
 
           <div>
+
             <div style="
-              color:#9fb5d1;
-              font-size:12px;
-              letter-spacing:2px;
+              font-size:11px;
+              color:#a8bdd7;
+              letter-spacing:1px;
             ">
               CURRENT FOCUS LEVEL
             </div>
 
             <div style="
-              font-size:38px;
+              font-size:clamp(37px,8vw,52px);
               font-weight:800;
-              line-height:1.5;
+              line-height:1.25;
               color:#ffffff;
+              font-variant-numeric:tabular-nums;
             ">
               LV.${level}
             </div>
+
           </div>
 
           <div style="text-align:right">
 
             <div style="
-              color:#9fb5d1;
-              font-size:12px;
+              font-size:11px;
+              color:#a8bdd7;
             ">
               HIGHEST LEVEL
             </div>
 
-            <strong style="font-size:21px">
+            <div style="
+              font-size:24px;
+              font-weight:750;
+              color:#c2dfff;
+            ">
               LV.${highest}
-            </strong>
+            </div>
 
           </div>
+
         </div>
 
         <div style="
-          height:9px;
-          margin:16px 0 9px;
-          border-radius:20px;
+          height:10px;
+          background:#293d57;
+          border-radius:30px;
           overflow:hidden;
-          background:#293c55;
+          margin-top:22px;
         ">
 
           <div style="
@@ -2888,10 +2931,11 @@ async function labOpenHub(){
             height:100%;
             background:linear-gradient(
               90deg,
-              #5189df,
-              #8bc7ff
+              #4f88db,
+              #80c4ff
             );
-            border-radius:20px;
+            border-radius:30px;
+            transition:width .5s ease;
           "></div>
 
         </div>
@@ -2899,33 +2943,302 @@ async function labOpenHub(){
         <div style="
           display:flex;
           justify-content:space-between;
-          flex-wrap:wrap;
-          gap:8px;
-          color:#b4c6df;
+          align-items:center;
+          gap:10px;
+          margin-top:9px;
           font-size:13px;
+          color:#c6d8ed;
+          font-variant-numeric:tabular-nums;
         ">
 
           <span>
             EXP ${exp} / ${needed}
           </span>
 
-          <span>
-            완료한 검사 ${total}회
-          </span>
+          <strong>
+            ${percent.toFixed(1)}%
+          </strong>
 
         </div>
 
         <div style="
-          margin-top:17px;
-          padding-top:13px;
-          border-top:1px solid #304763;
-          color:#b4c6df;
-          font-size:13px;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:12px;
+          margin-top:23px;
         ">
-          ${labEscape(nextText)}
+
+          <div style="
+            background:#0b1729;
+            border-radius:10px;
+            padding:13px;
+          ">
+
+            <div style="
+              font-size:11px;
+              color:#9eb5d0;
+            ">
+              COMPLETED TESTS
+            </div>
+
+            <div style="
+              font-size:23px;
+              font-weight:750;
+              margin-top:5px;
+            ">
+              ${total}
+            </div>
+
+          </div>
+
+          <div style="
+            background:#0b1729;
+            border-radius:10px;
+            padding:13px;
+          ">
+
+            <div style="
+              font-size:11px;
+              color:#9eb5d0;
+            ">
+              NEXT LEVEL
+            </div>
+
+            <div style="
+              font-size:23px;
+              font-weight:750;
+              margin-top:5px;
+            ">
+              ${
+                level>=100
+                  ?'MASTER'
+                  :`LV.${level+1}`
+              }
+            </div>
+
+          </div>
+
+        </div>
+
+        <div style="
+          border-top:1px solid #344b68;
+          margin-top:20px;
+          padding-top:17px;
+        ">
+
+          <div style="
+            font-size:11px;
+            letter-spacing:1px;
+            color:#9eb5d0;
+          ">
+            NEXT COURSE UNLOCK
+          </div>
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            margin-top:8px;
+          ">
+
+            <strong style="
+              font-size:16px;
+              color:#e3efff;
+            ">
+              ${labEscape(nextName)}
+            </strong>
+
+            <span style="
+              font-size:13px;
+              color:#9ac9ff;
+              white-space:nowrap;
+            ">
+              ${nextLevel}
+            </span>
+
+          </div>
+
+          <div style="
+            color:#a8bdd7;
+            font-size:12px;
+            margin-top:8px;
+          ">
+            ${
+              next
+                ?`해금까지 ${remaining}레벨`
+                :'모든 기본 검사 과정이 해금되었습니다.'
+            }
+          </div>
+
         </div>
 
       </div>
+
+      <div id="labHubLatest" style="
+        margin-top:14px;
+        padding:17px 20px;
+        background:#101f34;
+        border:1px solid #304763;
+        border-radius:13px;
+        text-align:left;
+      ">
+
+        <div style="
+          font-size:11px;
+          letter-spacing:1.5px;
+          color:#9eb5d0;
+        ">
+          LATEST PERFORMANCE
+        </div>
+
+        <div style="
+          color:#b4c6df;
+          font-size:13px;
+          margin-top:9px;
+        ">
+          최근 검사 기록을 불러오는 중...
+        </div>
+
+      </div>
+
+    `;
+
+    /* 4. 최근 검사 결과 조회 */
+
+    const {data,error}=await client
+      .from('focus_lab_results')
+      .select(
+        'mode,total_trials,score,exp_delta,completed_at'
+      )
+      .eq('user_id',state.user.id)
+      .order('completed_at',{ascending:false})
+      .limit(1);
+
+    if(hub.hidden)return;
+
+    const latest=document.getElementById('labHubLatest');
+
+    if(!latest)return;
+
+    if(error){
+
+      latest.innerHTML=`
+        <div style="color:#9eb5d0;font-size:12px">
+          LATEST PERFORMANCE
+        </div>
+
+        <p style="color:#b4c6df">
+          최근 검사 기록을 불러오지 못했습니다.
+        </p>
+      `;
+
+      console.error(
+        '[FOCUS LAB] latest result:',
+        error
+      );
+
+      return;
+    }
+
+    const r=data?.[0];
+
+    if(!r){
+
+      latest.innerHTML=`
+        <div style="color:#9eb5d0;font-size:12px">
+          LATEST PERFORMANCE
+        </div>
+
+        <p style="color:#b4c6df">
+          아직 완료된 검사 기록이 없습니다.
+        </p>
+      `;
+
+      return;
+    }
+
+    const modeName=
+      LAB_MODES[r.mode]?.name||r.mode||'FOCUS TEST';
+
+    const score=Number(r.score);
+    const delta=Number(r.exp_delta)||0;
+
+    const date=r.completed_at
+      ?new Date(r.completed_at).toLocaleString('ko-KR',{
+          year:'numeric',
+          month:'numeric',
+          day:'numeric',
+          hour:'2-digit',
+          minute:'2-digit'
+        })
+      :'날짜 없음';
+
+    latest.innerHTML=`
+
+      <div style="
+        font-size:11px;
+        letter-spacing:1.5px;
+        color:#9eb5d0;
+      ">
+        LATEST PERFORMANCE
+      </div>
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        margin-top:12px;
+      ">
+
+        <div>
+
+          <div style="
+            color:#c4d7ed;
+            font-size:12px;
+          ">
+            ${labEscape(modeName)}
+            · ${Number(r.total_trials)||0}회
+          </div>
+
+          <div style="
+            color:#ffffff;
+            font-size:28px;
+            font-weight:800;
+            margin-top:5px;
+          ">
+            ${
+              Number.isFinite(score)
+                ?`${score}/100`
+                :'기록 없음'
+            }
+          </div>
+
+        </div>
+
+        <div style="text-align:right">
+
+          <div style="
+            color:${delta>=0?'#8de0b2':'#ff9fa9'};
+            font-size:20px;
+            font-weight:750;
+          ">
+            EXP ${delta>=0?'+':''}${delta}
+          </div>
+
+          <div style="
+            color:#9eb5d0;
+            font-size:11px;
+            margin-top:6px;
+          ">
+            ${labEscape(date)}
+          </div>
+
+        </div>
+
+      </div>
+
     `;
 
   }catch(e){
@@ -2934,6 +3247,8 @@ async function labOpenHub(){
       stats.textContent=
         '성장 기록 조회 실패: '+e.message;
     }
+
+    console.error('[FOCUS LAB HUB]',e);
 
   }
 }

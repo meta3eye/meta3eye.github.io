@@ -2949,18 +2949,31 @@ labInstallRooms();
     <div id="focusLabStimulus" aria-hidden="true"></div>
   `;
 
-  document.body.appendChild(overlay);
 
-  $('focusLabClose').onclick=()=>{
-    if(
-      focusLab?.phase==='running'||
-      focusLab?.phase==='countdown'
-    ){
-      abortFocusLab('사용자가 측정을 중단했습니다.');
-    }else{
-      closeFocusLab();
-    }
-  };
+document.body.appendChild(overlay);
+
+$('focusLabClose').textContent='← 검증실로';
+
+$('focusLabClose').onclick=()=>{
+
+  if(focusLabSaving)return;
+
+  // 검사 진행 중이거나 카운트다운 중이면
+  // 타이머를 중단하고 미완료 검사를 폐기한다.
+  if(
+    focusLab?.phase==='running' ||
+    focusLab?.phase==='countdown'
+  ){
+    labClearTimers();
+    focusLab.phase='aborted';
+  }
+
+  closeFocusLab();
+
+  // 메인 화면이 아니라 검증실 입구로 돌아간다.
+  labOpenHub();
+};
+
 
   overlay.addEventListener('click',e=>{
     if(

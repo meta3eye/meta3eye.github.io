@@ -3514,6 +3514,42 @@ async function openFocusLab(requestedMode=null){
   const p=labProfile;
 
 
+  if(
+    requestedMode==='master' &&
+    (
+      Number(p.level)<90 ||
+      Boolean(p.master_at)
+    )
+  ){
+    $('focusLabBody').innerHTML=`
+      <h1>MASTER CHALLENGE</h1>
+
+      <p>
+        ${
+          p.master_at
+            ?'이미 FOCUS MASTER 자격을 획득했습니다.'
+            :'현재 FOCUS LV.90 이상에서 입장할 수 있습니다.'
+        }
+      </p>
+
+      <p class="lab-muted">
+        현재 FOCUS LV.${Number(p.level)||1}
+        · 누적 합격 ${Number(p.master_passes)||0}/3회
+      </p>
+
+      <button id="labMasterBack" type="button">
+        ← 검증실로
+      </button>
+    `;
+
+    $('labMasterBack').onclick=()=>{
+      closeFocusLab();
+      labOpenHub();
+    };
+
+    return;
+  }
+
   
   const modes=Object.entries(LAB_MODES)
     .map(([key,c])=>{

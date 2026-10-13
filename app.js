@@ -4257,6 +4257,43 @@ async function finishV3FocusPerformanceTest(){
       ?data[0]
       :data;
 
+   
+    const masterResult=s.modeKey==='master'
+      ?`
+        <div style="
+          margin-top:15px;
+          padding:16px;
+          background:#142b45;
+          border:1px solid #547aa4;
+          border-radius:12px;
+        ">
+          <strong style="
+            font-size:20px;
+            color:${r?.master_qualified?'#9ce7bd':'#ffd39a'};
+          ">
+            ${
+              r?.master_awarded
+                ?'✦ FOCUS MASTER 획득'
+                :r?.master_qualified
+                  ?'MASTER CHALLENGE · PASS'
+                  :'MASTER CHALLENGE · NOT PASSED'
+            }
+          </strong>
+
+          <p>
+            누적 합격
+            <strong>${Number(r?.master_passes)||0}/3회</strong>
+          </p>
+
+          <p class="lab-muted">
+            최종 MASTER 자격은
+            3회 합격과 FOCUS LV.100 달성이
+            모두 충족되어야 부여됩니다.
+          </p>
+        </div>
+      `
+      :'';
+
     $('focusLabSaveStatus').innerHTML=`
       서버 확정:
       <strong>
@@ -4278,7 +4315,10 @@ async function finishV3FocusPerformanceTest(){
           ?labEscape(r.message)
           :'검사 결과 저장 완료'
       }
+
+      ${masterResult}
     `;
+
 
     try{
       await labLoadProfile();

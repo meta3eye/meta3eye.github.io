@@ -2077,8 +2077,15 @@ async function labLoadProfile(){
     total_tests:0
   };
 
-  labUpdatePanel();
-  return labProfile;
+ 
+labUpdatePanel();
+
+if(document.getElementById('labGrowthPanel')){
+  labDashboardLoad();
+}
+
+return labProfile;
+
 }
 
 function labUpdatePanel(){

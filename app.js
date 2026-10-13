@@ -2782,37 +2782,158 @@ function labCloseRooms(){
 
 /* 집중력 검증실 입장 */
 
+
 async function labOpenHub(){
 
   labInstallRooms();
   labCloseRooms();
 
   const hub=document.getElementById('labHubOverlay');
+  const stats=document.getElementById('labHubStats');
 
   hub.hidden=false;
-
   document.body.style.overflow='hidden';
 
-  const stats=document.getElementById('labHubStats');
+  stats.textContent='성장 정보를 불러오는 중...';
 
   try{
 
     const p=await labLoadProfile();
 
-    if(!hub.hidden){
+    // 조회 도중 다른 화면으로 이동했으면
+    // 이전 화면의 결과를 다시 표시하지 않는다.
+    if(hub.hidden)return;
 
-      stats.textContent=
-        `FOCUS LV.${p.level} · `+
-        `EXP ${p.exp}/${labExpNeed(p.level)} · `+
-        `최고 LV.${p.max_level} · `+
-        `검사 ${p.total_tests}회`;
+    const level=Number(p.level)||1;
+    const exp=Number(p.exp)||0;
+    const highest=Number(p.max_level)||1;
+    const total=Number(p.total_tests)||0;
 
-    }
+    const needed=labExpNeed(level);
+
+    const percent=Math.max(
+      0,
+      Math.min(100,exp/needed*100)
+    );
+
+    const next=Object.values(LAB_MODES)
+      .find(mode=>mode.level>highest);
+
+    const nextText=next
+      ?`다음 해금 · ${next.name} / LV.${next.level}`
+      :'모든 검사 과정 해금 완료';
+
+    stats.innerHTML=`
+      <div style="
+        margin-top:20px;
+        padding:22px;
+        border:1px solid #304763;
+        border-radius:15px;
+        background:#101f34;
+        text-align:left;
+      ">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-end;
+          gap:12px;
+        ">
+
+          <div>
+            <div style="
+              color:#9fb5d1;
+              font-size:12px;
+              letter-spacing:2px;
+            ">
+              CURRENT FOCUS LEVEL
+            </div>
+
+            <div style="
+              font-size:38px;
+              font-weight:800;
+              line-height:1.5;
+              color:#ffffff;
+            ">
+              LV.${level}
+            </div>
+          </div>
+
+          <div style="text-align:right">
+
+            <div style="
+              color:#9fb5d1;
+              font-size:12px;
+            ">
+              HIGHEST LEVEL
+            </div>
+
+            <strong style="font-size:21px">
+              LV.${highest}
+            </strong>
+
+          </div>
+        </div>
+
+        <div style="
+          height:9px;
+          margin:16px 0 9px;
+          border-radius:20px;
+          overflow:hidden;
+          background:#293c55;
+        ">
+
+          <div style="
+            width:${percent}%;
+            height:100%;
+            background:linear-gradient(
+              90deg,
+              #5189df,
+              #8bc7ff
+            );
+            border-radius:20px;
+          "></div>
+
+        </div>
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          flex-wrap:wrap;
+          gap:8px;
+          color:#b4c6df;
+          font-size:13px;
+        ">
+
+          <span>
+            EXP ${exp} / ${needed}
+          </span>
+
+          <span>
+            완료한 검사 ${total}회
+          </span>
+
+        </div>
+
+        <div style="
+          margin-top:17px;
+          padding-top:13px;
+          border-top:1px solid #304763;
+          color:#b4c6df;
+          font-size:13px;
+        ">
+          ${labEscape(nextText)}
+        </div>
+
+      </div>
+    `;
 
   }catch(e){
 
-    stats.textContent=
-      '성장 기록 조회 실패: '+e.message;
+    if(!hub.hidden){
+      stats.textContent=
+        '성장 기록 조회 실패: '+e.message;
+    }
 
   }
 }

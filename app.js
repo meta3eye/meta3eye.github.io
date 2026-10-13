@@ -2102,6 +2102,415 @@ function labUpdatePanel(){
       :' · 전 과정 해금');
 }
 
+
+
+/* FOCUS LAB 3.1 — Growth Dashboard (read-only) */
+let labDashboardRequest = 0;
+
+function labDashboardInstall(){
+  if(document.getElementById('labGrowthPanel'))return;
+
+  const parent=document.getElementById('focusLabPanel');
+  if(!parent)return;
+
+  const el=document.createElement('div');
+  el.id='labGrowthPanel';
+  el.className='panel';
+
+  el.innerHTML=`
+    <div class="section-title">
+      <h2>FOCUS GROWTH · 성장 분석</h2>
+      <span class="muted">동일 조건 비교</span>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0">
+      <label for="labHistoryMode">과정</label>
+      <select id="labHistoryMode" style="padding:9px;border-radius:8px;max-width:100%"></select>
+
+      <label for="labHistoryCount">횟수</label>
+      <select id="labHistoryCount" style="padding:9px;border-radius:8px"></select>
+
+      <button id="labHistoryRefresh" type="button">새로고침</button>
+    </div>
+
+    <div id="labGrowthContent" aria-live="polite">
+      성장 기록을 불러오는 중...
+    </div>
+  `;
+
+  parent.insertAdjacentElement('afterend',el);
+
+  const mode=document.getElementById('labHistoryMode');
+  const count=document.getElementById('labHistoryCount');
+
+  mode.innerHTML=Object.entries(LAB_MODES)
+    .map(([k,v])=>`<option value="${k}">${labEscape(v.name)}</option>`)
+    .join('');
+
+  mode.onchange=()=>{
+    const old=count.value;
+
+    count.innerHTML=
+      (LAB_MODES[mode.value].switches?[40,80]:[30,60])
+        .map(n=>`<option value="${n}">${n}회</option>`)
+        .join('');
+
+    if([...count.options].some(o=>o.value===old)){
+      count.value=old;
+    }
+
+    labDashboardLoad();
+  };
+
+  count.onchange=labDashboardLoad;
+
+  document.getElementById('labHistoryRefresh').onclick=
+    labDashboardLoad;
+
+  mode.onchange();
+}
+
+function labDashboardMetric(v,digits=0,suffix=''){
+  const n=Number(v);
+
+  return v===null||
+    v===undefined||
+    !Number.isFinite(n)
+      ?'기록 없음'
+      :n.toFixed(digits)+suffix;
+}
+
+function labDashboardAdvice(rows){
+  if(rows.length<3){
+    return '동일 조건의 검사를 3회 이상 완료하면 개인별 변화 분석을 표시합니다.';
+  }
+
+  const recent=rows.slice(-3);
+  const previous=rows.slice(-6,-3);
+
+  const avg=(a,fn)=>{
+    const v=a.map(fn).filter(Number.isFinite);
+
+    return v.length
+      ?v.reduce((x,y)=>x+y,0)/v.length
+      :null;
+  };
+
+  const hit=avg(
+    recent,
+    r=>r.hits/Math.max(1,r.target_count)
+  );
+
+  const falseRate=avg(
+    recent,
+    r=>r.false_alarms/Math.max(1,r.non_target_count)
+  );
+
+  const rt=avg(
+    recent,
+    r=>r.average_reaction_ms===null
+      ?NaN
+      :r.average_reaction_ms
+  );
+
+  const current=avg(recent,r=>r.score);
+  const prior=avg(previous,r=>r.score);
+
+  const notes=[];
+
+  if(hit!==null&&hit<.7){
+    notes.push(
+      '목표 도형을 놓치는 비율이 높습니다. 정확도를 우선하며 현재 과정을 반복하세요.'
+    );
+  }
+
+  if(falseRate!==null&&falseRate>.2){
+    notes.push(
+      '비목표 도형에 반응하는 경향이 있습니다. 누르지 않고 기다리는 연습을 권합니다.'
+    );
+  }
+
+  if(rt!==null&&rt>650){
+    notes.push(
+      '평균 반응시간이 비교적 깁니다. 정확도를 유지한 상태에서 속도를 점진적으로 개선하세요.'
+    );
+  }
+
+  if(prior!==null&&current!==null){
+    if(current>=prior+5){
+      notes.push(
+        '최근 3회 평균점수가 직전 3회보다 5점 이상 높습니다.'
+      );
+    }else if(current<=prior-5){
+      notes.push(
+        '최근 3회 평균점수가 직전 3회보다 5점 이상 낮습니다. 피로·환경 차이를 확인하세요.'
+      );
+    }
+  }
+
+  if(!notes.length){
+    notes.push(
+      '최근 기록이 비교적 안정적입니다. 같은 조건으로 기록을 더 축적한 뒤 상위 과정에 도전하세요.'
+    );
+  }
+
+  return notes.join(' ');
+}
+
+async function labDashboardLoad(){
+  const box=document.getElementById('labGrowthContent');
+  const mode=document.getElementById('labHistoryMode');
+  const count=document.getElementById('labHistoryCount');
+
+  if(!box||!mode||!count||!state.user?.id)return;
+
+  const request=++labDashboardRequest;
+  const selectedMode=mode.value;
+  const total=Number(count.value);
+
+  box.textContent='저장된 검사 결과를 불러오는 중...';
+
+  const {data,error}=await client
+    .from('focus_lab_results')
+    .select(
+      'id,mode,total_trials,score,exp_delta,old_level,new_level,max_success_combo,max_fail_combo,result,completed_at'
+    )
+    .eq('user_id',state.user.id)
+    .eq('mode',selectedMode)
+    .eq('total_trials',total)
+    .order('completed_at',{ascending:false})
+    .limit(100);
+
+  if(request!==labDashboardRequest)return;
+
+  if(error){
+    box.textContent='기록 조회 실패: '+error.message;
+    return;
+  }
+
+  const rows=(data||[])
+    .slice()
+    .reverse()
+    .map(r=>({
+      ...r,
+      hits:Number(r.result?.hits??0),
+      target_count:Number(r.result?.target_count??0),
+      false_alarms:Number(r.result?.false_alarms??0),
+      non_target_count:Number(r.result?.non_target_count??0),
+      average_reaction_ms:
+        r.result?.average_reaction_ms==null
+          ?null
+          :Number(r.result.average_reaction_ms),
+      switch_hits:Number(r.result?.switch_hits??0),
+      switch_targets:Number(r.result?.switch_targets??0)
+    }));
+
+  if(!rows.length){
+    box.innerHTML=`
+      <p class="muted">
+        이 과정·검사 횟수의 저장 기록이 없습니다.
+        검사를 완료하면 여기에 표시됩니다.
+      </p>
+    `;
+    return;
+  }
+
+  const recent=rows.slice(-10);
+  const latest=rows[rows.length-1];
+
+  const avg=(key)=>{
+    const a=recent
+      .map(x=>Number(x[key]))
+      .filter(Number.isFinite);
+
+    return a.length
+      ?a.reduce((x,y)=>x+y,0)/a.length
+      :null;
+  };
+
+  const lastScores=recent.map(x=>Number(x.score));
+
+  const min=Math.max(0,Math.min(...lastScores)-10);
+  const max=Math.min(100,Math.max(...lastScores)+10);
+  const span=Math.max(1,max-min);
+
+  const width=600;
+  const height=190;
+  const pad=24;
+
+  const points=recent.map((r,i)=>({
+    x:pad+
+      (recent.length===1?.5:i/(recent.length-1))*
+      (width-2*pad),
+    y:height-pad-
+      (r.score-min)/span*(height-2*pad),
+    r
+  }));
+
+  const poly=points
+    .map(p=>`${p.x},${p.y}`)
+    .join(' ');
+
+  const hit=latest.target_count
+    ?latest.hits/latest.target_count*100
+    :null;
+
+  const falseRate=latest.non_target_count
+    ?latest.false_alarms/latest.non_target_count*100
+    :null;
+
+  const date=r=>new Date(r.completed_at)
+    .toLocaleString('ko-KR',{
+      month:'numeric',
+      day:'numeric',
+      hour:'2-digit',
+      minute:'2-digit'
+    });
+
+  box.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin:12px 0">
+      ${
+        [
+          ['비교 기록',rows.length+'회 (최근 최대 100회)'],
+          ['최근 수행점수',latest.score+'/100'],
+          ['최근 10회 평균',labDashboardMetric(avg('score'),1,'점')],
+          ['현재 선택 과정 최고점',Math.max(...rows.map(x=>x.score))+'점'],
+          ['최근 EXP 변화',(latest.exp_delta>=0?'+':'')+latest.exp_delta],
+          ['최근 최대 성공 콤보',latest.max_success_combo+'회']
+        ].map(([k,v])=>`
+          <div style="padding:12px;border:1px solid #64748b55;border-radius:9px">
+            <div class="muted" style="font-size:.85em">${k}</div>
+            <strong>${v}</strong>
+          </div>
+        `).join('')
+      }
+    </div>
+
+    <h3>수행점수 추이 · 최근 ${recent.length}회</h3>
+
+    <svg
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="최근 수행점수 변화"
+      style="display:block;width:100%;max-width:700px;background:#102039;border-radius:10px"
+    >
+      <line
+        x1="${pad}"
+        y1="${height-pad}"
+        x2="${width-pad}"
+        y2="${height-pad}"
+        stroke="#7891b1"
+      />
+
+      <line
+        x1="${pad}"
+        y1="${pad}"
+        x2="${pad}"
+        y2="${height-pad}"
+        stroke="#7891b1"
+      />
+
+      <text
+        x="${pad+3}"
+        y="${pad-5}"
+        fill="#d6e5ff"
+        font-size="13"
+      >${max}점</text>
+
+      <text
+        x="${pad+3}"
+        y="${height-5}"
+        fill="#d6e5ff"
+        font-size="13"
+      >${min}점</text>
+
+      ${
+        points.length>1
+          ?`<polyline fill="none" stroke="#72b6ff" stroke-width="3" points="${poly}"/>`
+          :''
+      }
+
+      ${
+        points.map((p,i)=>`
+          <circle
+            cx="${p.x}"
+            cy="${p.y}"
+            r="5"
+            fill="#ffd479"
+          >
+            <title>
+              ${i+1}번째 · ${p.r.score}점 · ${date(p.r)}
+            </title>
+          </circle>
+        `).join('')
+      }
+    </svg>
+
+    <p class="muted">
+      그래프는 동일 과정·동일 검사 횟수만 비교합니다.
+      최대 최근 100회 조회 중 마지막 10회를 표시합니다.
+    </p>
+
+    <h3>가장 최근 검사 세부 결과</h3>
+
+    <p>
+      목표 적중률
+      <strong>${labDashboardMetric(hit,1,'%')}</strong>
+      · 오반응률
+      <strong>${labDashboardMetric(falseRate,1,'%')}</strong>
+      · 평균 반응속도
+      <strong>${labDashboardMetric(latest.average_reaction_ms,0,'ms')}</strong>
+      · 최대 실패 콤보
+      <strong>${latest.max_fail_combo}회</strong>
+    </p>
+
+    <h3>개인별 훈련 제안</h3>
+
+    <p>${labEscape(labDashboardAdvice(rows))}</p>
+
+    <details>
+      <summary>최근 검사 기록 보기</summary>
+
+      <div style="overflow-x:auto">
+        <table style="width:100%;text-align:left">
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>점수</th>
+              <th>EXP</th>
+              <th>적중</th>
+              <th>오반응</th>
+              <th>반응시간</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${
+              recent.slice().reverse().map(r=>`
+                <tr>
+                  <td>${date(r)}</td>
+                  <td>${r.score}</td>
+                  <td>${r.exp_delta>=0?'+':''}${r.exp_delta}</td>
+                  <td>${r.hits}/${r.target_count}</td>
+                  <td>${r.false_alarms}/${r.non_target_count}</td>
+                  <td>${labDashboardMetric(r.average_reaction_ms,0,'ms')}</td>
+                </tr>
+              `).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <p class="muted">
+      본 지표는 검사 내 행동 수행 기록이며
+      뇌파 측정 또는 의학적 진단이 아닙니다.
+    </p>
+  `;
+}
+
+
+  
 function installFocusLab(){
   if($('focusLabPanel'))return;
 

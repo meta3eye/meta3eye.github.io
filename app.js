@@ -3614,10 +3614,32 @@ async function openFocusLab(requestedMode=null){
       `도형 ${c.shapes}종 · 목표 전환 ${c.switches}회 · 표시 ${c.display}ms · 반응 ${c.response}ms · 무작위 대기 ${c.min}~${c.max}ms`;
   };
 
+ 
   $('labMode').onchange=update;
+
+  if(requestedMode==='master'){
+    $('labMode').value='master';
+    $('labMode').disabled=true;
+  }
+
   update();
 
+  if(requestedMode==='master'){
+    $('labCount').value='80';
+    $('labCount').disabled=true;
+
+    $('labModeInfo').textContent=
+      'MASTER CHALLENGE · 도형 16종 · 목표 전환 5회 · 총 80문항 · 합격 기준 95점 이상';
+
+    const heading=$('focusLabBody').querySelector('h1');
+
+    if(heading){
+      heading.textContent='MASTER CHALLENGE';
+    }
+  }
+
   $('labPrepare').onclick=prepareFocusLab;
+
 }
 
 function prepareFocusLab(){

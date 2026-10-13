@@ -2016,7 +2016,18 @@ const LAB_MODES = {
   normal3:{name:"일반 고급",level:30,shapes:10,switches:0,display:200,response:800,min:600,max:1600,weight:1.20},
   applied1:{name:"응용 초급",level:45,shapes:6,switches:1,display:180,response:700,min:350,max:1100,weight:1.35},
   applied2:{name:"응용 중급",level:60,shapes:10,switches:3,display:160,response:650,min:250,max:950,weight:1.55},
-  applied3:{name:"응용 고급",level:75,shapes:16,switches:5,display:140,response:600,min:200,max:850,weight:1.80}
+  applied3:{name:"응용 고급",level:75,shapes:16,switches:5,display:140,response:600,min:200,max:850,weight:1.80},
+   master:{
+    name:"MASTER CHALLENGE",
+    level:90,
+    shapes:16,
+    switches:5,
+    display:140,
+    response:600,
+    min:200,
+    max:850,
+    weight:1.80
+  }
 };
 
 let focusLab=null, focusLabTimers=[], focusLabSaving=false, labProfile=null;
@@ -2700,8 +2711,30 @@ function labInstallRooms(){
             나의 성장 기록을 확인합니다.
           </span>
 
-          <b>기록 보기 →</b>
+          <b>기록 보기 →</b>      
         </button>
+
+        <button
+          id="labHubMaster"
+          class="lab-room-card"
+          type="button"
+        >
+          <strong>✦ MASTER CHALLENGE</strong>
+
+          <span>
+            FOCUS LV.90부터 입장 가능
+            <br>
+            80문항 · 목표 전환 5회
+            <br>
+            3회 합격 및 LV.100 달성
+          </span>
+
+          <b id="labHubMasterLabel">
+            도전 정보 확인 →
+          </b>
+        </button>
+
+
 
       </div>
     </div>
@@ -2763,6 +2796,13 @@ function labInstallRooms(){
 
   document.getElementById('labGrowthBack').onclick=
     labOpenHub;
+
+  
+  document.getElementById('labHubMaster').onclick=()=>{
+    labCloseRooms();
+    openFocusLab('master');
+  };
+
 }
 
 
@@ -3448,7 +3488,7 @@ $('focusLabClose').onclick=()=>{
   });
 }
 
-async function openFocusLab(){
+async function openFocusLab(requestedMode=null){
   installFocusLab();
   if(focusLabSaving)return;
 
@@ -3473,6 +3513,8 @@ async function openFocusLab(){
 
   const p=labProfile;
 
+
+  
   const modes=Object.entries(LAB_MODES)
     .map(([key,c])=>{
       const unlocked=p.max_level>=c.level;

@@ -2536,8 +2536,11 @@ function installFocusLab(){
     </div>
   `;
 
-  quest.insertAdjacentElement('afterend',panel);
-  $('focusLabOpen').onclick=openFocusLab;
+ 
+quest.insertAdjacentElement('afterend',panel);
+$('focusLabOpen').onclick=openFocusLab;
+labDashboardInstall();
+
 
   if(!$('focusLabStyle')){
     const style=document.createElement('style');

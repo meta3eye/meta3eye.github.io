@@ -3661,6 +3661,11 @@ async function openFocusLab(requestedMode=null){
 
   
   const modes=Object.entries(LAB_MODES)
+    .filter(([key])=>
+      requestedMode==='master'
+        ?key==='master'
+        :key!=='master'
+    )
     .map(([key,c])=>{
       const unlocked=p.max_level>=c.level;
 

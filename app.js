@@ -3719,12 +3719,15 @@ async function finishV3FocusPerformanceTest(){
     }
   }
 
-  $('focusLabReturn').disabled=false;
+ 
+$('focusLabReturn').disabled=false;
 
-  $('focusLabReturn').onclick=()=>{
-    closeFocusLab();
-    renderV3Evaluation();
-  };
+$('focusLabReturn').onclick=()=>{
+  closeFocusLab();
+  renderV3Evaluation();
+  labOpenHub();
+};
+
 }
 
 

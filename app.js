@@ -3144,6 +3144,115 @@ async function labOpenHub(){
 
     `;
 
+
+    
+    /* FOCUS LAB 3.5 — MASTER STATUS */
+
+    const masterPasses=
+      Math.min(3,Math.max(0,Number(p.master_passes)||0));
+
+    const masterAttempts=
+      Math.max(0,Number(p.master_attempts)||0);
+
+    const isMaster=Boolean(p.master_at);
+
+    const masterCard=document.getElementById('labHubMaster');
+    const masterLabel=document.getElementById('labHubMasterLabel');
+
+    if(masterCard){
+      masterCard.disabled=isMaster || level<90;
+      masterCard.style.opacity=
+        masterCard.disabled?'.65':'1';
+    }
+
+    if(masterLabel){
+      masterLabel.textContent=
+        isMaster
+          ?'MASTER 달성 완료'
+          :level<90
+            ?`LV.90 해금 · ${90-level}레벨 남음`
+            :'MASTER 도전 입장 →';
+    }
+
+    const masterStatus=document.createElement('div');
+
+    masterStatus.id='labMasterStatus';
+
+    masterStatus.style.cssText=`
+      margin-top:14px;
+      padding:18px 20px;
+      background:linear-gradient(135deg,#1b2945,#101b30);
+      border:1px solid #53698e;
+      border-radius:13px;
+      text-align:left;
+    `;
+
+    masterStatus.innerHTML=`
+      <div style="
+        color:#b6c9e6;
+        font-size:11px;
+        letter-spacing:1.5px;
+      ">
+        MASTER PROGRESSION
+      </div>
+
+      <div style="
+        font-size:21px;
+        font-weight:800;
+        margin-top:10px;
+        color:#f4e1a5;
+      ">
+        ${isMaster?'✦ FOCUS MASTER':'MASTER CHALLENGE'}
+      </div>
+
+      <div style="
+        margin-top:9px;
+        color:#c7d7ee;
+        font-size:13px;
+      ">
+        합격 ${masterPasses}/3회
+        · 도전 ${masterAttempts}회
+        · 현재 LV.${level}/100
+      </div>
+
+      <div style="
+        display:flex;
+        gap:7px;
+        margin-top:14px;
+      ">
+        ${[1,2,3].map(n=>`
+          <div style="
+            flex:1;
+            height:8px;
+            border-radius:8px;
+            background:${
+              masterPasses>=n?'#eacb78':'#344761'
+            };
+          "></div>
+        `).join('')}
+      </div>
+
+      <p style="
+        color:#aebfda;
+        font-size:12px;
+        line-height:1.6;
+        margin:12px 0 0;
+      ">
+        ${
+          isMaster
+            ?'모든 마스터 자격 조건을 달성했습니다.'
+            :level<90
+              ?'FOCUS LV.90에 도달하면 마스터 도전이 열립니다.'
+              :masterPasses>=3
+                ?'합격 조건을 충족했습니다. LV.100 달성이 남았습니다.'
+                :'95점 이상 · 적중률 90% 이상 · 오반응률 5% 이하 · 최대 연속 실패 2회 이하'
+        }
+      </p>
+    `;
+
+    stats.appendChild(masterStatus);
+
+
     /* 4. 최근 검사 결과 조회 */
 
     const {data,error}=await client

@@ -4326,12 +4326,14 @@ async function finishV3FocusPerformanceTest(){
     </button>
   `;
 
+ 
   focusLabSaving=true;
 
   let error=null;
   let data=null;
 
- 
+  try{
+
     const r=await client.rpc(
       s.modeKey==='master'
         ?'submit_focus_lab_master'
@@ -4352,14 +4354,17 @@ async function finishV3FocusPerformanceTest(){
           }
     );
 
-
     error=r.error;
     data=r.data;
+
   }catch(e){
+
     error=e;
+
   }
 
   focusLabSaving=false;
+
 
   if(error){
     $('focusLabSaveStatus').textContent=

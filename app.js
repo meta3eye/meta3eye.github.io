@@ -6743,6 +6743,7 @@ function senseLabV1Start() {
   };
 
   senseLabV1 = s;
+  senseLabV1UpdateCombo();
 
   $("senseLabV1Setup").style.display = "none";
   $("senseLabV1Result").style.display = "none";
@@ -6831,6 +6832,26 @@ function senseLabV1Next() {
 
       s.phase = "finalizing";
 
+     
+      // 적중 또는 정확한 무반응일 때만 콤보 증가
+      const correct = present
+        ? s.responded
+        : !s.responded;
+
+      if (correct) {
+        s.combo++;
+
+        s.bestCombo = Math.max(
+          s.bestCombo,
+          s.combo
+        );
+      } else {
+        s.combo = 0;
+      }
+
+      senseLabV1UpdateCombo();
+
+      // 기존 서버 제출 형식은 그대로 유지
       s.trials.push({
         index: s.index + 1,
         stimulus_present: present,
@@ -6839,6 +6860,7 @@ function senseLabV1Next() {
       });
 
       s.index++;
+
 
       if (s.index >= 30) {
         senseLabV1Finish();
@@ -6866,7 +6888,10 @@ function senseLabV1Respond() {
   // + 표시 중 조기 반응
   if (s.phase === "waiting") {
     s.phase = "early";
-    s.earlyResponses++;
+    s.earlyResponses++;    
+    s.combo = 0;
+    senseLabV1UpdateCombo();
+
 
     // 예약된 자극 출현과 채점 타이머 취소
     senseLabV1ClearTimers();
@@ -6943,6 +6968,29 @@ async function senseLabV1Finish() {
       <div>오반응: ${Number(data.false_alarms)}</div>
       <div>정확한 무반응: ${Number(data.correct_rejections)}</div>
       <div>조기 반응: ${s.earlyResponses}회 (별도 참고 기록)</div>
+      
+      <div>최고 콤보: ${s.bestCombo} COMBO</div>
+      <div>
+        정확한 판단:
+        ${Number(data.hits) + Number(data.correct_rejections)} / 30
+      </div>
+
+      <div style="
+        font-weight:bold;
+        margin:8px 0;
+        color:#a9dfb7;
+      ">
+        ${
+          s.bestCombo === 30 && s.earlyResponses === 0
+            ? "PERFECT COMBO"
+            : s.bestCombo >= 20
+              ? "EXCELLENT COMBO"
+              : s.bestCombo >= 10
+                ? "GOOD COMBO"
+                : "COMBO RECORD"
+        }
+      </div>
+
       <hr>
 
       <div>평균 반응시간:

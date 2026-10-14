@@ -6085,65 +6085,29 @@ function senseLabV1Install() {
   labCard.id = "senseLabV1Card";
   labCard.className = "panel";
 
+ 
   labCard.innerHTML = `
     <div class="section-title">
       <h2>SENSE LAB · 감각 검증실</h2>
-      <span class="muted">독립 성장 LV.1~100</span>
+      <span class="muted">SENSE LV.1~100</span>
     </div>
 
-    <div style="line-height:1.8">
+    <p class="muted">
+      감각 탐지와 변별 능력을 측정하는 독립 검증실
+    </p>
 
-      <h3>감각을 관찰하는 것과 정확하게 감지하는 것은 다릅니다.</h3>
-
-      <p>
-        SENSE LAB은 심리물리학(Psychophysics)과
-        신호탐지이론(Signal Detection Theory)을
-        기반으로 설계하는 감각 탐지 훈련실입니다.
-      </p>
-
-      <p>
-        사람은 실제 신호를 놓치기도 하고,
-        신호가 없는데도 존재한다고 판단하기도 합니다.
-        이 검증실은 두 상황을 구분하여 기록합니다.
-      </p>
-
-      <h3>훈련 목적</h3>
-
-      <p>
-        시각과 청각 자극을 관찰하면서
-        탐지 정확도, 오반응, 반응시간,
-        반복 수행의 안정성을 측정합니다.
-      </p>
-
-      <p class="muted">
-        검사 결과는 일반 감각 수행의 참고 지표이며,
-        영적 능력이나 초감각적 지각의 증거를
-        의미하지 않습니다.
-      </p>
-
-      <div class="quest">
-        <div>
-          <h3>VISUAL 1 · 시각 탐지 초급</h3>
-          <p>
-            30문항 · 자극 출현/비출현 구별 ·
-            서버 채점
-          </p>
-          <p class="muted">
-            현재 이용 가능한 첫 번째 검사
-          </p>
-        </div>
-        <button id="senseLabV1Open" type="button">
-          입장 →
-        </button>
-      </div>
-
-      <p class="muted">
-        VISUAL 2~3 · AUDIO 1~3 · MIXED 1~3은
-        순차적으로 확장됩니다.
-      </p>
-
+    <div id="senseLabGrowthInfo"
+      style="margin:12px 0;line-height:1.8">
+      성장 기록을 불러오는 중...
     </div>
+
+    <button id="senseLabV1Open"
+      type="button"
+      style="width:100%;padding:14px">
+      SENSE LAB 입장 →
+    </button>
   `;
+
 
   host.insertAdjacentElement("afterend", labCard);
 

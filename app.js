@@ -6535,7 +6535,6 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-senseLabV1Install();
 
 /* =========================================
    END SENSE LAB 1.0

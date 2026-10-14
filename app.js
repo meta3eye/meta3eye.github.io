@@ -6485,7 +6485,7 @@ function senseLabV1Start() {
   let countdown = 3;
 
   function senseCountdown() {
-    if (!senseLabV1 || senseLabV1.phase !== "waiting") {
+    if (!senseLabV1 || senseLabV1.phase !== "ready") {
       return;
     }
 

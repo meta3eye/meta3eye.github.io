@@ -6581,18 +6581,49 @@ function senseLabV1Next() {
   }, gap);
 }
 
+
 function senseLabV1Respond() {
   const s = senseLabV1;
 
-  if (!s || s.phase !== "active") return;
+  if (!s) return;
 
-  if (s.responded) return;
+  // 최초 3초 준비 시간은 채점 대상이 아님
+  if (s.phase === "ready") return;
+
+  // + 표시 중 누른 경우: 조기 반응
+  if (s.phase === "waiting") {
+    s.phase = "early";
+    s.earlyResponses++;
+
+    // 현재 문항의 예약된 자극 출현을 취소
+    senseLabV1ClearTimers();
+
+    $("senseLabV1Fixation").style.display = "block";
+    $("senseLabV1Fixation").textContent = "!";
+    $("senseLabV1Stimulus").style.display = "none";
+
+    $("senseLabV1Message").textContent =
+      `조기 반응 ${s.earlyResponses}회 · 현재 문항 재출제`;
+
+    // 문항 번호는 증가시키지 않음
+    senseLabV1Later(() => {
+      if (senseLabV1 !== s || s.phase !== "early") {
+        return;
+      }
+
+      senseLabV1Next();
+    }, 900);
+
+    return;
+  }
+
+  if (s.phase !== "active" || s.responded) return;
 
   const elapsed = Math.round(
     performance.now() - s.startedAt
   );
 
-  // 서버에서 허용하는 반응시간 범위
+  // 기존 서버 허용 범위 유지
   if (elapsed < 100 || elapsed > 1500) {
     return;
   }
@@ -6603,6 +6634,7 @@ function senseLabV1Respond() {
   $("senseLabV1Message").textContent =
     "반응 기록됨";
 }
+
 
 async function senseLabV1Finish() {
   const s = senseLabV1;

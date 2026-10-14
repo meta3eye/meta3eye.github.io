@@ -6707,6 +6707,18 @@ function senseLabV1Close() {
 }
 
 
+function senseLabV1UpdateCombo() {
+  const s = senseLabV1;
+  if (!s) return;
+
+  const current = $("senseLabV1Combo");
+  const best = $("senseLabV1BestCombo");
+
+  if (current) current.textContent = s.combo;
+  if (best) best.textContent = s.bestCombo;
+}
+
+  
 function senseLabV1Start() {
   if (senseLabV1Saving) return;
 

@@ -6499,6 +6499,134 @@ async function senseLabLoadGrowth() {
 }
 
 
+/* =========================================
+   SENSE GROWTH 1.3
+   Read-only performance dashboard
+========================================= */
+
+async function senseLabDashboardLoad() {
+  const card = $("senseLabV1Card");
+  if (!card || !state.user?.id) return;
+
+  let panel = $("senseLabGrowthPanel");
+
+  if (!panel) {
+    panel = document.createElement("section");
+    panel.id = "senseLabGrowthPanel";
+    panel.className = "panel";
+
+    panel.style.cssText = `
+      border:2px solid #6ea58d;
+      border-radius:16px;
+      padding:22px;
+      margin:24px 0;
+      background:rgba(68,139,102,.08);
+    `;
+
+    card.insertAdjacentElement("afterend", panel);
+  }
+
+  panel.innerHTML = `
+    <h2>SENSE GROWTH · 성장 분석</h2>
+    <p class="muted">VISUAL 1 · 누적 검사 기록</p>
+    <div id="senseGrowthContent">
+      성장 데이터를 불러오는 중...
+    </div>
+  `;
+
+  const content = $("senseGrowthContent");
+
+  try {
+    const { data, error } = await client
+      .from("sense_lab_results")
+      .select(
+        "score,hits,misses,false_alarms,correct_rejections,completed_at"
+      )
+      .eq("user_id", state.user.id)
+      .eq("mode", "visual1")
+      .order("completed_at", { ascending: false })
+      .limit(1000);
+
+    if (error) throw error;
+
+    const rows = data || [];
+    const count = rows.length;
+
+    if (!count) {
+      content.textContent =
+        "아직 저장된 VISUAL 1 검사 기록이 없습니다.";
+      return;
+    }
+
+    const sum = key => rows.reduce(
+      (total, row) => total + Number(row[key] || 0),
+      0
+    );
+
+    const average = key =>
+      (sum(key) / count).toFixed(1);
+
+    const best = Math.max(
+      ...rows.map(row => Number(row.score || 0))
+    );
+
+    const targets = sum("hits") + sum("misses");
+    const nonTargets =
+      sum("false_alarms") + sum("correct_rejections");
+
+    const hitRate = targets
+      ? (sum("hits") / targets * 100).toFixed(1)
+      : "0.0";
+
+    const falseAlarmRate = nonTargets
+      ? (sum("false_alarms") / nonTargets * 100).toFixed(1)
+      : "0.0";
+
+    content.innerHTML = `
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:12px;
+        margin:16px 0;
+      ">
+        ${[
+          ["누적 검사", `${count}회`],
+          ["평균 점수", `${average("score")}점`],
+          ["최고 점수", `${best}점`],
+          ["평균 오반응", `${average("false_alarms")}회`],
+          ["누적 적중률", `${hitRate}%`],
+          ["누적 오반응률", `${falseAlarmRate}%`]
+        ].map(([label, value]) => `
+          <div style="
+            border:1px solid rgba(110,165,141,.5);
+            border-radius:10px;
+            padding:13px;
+            min-width:0;
+          ">
+            <div class="muted" style="font-size:13px">
+              ${label}
+            </div>
+            <strong style="font-size:22px">
+              ${value}
+            </strong>
+          </div>
+        `).join("")}
+      </div>
+
+      <p class="muted" style="font-size:12px">
+        최근 최대 1,000건의 VISUAL 1 기록 기준.
+        조기 반응은 아직 서버 통계에 포함되지 않습니다.
+      </p>
+    `;
+
+  } catch (error) {
+    console.error("SENSE GROWTH ERROR:", error);
+    content.textContent =
+      "성장 분석을 불러오지 못했습니다: " +
+      (error.message || "알 수 없는 오류");
+  }
+}
+
   
 function senseLabV1Open() {
   if (!state.user?.id) {

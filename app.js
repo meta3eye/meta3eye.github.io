@@ -6457,11 +6457,12 @@ function senseLabV1Start() {
   senseLabV1 = {
     sequence,
     index: 0,
-    trials: [],
-    phase: "waiting",
+    trials: [],  
+    phase: "ready",
     responded: false,
     startedAt: 0,
-    reactionMs: null
+    reactionMs: null,
+    earlyResponses: 0
   };
 
   $("senseLabV1Setup").style.display = "none";

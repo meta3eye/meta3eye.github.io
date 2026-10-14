@@ -4046,9 +4046,12 @@ function labFinalizeTrial(s,stimulus,target){
     stimulus:stimulus.id,
     target:target.id,
     is_target:s.currentTarget,
+   
     responded:s.responded,
     reaction_ms:s.currentRt??null,
+    display_ms:s.currentDisplayMs,
     correct:ok,
+
     early_inputs:s.currentEarly||0,
     extra_inputs:s.currentExtra||0
   });

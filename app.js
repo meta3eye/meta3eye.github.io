@@ -4096,7 +4096,8 @@ function showNextV3PerformanceStimulus(){
     if(focusLab===s&&s.phase==='running'){
       $('focusLabStimulus').textContent='';
     }
-  },s.config.display);
+  },s.currentDisplayMs);
+
 
   labLater(()=>{
     if(focusLab!==s||s.phase!=='running')return;

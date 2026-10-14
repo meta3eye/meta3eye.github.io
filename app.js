@@ -1915,6 +1915,7 @@ async function renderV3Evaluation() {
   installFocusLab();
   senseLabV1Install();
   await senseLabLoadGrowth();
+  await senseLabDashboardLoad();
 
 
 
@@ -6904,6 +6905,7 @@ async function senseLabV1Finish() {
     $("senseLabV1Message").textContent =
       "서버 저장 완료";
     await senseLabLoadGrowth();
+    await senseLabDashboardLoad();
     
   } catch (error) {
     console.error("SENSE LAB ERROR:", error);

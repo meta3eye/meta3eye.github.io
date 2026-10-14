@@ -6594,10 +6594,12 @@ function senseLabV1Start() {
 }
 
 
+
 function senseLabV1Next() {
   const s = senseLabV1;
+  if (!s) return;
 
-  if (!s || s.index >= 30) {
+  if (s.index >= 30) {
     senseLabV1Finish();
     return;
   }
@@ -6619,7 +6621,8 @@ function senseLabV1Next() {
   const gap = 700 + Math.floor(Math.random() * 501);
 
   senseLabV1Later(() => {
-    if (senseLabV1 !== s) return;
+    // 조기 반응으로 취소된 문항은 실행하지 않음
+    if (senseLabV1 !== s || s.phase !== "waiting") return;
 
     const present = s.sequence[s.index];
 
@@ -6632,16 +6635,13 @@ function senseLabV1Next() {
       $("senseLabV1Stimulus").style.display = "block";
     }
 
-    // 시각 자극은 250ms 동안 표시
     senseLabV1Later(() => {
-      if (senseLabV1 !== s) return;
-
+      if (senseLabV1 !== s || s.phase !== "active") return;
       $("senseLabV1Stimulus").style.display = "none";
     }, 250);
 
-    // 전체 반응 허용 시간은 1500ms
     senseLabV1Later(() => {
-      if (senseLabV1 !== s) return;
+      if (senseLabV1 !== s || s.phase !== "active") return;
 
       s.phase = "finalizing";
 
@@ -6657,16 +6657,16 @@ function senseLabV1Next() {
       if (s.index >= 30) {
         senseLabV1Finish();
       } else {
-        senseLabV1Later(
-          senseLabV1Next,
-          350
-        );
+        senseLabV1Later(() => {
+          if (senseLabV1 === s && s.phase === "finalizing") {
+            senseLabV1Next();
+          }
+        }, 350);
       }
-
     }, 1500);
-
   }, gap);
 }
+
 
 
 function senseLabV1Respond() {

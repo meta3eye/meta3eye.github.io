@@ -4264,7 +4264,10 @@ async function finishV3FocusPerformanceTest(){
 
   const resultData={
     test_type:'FOCUS LAB 집중력 검증',
-    test_version:'FOCUS-LAB-3.0',
+   
+    test_version:'FOCUS-LAB-3.6',
+    exposure_policy:'balanced-variable-v1',
+
     mode:s.modeKey,
     mode_name:s.config.name,
     total_trials:s.total,

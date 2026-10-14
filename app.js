@@ -6391,6 +6391,49 @@ function senseLabV1Install() {
 
   document.body.appendChild(panel);
 
+  // SENSE LAB 전용 콤보 표시판
+  const comboPanel = document.createElement("div");
+  comboPanel.id = "senseLabV1ComboPanel";
+
+  comboPanel.style.cssText = `
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin:12px 0;
+  `;
+
+  comboPanel.innerHTML = `
+    <div style="
+      border:1px solid #6ea58d;
+      border-radius:10px;
+      padding:12px;
+    ">
+      <div style="font-size:12px;opacity:.75">
+        CURRENT COMBO
+      </div>
+      <strong id="senseLabV1Combo"
+        style="font-size:26px">0</strong>
+    </div>
+
+    <div style="
+      border:1px solid #6ea58d;
+      border-radius:10px;
+      padding:12px;
+    ">
+      <div style="font-size:12px;opacity:.75">
+        BEST COMBO
+      </div>
+      <strong id="senseLabV1BestCombo"
+        style="font-size:26px">0</strong>
+    </div>
+  `;
+
+  $("senseLabV1Progress").insertAdjacentElement(
+    "afterend",
+    comboPanel
+  );
+
+
   openButton.addEventListener(
     "click",
     senseLabV1Open

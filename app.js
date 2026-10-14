@@ -6067,18 +6067,21 @@ function senseLabV1Shuffle(items) {
   return a;
 }
 
+
 function senseLabV1Install() {
   if ($("senseLabV1Panel")) return;
 
- 
-  const host = $("questList")?.closest(".panel");
+  const focusPanel = $("focusLabPanel");
+  const questPanel = $("questList")?.closest(".panel");
+
+  const host = focusPanel || questPanel;
 
   if (!host) {
-    console.warn("SENSE LAB: quest panel not found");
+    console.warn("SENSE LAB: installation target not found");
     return;
   }
 
-  const labCard = document.createElement("div");
+  const labCard = document.createElement("section");
   labCard.id = "senseLabV1Card";
   labCard.className = "panel";
 
@@ -6088,48 +6091,69 @@ function senseLabV1Install() {
       <span class="muted">독립 성장 LV.1~100</span>
     </div>
 
-    <p class="muted">
-      VISUAL 1 · 시각 자극 탐지 초급
-      · 30문항 · 서버 채점
-    </p>
+    <div style="line-height:1.8">
+
+      <h3>감각을 관찰하는 것과 정확하게 감지하는 것은 다릅니다.</h3>
+
+      <p>
+        SENSE LAB은 심리물리학(Psychophysics)과
+        신호탐지이론(Signal Detection Theory)을
+        기반으로 설계하는 감각 탐지 훈련실입니다.
+      </p>
+
+      <p>
+        사람은 실제 신호를 놓치기도 하고,
+        신호가 없는데도 존재한다고 판단하기도 합니다.
+        이 검증실은 두 상황을 구분하여 기록합니다.
+      </p>
+
+      <h3>훈련 목적</h3>
+
+      <p>
+        시각과 청각 자극을 관찰하면서
+        탐지 정확도, 오반응, 반응시간,
+        반복 수행의 안정성을 측정합니다.
+      </p>
+
+      <p class="muted">
+        검사 결과는 일반 감각 수행의 참고 지표이며,
+        영적 능력이나 초감각적 지각의 증거를
+        의미하지 않습니다.
+      </p>
+
+      <div class="quest">
+        <div>
+          <h3>VISUAL 1 · 시각 탐지 초급</h3>
+          <p>
+            30문항 · 자극 출현/비출현 구별 ·
+            서버 채점
+          </p>
+          <p class="muted">
+            현재 이용 가능한 첫 번째 검사
+          </p>
+        </div>
+        <button id="senseLabV1Open" type="button">
+          입장 →
+        </button>
+      </div>
+
+      <p class="muted">
+        VISUAL 2~3 · AUDIO 1~3 · MIXED 1~3은
+        순차적으로 확장됩니다.
+      </p>
+
+    </div>
   `;
 
+  host.insertAdjacentElement("afterend", labCard);
 
-  const openButton = document.createElement("button");
+  const openButton = $("senseLabV1Open");
 
-  openButton.id = "senseLabV1Open";
-  openButton.type = "button";
-  openButton.textContent = "SENSE LAB · 시각 탐지 검증실";
+  openButton.addEventListener(
+    "click",
+    senseLabV1Open
+  );
 
-  openButton.style.cssText = `
-    display:block;
-    width:100%;
-    margin:14px 0;
-    padding:15px;
-    border:1px solid #748b83;
-    border-radius:12px;
-    background:#263e37;
-    color:#ffffff;
-    font-weight:700;
-    cursor:pointer;
-  `;
-
-  
-  labCard.appendChild(openButton);
-
-  const focusCard = $("focusLabPanel");
-
-  if (focusCard) {
-    focusCard.insertAdjacentElement(
-      "afterend",
-      labCard
-    );
-  } else {
-    host.insertAdjacentElement(
-      "afterend",
-      labCard
-    );
-  }
 
 
   const panel = document.createElement("section");

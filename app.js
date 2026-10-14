@@ -3835,7 +3835,9 @@ function prepareFocusLab(){
     failPenalty:0,
     earlyInputs:0,
     extraInputs:0,
-    estimatedExp:0
+    estimatedExp:0,
+    exposureSequence:labBuildExposureSequence(c,total)
+
   };
 
   showFocusLabTarget();
@@ -4078,9 +4080,12 @@ function showNextV3PerformanceStimulus(){
   s.responded=false;
   s.windowOpen=true;
   s.currentRt=null;
+
   s.currentEarly=0;
   s.currentExtra=0;
+  s.currentDisplayMs=s.exposureSequence[s.index];
   s.startedAt=performance.now();
+
 
   labUpdateHud();
 

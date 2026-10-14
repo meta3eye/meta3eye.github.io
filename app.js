@@ -6677,7 +6677,7 @@ async function senseLabV1Finish() {
       <div>놓침: ${Number(data.misses)}</div>
       <div>오반응: ${Number(data.false_alarms)}</div>
       <div>정확한 무반응: ${Number(data.correct_rejections)}</div>
-
+      <div>조기 반응: ${s.earlyResponses}회 (별도 참고 기록)</div>
       <hr>
 
       <div>평균 반응시간:

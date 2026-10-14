@@ -6111,7 +6111,23 @@ function senseLabV1Install() {
     cursor:pointer;
   `;
 
-  host.prepend(openButton);
+  
+  labCard.appendChild(openButton);
+
+  const focusCard = $("focusLabPanel");
+
+  if (focusCard) {
+    focusCard.insertAdjacentElement(
+      "afterend",
+      labCard
+    );
+  } else {
+    host.insertAdjacentElement(
+      "afterend",
+      labCard
+    );
+  }
+
 
   const panel = document.createElement("section");
 

@@ -2010,24 +2010,15 @@ const LAB_SHAPES = [
   ["openHexagon","⬡","빈 육각형"],["arrow","➤","화살표"]
 ].map(([id,symbol,name])=>({id,symbol,name}));
 
+
 const LAB_MODES = {
-  normal1:{name:"일반 초급",level:1,shapes:2,switches:0,display:250,response:900,min:900,max:2100,weight:1},
-  normal2:{name:"일반 중급",level:15,shapes:6,switches:0,display:220,response:850,min:750,max:1850,weight:1.10},
-  normal3:{name:"일반 고급",level:30,shapes:10,switches:0,display:200,response:800,min:600,max:1600,weight:1.20},
-  applied1:{name:"응용 초급",level:45,shapes:6,switches:1,display:180,response:700,min:350,max:1100,weight:1.35},
-  applied2:{name:"응용 중급",level:60,shapes:10,switches:3,display:160,response:650,min:250,max:950,weight:1.55},
-  applied3:{name:"응용 고급",level:75,shapes:16,switches:5,display:140,response:600,min:200,max:850,weight:1.80},
-   master:{
-    name:"MASTER CHALLENGE",
-    level:90,
-    shapes:16,
-    switches:5,
-    display:140,
-    response:600,
-    min:200,
-    max:850,
-    weight:1.80
-  }
+  normal1:{name:"일반 초급",level:1,shapes:2,switches:0,display:250,displayMin:220,displayMax:320,response:900,min:900,max:2100,weight:1},
+  normal2:{name:"일반 중급",level:15,shapes:6,switches:0,display:220,displayMin:180,displayMax:280,response:850,min:750,max:1850,weight:1.10},
+  normal3:{name:"일반 고급",level:30,shapes:10,switches:0,display:200,displayMin:150,displayMax:250,response:800,min:600,max:1600,weight:1.20},
+  applied1:{name:"응용 초급",level:45,shapes:6,switches:1,display:180,displayMin:130,displayMax:230,response:700,min:350,max:1100,weight:1.35},
+  applied2:{name:"응용 중급",level:60,shapes:10,switches:3,display:160,displayMin:110,displayMax:210,response:650,min:250,max:950,weight:1.55},
+  applied3:{name:"응용 고급",level:75,shapes:16,switches:5,display:140,displayMin:90,displayMax:190,response:600,min:200,max:850,weight:1.80},
+  master:{name:"MASTER CHALLENGE",level:90,shapes:16,switches:5,display:140,displayMin:70,displayMax:170,response:600,min:200,max:850,weight:1.80}
 };
 
 let focusLab=null, focusLabTimers=[], focusLabSaving=false, labProfile=null;

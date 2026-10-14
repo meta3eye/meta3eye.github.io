@@ -6038,6 +6038,95 @@ document.addEventListener("visibilitychange", () => {
      BOOT
   ========================= */
 
+  
+/* =========================================
+   SPIRIT SYSTEM
+   LAB SECTION VISUAL SEPARATION
+========================================= */
+
+function installLabSectionStyle() {
+  if (document.getElementById("spiritLabSectionStyle")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "spiritLabSectionStyle";
+
+  style.textContent = `
+    /* FOCUS LAB */
+    #focusLabPanel {
+      border: 2px solid #719fd4 !important;
+      border-radius: 16px !important;
+      background: linear-gradient(
+        145deg,
+        rgba(67, 113, 171, 0.14),
+        rgba(67, 113, 171, 0.035)
+      ) !important;
+      box-shadow:
+        0 0 0 1px rgba(113, 159, 212, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.12);
+      padding: 22px !important;
+      margin-top: 24px !important;
+      margin-bottom: 24px !important;
+    }
+
+    /* SENSE LAB */
+    #senseLabV1Card {
+      border: 2px solid #6ea58d !important;
+      border-radius: 16px !important;
+      background: linear-gradient(
+        145deg,
+        rgba(68, 139, 102, 0.14),
+        rgba(68, 139, 102, 0.035)
+      ) !important;
+      box-shadow:
+        0 0 0 1px rgba(110, 165, 141, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.12);
+      padding: 22px !important;
+      margin-top: 24px !important;
+      margin-bottom: 24px !important;
+    }
+
+    /* FOCUS GROWTH */
+    #labGrowthPanel {
+      border: 2px solid #a58ac9 !important;
+      border-radius: 16px !important;
+      background: linear-gradient(
+        145deg,
+        rgba(133, 94, 172, 0.13),
+        rgba(133, 94, 172, 0.035)
+      ) !important;
+      box-shadow:
+        0 0 0 1px rgba(165, 138, 201, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.12);
+      padding: 22px !important;
+      margin-top: 24px !important;
+      margin-bottom: 24px !important;
+    }
+
+    /* 검사실 제목 구분 */
+    #focusLabPanel .section-title,
+    #senseLabV1Card .section-title,
+    #labGrowthPanel .section-title {
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(180, 200, 190, 0.3);
+    }
+
+    /* 작은 화면에서도 내부 여백 유지 */
+    @media (max-width: 600px) {
+      #focusLabPanel,
+      #senseLabV1Card,
+      #labGrowthPanel {
+        padding: 16px !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+  
 /* =========================================
    SENSE LAB 1.0 - VISUAL 1
    Independent visual detection test

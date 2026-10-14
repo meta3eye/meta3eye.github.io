@@ -1910,10 +1910,12 @@ async function renderV3Evaluation() {
   if (!container || !state.user?.id) return;
 
  
-  // 검증실은 평가 데이터 로딩과 관계없이 표시한다.
+  // 검증실은 평가 데이터 로딩과 관계없이 표시한다. 
+  installLabSectionStyle();
   installFocusLab();
   senseLabV1Install();
   await senseLabLoadGrowth();
+
 
 
 

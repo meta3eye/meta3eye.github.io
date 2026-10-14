@@ -6033,5 +6033,477 @@ document.addEventListener("visibilitychange", () => {
      BOOT
   ========================= */
 
+/* =========================================
+   SENSE LAB 1.0 - VISUAL 1
+   Independent visual detection test
+========================================= */
+
+let senseLabV1 = null;
+let senseLabV1Timers = [];
+let senseLabV1Saving = false;
+
+function senseLabV1Later(fn, ms) {
+  const id = setTimeout(fn, ms);
+  senseLabV1Timers.push(id);
+  return id;
+}
+
+function senseLabV1ClearTimers() {
+  senseLabV1Timers.forEach(clearTimeout);
+  senseLabV1Timers = [];
+}
+
+function senseLabV1Shuffle(items) {
+  const a = [...items];
+
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+
+  return a;
+}
+
+function senseLabV1Install() {
+  if ($("senseLabV1Panel")) return;
+
+  const host = $("senseTrainingPanel");
+
+  if (!host) {
+    console.warn("SENSE LAB: senseTrainingPanel not found");
+    return;
+  }
+
+  const openButton = document.createElement("button");
+
+  openButton.id = "senseLabV1Open";
+  openButton.type = "button";
+  openButton.textContent = "SENSE LAB · 시각 탐지 검증실";
+
+  openButton.style.cssText = `
+    display:block;
+    width:100%;
+    margin:14px 0;
+    padding:15px;
+    border:1px solid #748b83;
+    border-radius:12px;
+    background:#263e37;
+    color:#ffffff;
+    font-weight:700;
+    cursor:pointer;
+  `;
+
+  host.prepend(openButton);
+
+  const panel = document.createElement("section");
+
+  panel.id = "senseLabV1Panel";
+
+  panel.style.cssText = `
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    overflow:auto;
+    background:#101b19;
+    color:#f5f5ed;
+    padding:24px 15px;
+    box-sizing:border-box;
+    font-family:inherit;
+  `;
+
+  panel.innerHTML = `
+    <div style="
+      max-width:540px;
+      margin:0 auto;
+      text-align:center;
+    ">
+
+      <h2>SENSE LAB 1.0</h2>
+
+      <p style="opacity:.8">
+        VISUAL 1 · 시각 탐지 초급
+      </p>
+
+      <div id="senseLabV1Setup">
+
+        <p>
+          총 30문항입니다.<br>
+          중앙에 빛이 나타날 때만<br>
+          반응 버튼을 누르세요.
+        </p>
+
+        <p>
+          아무것도 나타나지 않는 문항도 있습니다.<br>
+          추측해서 누르면 오반응으로 기록됩니다.
+        </p>
+
+        <button id="senseLabV1Start" type="button">
+          검사 시작
+        </button>
+
+      </div>
+
+      <div id="senseLabV1Running" style="display:none">
+
+        <p id="senseLabV1Progress">0 / 30</p>
+
+        <div id="senseLabV1Stage" style="
+          position:relative;
+          height:260px;
+          max-width:420px;
+          margin:20px auto;
+          border:1px solid #64756e;
+          border-radius:16px;
+          background:#080d0c;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        ">
+
+          <div id="senseLabV1Stimulus" style="
+            display:none;
+            width:46px;
+            height:46px;
+            border-radius:50%;
+            background:#eafbdc;
+            box-shadow:0 0 25px #c9ffad;
+          "></div>
+
+          <span id="senseLabV1Fixation" style="
+            font-size:24px;
+            opacity:.65;
+          ">+</span>
+
+        </div>
+
+        <button id="senseLabV1Respond"
+          type="button"
+          style="
+            width:100%;
+            max-width:420px;
+            padding:20px;
+            font-size:19px;
+            font-weight:bold;
+            touch-action:manipulation;
+          ">
+          감지!
+        </button>
+
+        <p style="font-size:13px;opacity:.7">
+          빛이 나타났을 때만 누르세요.
+        </p>
+
+      </div>
+
+      <div id="senseLabV1Result" style="display:none">
+
+        <h3>검사 결과</h3>
+
+        <div id="senseLabV1ResultText"
+          style="line-height:2">
+        </div>
+
+      </div>
+
+      <p id="senseLabV1Message"
+        style="min-height:24px">
+      </p>
+
+      <button id="senseLabV1Back"
+        type="button"
+        style="margin-top:18px">
+        검증실 닫기
+      </button>
+
+    </div>
+  `;
+
+  document.body.appendChild(panel);
+
+  openButton.addEventListener(
+    "click",
+    senseLabV1Open
+  );
+
+  $("senseLabV1Start").addEventListener(
+    "click",
+    senseLabV1Start
+  );
+
+  $("senseLabV1Respond").addEventListener(
+    "click",
+    senseLabV1Respond
+  );
+
+  $("senseLabV1Back").addEventListener(
+    "click",
+    senseLabV1Close
+  );
+}
+
+function senseLabV1Open() {
+  if (!state.user?.id) {
+    alert("로그인 후 이용할 수 있습니다.");
+    return;
+  }
+
+  if (focusTimerInterval || senseTimerInterval) {
+    alert("진행 중인 훈련을 먼저 종료하세요.");
+    return;
+  }
+
+  const panel = $("senseLabV1Panel");
+
+  panel.style.display = "block";
+
+  $("senseLabV1Setup").style.display = "block";
+  $("senseLabV1Running").style.display = "none";
+  $("senseLabV1Result").style.display = "none";
+
+  $("senseLabV1Message").textContent = "";
+}
+
+function senseLabV1Close() {
+  if (senseLabV1Saving) {
+    alert("검사 결과를 저장하고 있습니다.");
+    return;
+  }
+
+  senseLabV1ClearTimers();
+  senseLabV1 = null;
+
+  $("senseLabV1Panel").style.display = "none";
+}
+
+function senseLabV1Start() {
+  if (senseLabV1Saving) return;
+
+  senseLabV1ClearTimers();
+
+  // 정확히 15개 출현, 15개 비출현
+  const sequence = senseLabV1Shuffle([
+    ...Array(15).fill(true),
+    ...Array(15).fill(false)
+  ]);
+
+  senseLabV1 = {
+    sequence,
+    index: 0,
+    trials: [],
+    phase: "waiting",
+    responded: false,
+    startedAt: 0,
+    reactionMs: null
+  };
+
+  $("senseLabV1Setup").style.display = "none";
+  $("senseLabV1Result").style.display = "none";
+  $("senseLabV1Running").style.display = "block";
+
+  $("senseLabV1Message").textContent =
+    "잠시 후 검사가 시작됩니다.";
+
+  senseLabV1Later(
+    senseLabV1Next,
+    1500
+  );
+}
+
+function senseLabV1Next() {
+  const s = senseLabV1;
+
+  if (!s || s.index >= 30) {
+    senseLabV1Finish();
+    return;
+  }
+
+  s.phase = "waiting";
+  s.responded = false;
+  s.reactionMs = null;
+
+  $("senseLabV1Stimulus").style.display = "none";
+  $("senseLabV1Fixation").style.display = "block";
+
+  $("senseLabV1Progress").textContent =
+    `${s.index + 1} / 30`;
+
+  $("senseLabV1Message").textContent =
+    "중앙을 주시하세요.";
+
+  const gap = 700 + Math.floor(Math.random() * 501);
+
+  senseLabV1Later(() => {
+    if (senseLabV1 !== s) return;
+
+    const present = s.sequence[s.index];
+
+    s.phase = "active";
+    s.startedAt = performance.now();
+
+    $("senseLabV1Fixation").style.display = "none";
+
+    if (present) {
+      $("senseLabV1Stimulus").style.display = "block";
+    }
+
+    // 시각 자극은 250ms 동안 표시
+    senseLabV1Later(() => {
+      if (senseLabV1 !== s) return;
+
+      $("senseLabV1Stimulus").style.display = "none";
+    }, 250);
+
+    // 전체 반응 허용 시간은 1500ms
+    senseLabV1Later(() => {
+      if (senseLabV1 !== s) return;
+
+      s.phase = "finalizing";
+
+      s.trials.push({
+        index: s.index + 1,
+        stimulus_present: present,
+        responded: s.responded,
+        reaction_ms: s.reactionMs
+      });
+
+      s.index++;
+
+      if (s.index >= 30) {
+        senseLabV1Finish();
+      } else {
+        senseLabV1Later(
+          senseLabV1Next,
+          350
+        );
+      }
+
+    }, 1500);
+
+  }, gap);
+}
+
+function senseLabV1Respond() {
+  const s = senseLabV1;
+
+  if (!s || s.phase !== "active") return;
+
+  if (s.responded) return;
+
+  const elapsed = Math.round(
+    performance.now() - s.startedAt
+  );
+
+  // 서버에서 허용하는 반응시간 범위
+  if (elapsed < 100 || elapsed > 1500) {
+    return;
+  }
+
+  s.responded = true;
+  s.reactionMs = elapsed;
+
+  $("senseLabV1Message").textContent =
+    "반응 기록됨";
+}
+
+async function senseLabV1Finish() {
+  const s = senseLabV1;
+
+  if (!s || senseLabV1Saving) return;
+
+  senseLabV1ClearTimers();
+
+  s.phase = "finished";
+
+  $("senseLabV1Running").style.display = "none";
+  $("senseLabV1Result").style.display = "block";
+
+  $("senseLabV1ResultText").textContent =
+    "서버에서 결과를 계산하고 있습니다...";
+
+  senseLabV1Saving = true;
+
+  try {
+    const { data, error } = await client.rpc(
+      "submit_sense_lab_visual1",
+      {
+        p_trials: s.trials
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data?.success) {
+      throw new Error("검사 결과 저장에 실패했습니다.");
+    }
+
+    $("senseLabV1ResultText").innerHTML = `
+      <div style="font-size:30px;font-weight:bold">
+        ${Number(data.score)}점
+      </div>
+
+      <div>적중: ${Number(data.hits)}</div>
+      <div>놓침: ${Number(data.misses)}</div>
+      <div>오반응: ${Number(data.false_alarms)}</div>
+      <div>정확한 무반응: ${Number(data.correct_rejections)}</div>
+
+      <hr>
+
+      <div>평균 반응시간:
+        ${data.average_reaction_ms ?? "-"}ms
+      </div>
+
+      <div>획득 EXP: +${Number(data.exp_delta)}</div>
+
+      <div>
+        SENSE LEVEL:
+        ${Number(data.old_level)}
+        →
+        ${Number(data.new_level)}
+      </div>
+    `;
+
+    $("senseLabV1Message").textContent =
+      "서버 저장 완료";
+
+  } catch (error) {
+    console.error("SENSE LAB ERROR:", error);
+
+    $("senseLabV1ResultText").textContent =
+      "결과 저장에 실패했습니다.";
+
+    $("senseLabV1Message").textContent =
+      error.message || "알 수 없는 오류";
+
+  } finally {
+    senseLabV1Saving = false;
+  }
+}
+
+// 탭을 벗어나면 진행 중인 검사를 중단.
+// 완료되지 않은 검사는 제출하지 않음.
+document.addEventListener("visibilitychange", () => {
+  if (
+    document.visibilityState === "hidden" &&
+    senseLabV1 &&
+    senseLabV1.phase !== "finished" &&
+    !senseLabV1Saving
+  ) {
+    senseLabV1ClearTimers();
+    senseLabV1 = null;
+
+    const panel = $("senseLabV1Panel");
+
+    if (panel) panel.style.display = "none";
+  }
+});
+
+senseLabV1Install();
+
+/* =========================================
+   END SENSE LAB 1.0
+========================================= */
+
+  
   loadProfile();
 })();

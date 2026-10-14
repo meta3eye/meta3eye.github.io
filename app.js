@@ -2045,6 +2045,34 @@ function labClearTimers(){
   focusLabTimers=[];
 }
 
+
+function labBuildExposureSequence(config,total){
+  const low=config.displayMin??config.display;
+  const high=config.displayMax??config.display;
+  const third=(high-low)/3;
+
+  const bands=[
+    [low,Math.floor(low+third)],
+    [Math.floor(low+third)+1,Math.floor(low+2*third)],
+    [Math.floor(low+2*third)+1,high]
+  ];
+
+  const durations=[];
+
+  for(let i=0;i<total;i+=3){
+    const block=labShuffle(
+      bands.map(([min,max])=>labRandom(min,max))
+    );
+
+    durations.push(
+      ...block.slice(0,Math.min(3,total-i))
+    );
+  }
+
+  return durations;
+}
+
+  
 const labAvg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
 
 function labExpNeed(l){

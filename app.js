@@ -6267,6 +6267,95 @@ function senseLabV1Install() {
   );
 }
 
+
+/* =========================================
+   SENSE LAB 1.1
+   Independent Growth Information
+========================================= */
+
+async function senseLabLoadGrowth() {
+  const el = $("senseLabGrowthInfo");
+
+  if (!el || !state.user?.id) return;
+
+  el.textContent = "성장 기록을 불러오는 중...";
+
+  try {
+    const { data, error } = await client
+      .from("sense_lab_profiles")
+      .select("level, exp, max_level, total_tests")
+      .eq("user_id", state.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const p = data || {
+      level: 1,
+      exp: 0,
+      max_level: 1,
+      total_tests: 0
+    };
+
+    const level = Number(p.level);
+    const exp = Number(p.exp);
+
+    const needed = level >= 100
+      ? 0
+      : 100 + (level - 1) * 12;
+
+    const percentage = level >= 100
+      ? 100
+      : Math.min(
+          100,
+          Math.round((exp / needed) * 100)
+        );
+
+    el.innerHTML = `
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:8px;
+      ">
+        <strong>SENSE LV.${level}</strong>
+        <span>
+          ${level >= 100
+            ? "MAX LEVEL"
+            : `EXP ${exp} / ${needed}`}
+        </span>
+      </div>
+
+      <div style="
+        width:100%;
+        height:8px;
+        background:#293b35;
+        border-radius:20px;
+        overflow:hidden;
+      ">
+        <div style="
+          width:${percentage}%;
+          height:100%;
+          background:#88b8a1;
+          border-radius:20px;
+        "></div>
+      </div>
+
+      <p class="muted" style="margin-top:9px">
+        최고 LV.${Number(p.max_level)}
+        · 누적 검사 ${Number(p.total_tests)}회
+      </p>
+    `;
+
+  } catch (error) {
+    console.error("SENSE GROWTH ERROR:", error);
+
+    el.textContent =
+      "성장 기록을 불러오지 못했습니다.";
+  }
+}
+
+
+  
 function senseLabV1Open() {
   if (!state.user?.id) {
     alert("로그인 후 이용할 수 있습니다.");

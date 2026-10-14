@@ -6522,6 +6522,7 @@ function senseLabV1Next() {
 
   $("senseLabV1Stimulus").style.display = "none";
   $("senseLabV1Fixation").style.display = "block";
+  $("senseLabV1Fixation").textContent = "+";
 
   $("senseLabV1Progress").textContent =
     `${s.index + 1} / 30`;

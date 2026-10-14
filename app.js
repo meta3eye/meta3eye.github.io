@@ -6067,12 +6067,30 @@ function senseLabV1Shuffle(items) {
 function senseLabV1Install() {
   if ($("senseLabV1Panel")) return;
 
-  const host = $("senseTrainingPanel");
+ 
+  const host = $("questList")?.closest(".panel");
 
   if (!host) {
-    console.warn("SENSE LAB: senseTrainingPanel not found");
+    console.warn("SENSE LAB: quest panel not found");
     return;
   }
+
+  const labCard = document.createElement("div");
+  labCard.id = "senseLabV1Card";
+  labCard.className = "panel";
+
+  labCard.innerHTML = `
+    <div class="section-title">
+      <h2>SENSE LAB · 감각 검증실</h2>
+      <span class="muted">독립 성장 LV.1~100</span>
+    </div>
+
+    <p class="muted">
+      VISUAL 1 · 시각 자극 탐지 초급
+      · 30문항 · 서버 채점
+    </p>
+  `;
+
 
   const openButton = document.createElement("button");
 

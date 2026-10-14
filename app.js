@@ -3744,7 +3744,8 @@ async function openFocusLab(requestedMode=null){
         .join('');
 
     $('labModeInfo').textContent=
-      `도형 ${c.shapes}종 · 목표 전환 ${c.switches}회 · 표시 ${c.display}ms · 반응 ${c.response}ms · 무작위 대기 ${c.min}~${c.max}ms`;
+`도형 ${c.shapes}종 · 목표 전환 ${c.switches}회 · 가변 노출 ${c.displayMin}~${c.displayMax}ms · 반응 ${c.response}ms · 무작위 대기 ${c.min}~${c.max}ms`;
+
   };
 
  

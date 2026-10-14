@@ -6735,9 +6735,11 @@ function senseLabV1Start() {
     trials: [],
     phase: "ready",
     responded: false,
-    startedAt: 0,
+    startedAt: 0,    
     reactionMs: null,
-    earlyResponses: 0
+    earlyResponses: 0,
+    combo: 0,
+    bestCombo: 0
   };
 
   senseLabV1 = s;

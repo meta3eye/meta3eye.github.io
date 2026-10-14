@@ -3763,7 +3763,9 @@ async function openFocusLab(requestedMode=null){
     $('labCount').disabled=true;
 
     $('labModeInfo').textContent=
-      'MASTER CHALLENGE · 도형 16종 · 목표 전환 5회 · 총 80문항 · 합격 기준 95점 이상';
+      
+'MASTER CHALLENGE · 도형 16종 · 목표 전환 5회 · 가변 노출 70~170ms · 총 80문항 · 합격 기준 95점 이상';
+
 
     const heading=$('focusLabBody').querySelector('h1');
 

@@ -6150,24 +6150,77 @@ function senseLabV1Install() {
         VISUAL 1 · 시각 탐지 초급
       </p>
 
-      <div id="senseLabV1Setup">
+      
+      <div id="senseLabV1Setup"
+        style="text-align:left;line-height:1.85">
 
-        <p>
-          총 30문항입니다.<br>
-          중앙에 빛이 나타날 때만<br>
-          반응 버튼을 누르세요.
-        </p>
+        <div style="
+          padding:18px;
+          border:1px solid #52685e;
+          border-radius:12px;
+          margin:20px 0;
+        ">
 
-        <p>
-          아무것도 나타나지 않는 문항도 있습니다.<br>
-          추측해서 누르면 오반응으로 기록됩니다.
-        </p>
+          <h3 style="margin-top:0">
+            이 검증실은 왜 필요한가?
+          </h3>
 
-        <button id="senseLabV1Start" type="button">
-          검사 시작
+          <p>
+            SENSE LAB은 심리물리학
+            (Psychophysics)과
+            신호탐지이론
+            (Signal Detection Theory)을
+            참고하여 설계한 감각 탐지 검증실입니다.
+          </p>
+
+          <p>
+            사람은 실제 신호를 놓치기도 하고,
+            신호가 없는데도 있다고 판단하기도 합니다.
+            따라서 단순히 많이 반응하는 것보다
+            정확하게 구별하는 능력이 중요합니다.
+          </p>
+
+          <h3>무엇을 측정하는가?</h3>
+
+          <p>
+            적중, 놓침, 오반응,
+            정확한 무반응과 반응시간을 기록합니다.
+            반복 검사 결과를 통해 수행의
+            변화와 안정성을 관찰합니다.
+          </p>
+
+          <h3>현재 검사 · VISUAL 1</h3>
+
+          <p>
+            총 30문항으로 구성됩니다.
+            중앙에 빛이 나타났을 때만
+            감지 버튼을 누르세요.
+            빛이 나타나지 않으면
+            아무것도 누르지 않습니다.
+          </p>
+
+          <p style="font-size:13px;opacity:.75">
+            이 검사는 일반적인 시각 탐지 수행을
+            기록합니다. 높은 점수가 영적 능력이나
+            초감각적 지각의 증거를 의미하지는
+            않습니다.
+          </p>
+
+        </div>
+
+        <button id="senseLabV1Start"
+          type="button"
+          style="
+            display:block;
+            width:100%;
+            padding:16px;
+            font-weight:bold;
+          ">
+          설명을 확인했습니다 · 검사 시작
         </button>
 
       </div>
+
 
       <div id="senseLabV1Running" style="display:none">
 

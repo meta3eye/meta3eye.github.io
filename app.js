@@ -6669,35 +6669,32 @@ function senseLabV1Next() {
 
 
 
+
 function senseLabV1Respond() {
   const s = senseLabV1;
-
   if (!s) return;
 
-  // 최초 3초 준비 시간은 채점 대상이 아님
+  // 최초 3초 준비 시간은 검사에서 제외
   if (s.phase === "ready") return;
 
-  // + 표시 중 누른 경우: 조기 반응
+  // + 표시 중 조기 반응
   if (s.phase === "waiting") {
     s.phase = "early";
     s.earlyResponses++;
 
-    // 현재 문항의 예약된 자극 출현을 취소
+    // 예약된 자극 출현과 채점 타이머 취소
     senseLabV1ClearTimers();
 
+    $("senseLabV1Stimulus").style.display = "none";
     $("senseLabV1Fixation").style.display = "block";
     $("senseLabV1Fixation").textContent = "!";
-    $("senseLabV1Stimulus").style.display = "none";
 
     $("senseLabV1Message").textContent =
-      `조기 반응 ${s.earlyResponses}회 · 현재 문항 재출제`;
+      `조기 반응 ${s.earlyResponses}회 · 같은 문항 재출제`;
 
-    // 문항 번호는 증가시키지 않음
+    // index 및 trials는 변경하지 않음
     senseLabV1Later(() => {
-      if (senseLabV1 !== s || s.phase !== "early") {
-        return;
-      }
-
+      if (senseLabV1 !== s || s.phase !== "early") return;
       senseLabV1Next();
     }, 900);
 
@@ -6710,16 +6707,12 @@ function senseLabV1Respond() {
     performance.now() - s.startedAt
   );
 
-  // 기존 서버 허용 범위 유지
-  if (elapsed < 100 || elapsed > 1500) {
-    return;
-  }
+  if (elapsed < 100 || elapsed > 1500) return;
 
   s.responded = true;
   s.reactionMs = elapsed;
 
-  $("senseLabV1Message").textContent =
-    "반응 기록됨";
+  $("senseLabV1Message").textContent = "반응 기록됨";
 }
 
 

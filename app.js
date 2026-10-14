@@ -6119,8 +6119,6 @@ function senseLabV1Install() {
     "click",
     senseLabV1Open
   );
-  senseLabLoadGrowth();
-
 
   const panel = document.createElement("section");
 
@@ -6470,13 +6468,43 @@ function senseLabV1Start() {
   $("senseLabV1Result").style.display = "none";
   $("senseLabV1Running").style.display = "block";
 
-  $("senseLabV1Message").textContent =
-    "잠시 후 검사가 시작됩니다.";
+ 
+  // 검사 시작 전 3초 준비 시간
+  const progress = $("senseLabV1Progress");
+  const message = $("senseLabV1Message");
+  const fixation = $("senseLabV1Fixation");
+  const stimulus = $("senseLabV1Stimulus");
 
-  senseLabV1Later(
-    senseLabV1Next,
-    1500
-  );
+  stimulus.style.display = "none";
+  fixation.style.display = "block";
+
+  progress.textContent = "검사 준비";
+  message.textContent = "3초 후 시작합니다.";
+
+  let countdown = 3;
+
+  function senseCountdown() {
+    if (!senseLabV1 || senseLabV1.phase !== "waiting") {
+      return;
+    }
+
+    fixation.textContent = countdown;
+    message.textContent = `검사 시작까지 ${countdown}초`;
+
+    countdown--;
+
+    if (countdown >= 0) {
+      senseLabV1Later(senseCountdown, 1000);
+    } else {
+      fixation.textContent = "+";
+      message.textContent = "START";
+
+      senseLabV1Later(senseLabV1Next, 300);
+    }
+  }
+
+  senseCountdown();
+
 }
 
 function senseLabV1Next() {

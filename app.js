@@ -1913,6 +1913,8 @@ async function renderV3Evaluation() {
   // 검증실은 평가 데이터 로딩과 관계없이 표시한다.
   installFocusLab();
   senseLabV1Install();
+  await senseLabLoadGrowth();
+
 
 
   container.textContent =

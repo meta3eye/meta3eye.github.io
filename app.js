@@ -6117,7 +6117,7 @@ function senseLabV1Install() {
     "click",
     senseLabV1Open
   );
-
+  senseLabLoadGrowth();
 
 
   const panel = document.createElement("section");
@@ -6579,7 +6579,8 @@ async function senseLabV1Finish() {
 
     $("senseLabV1Message").textContent =
       "서버 저장 완료";
-
+    await senseLabLoadGrowth();
+    
   } catch (error) {
     console.error("SENSE LAB ERROR:", error);
 

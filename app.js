@@ -6534,21 +6534,21 @@ function senseLabV1Close() {
   $("senseLabV1Panel").style.display = "none";
 }
 
+
 function senseLabV1Start() {
   if (senseLabV1Saving) return;
 
   senseLabV1ClearTimers();
 
-  // 정확히 15개 출현, 15개 비출현
   const sequence = senseLabV1Shuffle([
     ...Array(15).fill(true),
     ...Array(15).fill(false)
   ]);
 
-  senseLabV1 = {
+  const s = {
     sequence,
     index: 0,
-    trials: [],  
+    trials: [],
     phase: "ready",
     responded: false,
     startedAt: 0,
@@ -6556,48 +6556,43 @@ function senseLabV1Start() {
     earlyResponses: 0
   };
 
+  senseLabV1 = s;
+
   $("senseLabV1Setup").style.display = "none";
   $("senseLabV1Result").style.display = "none";
   $("senseLabV1Running").style.display = "block";
 
- 
-  // 검사 시작 전 3초 준비 시간
-  const progress = $("senseLabV1Progress");
-  const message = $("senseLabV1Message");
-  const fixation = $("senseLabV1Fixation");
-  const stimulus = $("senseLabV1Stimulus");
-
-  stimulus.style.display = "none";
-  fixation.style.display = "block";
-
-  progress.textContent = "검사 준비";
-  message.textContent = "3초 후 시작합니다.";
+  $("senseLabV1Stimulus").style.display = "none";
+  $("senseLabV1Fixation").style.display = "block";
+  $("senseLabV1Progress").textContent = "검사 준비";
 
   let countdown = 3;
 
-  function senseCountdown() {
-    if (!senseLabV1 || senseLabV1.phase !== "ready") {
-      return;
-    }
+  function tick() {
+    if (senseLabV1 !== s || s.phase !== "ready") return;
 
-    fixation.textContent = countdown;
-    message.textContent = `검사 시작까지 ${countdown}초`;
+    $("senseLabV1Fixation").textContent = countdown;
+    $("senseLabV1Message").textContent =
+      `검사 시작까지 ${countdown}초`;
 
     countdown--;
 
     if (countdown >= 0) {
-      senseLabV1Later(senseCountdown, 1000);
+      senseLabV1Later(tick, 1000);
     } else {
-      fixation.textContent = "+";
-      message.textContent = "START";
-
-      senseLabV1Later(senseLabV1Next, 300);
+      $("senseLabV1Fixation").textContent = "START";
+      $("senseLabV1Message").textContent = "검사를 시작합니다.";
+      senseLabV1Later(() => {
+        if (senseLabV1 === s && s.phase === "ready") {
+          senseLabV1Next();
+        }
+      }, 300);
     }
   }
 
-  senseCountdown();
-
+  tick();
 }
+
 
 function senseLabV1Next() {
   const s = senseLabV1;

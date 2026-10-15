@@ -6385,16 +6385,18 @@ function senseLabV1Install() {
 
       <h2>SENSE LAB 3.0</h2>
 
-      <p class="muted">
-        VISUAL DETECTION TRAINING
-      </p>
+<p class="muted">
+  VISUAL DETECTION TRAINING
+</p>
 
-      <div id="senseLabV1Setup"
-        style="text-align:left;line-height:1.8">
+<div id="senseLabV1Setup"
+  style="text-align:left;line-height:1.8">
 
-        <div id="senseLabModeList"
-          style="display:grid;gap:12px;margin:22px 0">
-        </div>
+  <div id="senseLab21ProgressHost"></div>
+
+  <div id="senseLabModeList"
+    style="display:grid;gap:12px;margin:22px 0">
+  </div>
 
         <details id="senseLabV1Guide"
           style="
@@ -6739,7 +6741,7 @@ function senseLab21ExpRemaining(level, exp, targetLevel) {
 }
 
 function senseLab21RenderProgress() {
-  const host = $("senseLabGrowthInfo");
+ const host = $("senseLab21ProgressHost");
 
   if (!host || !senseLabProfile) return;
 

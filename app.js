@@ -7868,10 +7868,7 @@ function senseLabV1Start() {
     return;
   }
 
-  $("senseLabResponseGuide").textContent =
-  s.modeKey === "visual3"
-    ? "중앙의 연두색 목표 신호에만 반응하세요. 주변 도형은 방해 자극입니다."
-    : "빛이 나타났을 때만 누르세요.";
+ 
   senseLabV1ClearTimers();
 
   const s = {
@@ -7892,8 +7889,17 @@ function senseLabV1Start() {
     bestCombo: 0
   };
 
-  senseLabV1 = s;
-  senseLabV1UpdateCombo();
+ senseLabV1 = s;
+senseLabV1UpdateCombo();
+
+const responseGuide = $("senseLabResponseGuide");
+
+if (responseGuide) {
+  responseGuide.textContent =
+    s.modeKey === "visual3"
+      ? "중앙의 연두색 목표 신호에만 반응하세요. 주변 도형은 방해 자극입니다."
+      : "빛이 나타났을 때만 누르세요.";
+}
 
   $("senseLabRunningTitle").textContent =
     `${mode.name} · ${mode.subtitle}`;

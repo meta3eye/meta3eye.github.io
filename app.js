@@ -7329,9 +7329,14 @@ function senseLab22Achievements(rows, mode) {
         
         return `
           <div style="
-            border:1px solid ${
-              complete ? "#a9dfb7" : "#52685e"
-            };
+            border:${complete ? "2px" : "1px"} solid ${
+  complete ? "#a9dfb7" : "#52685e"
+};
+background:${
+  complete
+    ? "rgba(110,165,141,.15)"
+    : "rgba(255,255,255,.015)"
+};
             border-radius:12px;
             padding:13px;
             opacity:${complete ? "1" : ".65"};

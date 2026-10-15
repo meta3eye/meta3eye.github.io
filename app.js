@@ -6315,6 +6315,8 @@ function senseLabV1Install() {
             초감각적 지각의 증거를 의미하지는
             않습니다.
           </p>
+  </div>
+</details>
 
         </div>
 
@@ -6326,7 +6328,7 @@ function senseLabV1Install() {
             padding:16px;
             font-weight:bold;
           ">
-          설명을 확인했습니다 · 검사 시작
+          VISUAL 1 · 검사 시작
         </button>
 
       </div>
@@ -6710,6 +6712,11 @@ function senseLabV1Open() {
   panel.style.display = "block";
 
   $("senseLabV1Setup").style.display = "block";
+  
+  // 재입장 시 안내문은 항상 접힌 상태로 시작
+  const guide = $("senseLabV1Guide");
+  if (guide) guide.open = false;
+
   $("senseLabV1Running").style.display = "none";
   $("senseLabV1Result").style.display = "none";  
   $("senseLabV1Message").textContent = "";

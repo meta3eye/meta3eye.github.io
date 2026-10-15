@@ -7984,9 +7984,13 @@ const distractorPresent = s.modeKey === "visual3"
 
     $("senseLabV1Fixation").style.display = "none";
 
-    if (present) {
-      $("senseLabV1Stimulus").style.display = "block";
-    }
+   senseLab3RenderStimulus(
+  {
+    stimulus_present: present,
+    distractor_present: distractorPresent
+  },
+  s.modeKey
+);
 
     senseLabV1Later(() => {
       if (senseLabV1 !== s || s.phase !== "active") return;

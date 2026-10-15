@@ -6934,7 +6934,7 @@ function senseLab22Achievements(rows, mode) {
       align-items:center;
       margin:15px 0;
     ">
-      <strong>UNLOCKED</strong>
+      <strong>OPEN</strong>
       <strong>${unlocked} / ${achievements.length}</strong>
     </div>
 
@@ -6993,7 +6993,7 @@ function senseLab22Achievements(rows, mode) {
 
             <div style="font-size:12px">
               ${complete
-                ? "UNLOCKED"
+                ? "OPEN"
                 : `${Math.min(a.current, a.target)} / ${a.target}`}
             </div>
 

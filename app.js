@@ -6253,6 +6253,24 @@ function senseLabV1Install() {
           margin:20px 0;
         ">
 
+
+<details id="senseLabV1Guide" style="
+  border:1px solid #52685e;
+  border-radius:10px;
+  padding:12px 15px;
+  margin-bottom:16px;
+">
+  <summary style="
+    cursor:pointer;
+    font-weight:bold;
+    font-size:15px;
+    user-select:none;
+  ">
+    검증실 안내 · 검사 방법 보기
+  </summary>
+
+  <div style="padding-top:12px">
+
           <h3 style="margin-top:0">
             이 검증실은 왜 필요한가?
           </h3>

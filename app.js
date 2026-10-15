@@ -6549,10 +6549,14 @@ async function senseLabLoadGrowth() {
 ========================================= */
 
 async function senseLabDashboardLoad() {
-  const card = $("senseLabV1Card");
-  if (!card || !state.user?.id) return;
+  
+  // 성장 분석은 메인 화면이 아닌 SENSE LAB 내부에 설치
+  const host = $("senseLabV1Setup");
+
+  if (!host || !state.user?.id) return;
 
   let panel = $("senseLabGrowthPanel");
+
 
   if (!panel) {
     panel = document.createElement("section");

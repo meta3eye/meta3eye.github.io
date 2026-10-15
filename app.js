@@ -6795,6 +6795,255 @@ async function senseLabDashboardLoad() {
   await senseLabDashboardRender(previous);
 }
 
+
+/* =========================================
+   SENSE LAB 2.2
+   ACHIEVEMENT SYSTEM
+   Read-only / per mode
+========================================= */
+
+function senseLab22Achievements(rows, mode) {
+  const host = $("senseGrowthContent");
+  if (!host) return;
+
+  const old = $("senseLab22Achievements");
+  if (old) old.remove();
+
+  if (!rows || !rows.length) return;
+
+  const scores = rows.map(r => Number(r.score || 0));
+
+  const total = rows.length;
+  const bestScore = Math.max(...scores);
+
+  const totalHits = rows.reduce(
+    (s, r) => s + Number(r.hits || 0), 0
+  );
+
+  const totalMisses = rows.reduce(
+    (s, r) => s + Number(r.misses || 0), 0
+  );
+
+  const totalFA = rows.reduce(
+    (s, r) => s + Number(r.false_alarms || 0), 0
+  );
+
+  const totalCR = rows.reduce(
+    (s, r) => s + Number(r.correct_rejections || 0), 0
+  );
+
+  const targetCount = totalHits + totalMisses;
+  const nonTargetCount = totalFA + totalCR;
+
+  const hitRate = targetCount
+    ? Math.round(totalHits / targetCount * 100)
+    : 0;
+
+  const falseAlarmRate = nonTargetCount
+    ? Math.round(totalFA / nonTargetCount * 100)
+    : 0;
+
+  const bestCombo = rows.reduce((best, row) => {
+    const value = Number(row.result?.best_combo);
+    return Number.isFinite(value)
+      ? Math.max(best, value)
+      : best;
+  }, 0);
+
+  const perfectCount = rows.filter(r =>
+    Number(r.score) === 100
+  ).length;
+
+  const zeroFA = rows.filter(r =>
+    Number(r.false_alarms) === 0
+  ).length;
+
+  const excellentCount = rows.filter(r =>
+    Number(r.score) >= 90
+  ).length;
+
+  const achievements = [
+    {
+      icon: "◈",
+      name: "FIRST SIGNAL",
+      desc: "첫 번째 검사 완료",
+      current: total,
+      target: 1
+    },
+    {
+      icon: "◇",
+      name: "SIGNAL HUNTER",
+      desc: "검사 10회 완료",
+      current: total,
+      target: 10
+    },
+    {
+      icon: "✦",
+      name: "SHARP SENSE",
+      desc: "90점 이상 검사 5회",
+      current: excellentCount,
+      target: 5
+    },
+    {
+      icon: "◎",
+      name: "FALSE ALARM ZERO",
+      desc: "오반응 0회 검사 3회",
+      current: zeroFA,
+      target: 3
+    },
+    {
+      icon: "◆",
+      name: "COMBO MASTER",
+      desc: "최고 콤보 15회 달성",
+      current: bestCombo,
+      target: 15
+    },
+    {
+      icon: "★",
+      name: "PERFECT DETECTION",
+      desc: "100점 검사 1회 달성",
+      current: perfectCount,
+      target: 1
+    }
+  ];
+
+  const unlocked = achievements.filter(
+    a => a.current >= a.target
+  ).length;
+
+  const panel = document.createElement("section");
+  panel.id = "senseLab22Achievements";
+
+  panel.style.cssText = `
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px solid rgba(110,165,141,.45);
+  `;
+
+  panel.innerHTML = `
+    <h3>ACHIEVEMENTS · 성취 기록</h3>
+
+    <p style="font-size:13px;opacity:.75">
+      ${mode === "visual2" ? "VISUAL 2" : "VISUAL 1"}
+      독립 성취 기록
+    </p>
+
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin:15px 0;
+    ">
+      <strong>UNLOCKED</strong>
+      <strong>${unlocked} / ${achievements.length}</strong>
+    </div>
+
+    <div style="
+      height:9px;
+      border-radius:20px;
+      overflow:hidden;
+      background:#293b35;
+      margin-bottom:20px;
+    ">
+      <div style="
+        height:100%;
+        width:${Math.round(
+          unlocked / achievements.length * 100
+        )}%;
+        background:#a9dfb7;
+      "></div>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    ">
+      ${achievements.map(a => {
+        const complete = a.current >= a.target;
+        const progress = Math.min(
+          100,
+          Math.round(a.current / a.target * 100)
+        );
+
+        return `
+          <div style="
+            border:1px solid ${
+              complete ? "#a9dfb7" : "#52685e"
+            };
+            border-radius:12px;
+            padding:13px;
+            opacity:${complete ? "1" : ".65"};
+            min-width:0;
+          ">
+            <div style="font-size:25px">
+              ${a.icon}
+            </div>
+
+            <strong style="font-size:12px">
+              ${a.name}
+            </strong>
+
+            <div style="
+              font-size:12px;
+              margin:7px 0;
+            ">
+              ${a.desc}
+            </div>
+
+            <div style="font-size:12px">
+              ${complete
+                ? "UNLOCKED"
+                : `${Math.min(a.current, a.target)} / ${a.target}`}
+            </div>
+
+            <div style="
+              height:5px;
+              background:#293b35;
+              border-radius:10px;
+              margin-top:8px;
+              overflow:hidden;
+            ">
+              <div style="
+                height:100%;
+                width:${progress}%;
+                background:#a9dfb7;
+              "></div>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <div style="
+      border:1px solid #52685e;
+      border-radius:10px;
+      padding:13px;
+      margin-top:16px;
+      line-height:1.9;
+    ">
+      <strong>PERSONAL BEST</strong>
+
+      <div>최고 점수: ${bestScore}점</div>
+      <div>최고 콤보: ${bestCombo}회</div>
+      <div>누적 적중률: ${hitRate}%</div>
+      <div>누적 오반응률: ${falseAlarmRate}%</div>
+    </div>
+
+    <p style="
+      font-size:12px;
+      opacity:.65;
+      margin-top:13px;
+    ">
+      성취 배지는 검사 결과를 바탕으로 자동 계산됩니다.
+      별도 EXP는 지급되지 않습니다.
+    </p>
+  `;
+
+  host.appendChild(panel);
+}
+
+  
 async function senseLabDashboardRender(mode) {
   const content = $("senseGrowthContent");
 

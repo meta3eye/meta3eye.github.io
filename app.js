@@ -6572,7 +6572,6 @@ async function senseLabDashboardLoad() {
   
   // 성장 분석은 메인 화면이 아닌 SENSE LAB 내부에 설치
   const host = $("senseLabV1Setup");
-
   if (!host || !state.user?.id) return;
 
   let panel = $("senseLabGrowthPanel");
@@ -6590,7 +6589,6 @@ async function senseLabDashboardLoad() {
       margin:24px 0;
       background:rgba(68,139,102,.08);
     `;
-
         host.appendChild(panel);
   }
 

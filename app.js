@@ -7865,7 +7865,9 @@ function senseLabV1Start() {
   const s = {
     modeKey: senseLabSelectedMode,
     mode,
-    sequence: senseLabV15BuildSequence(),
+    sequence: senseLabSelectedMode === "visual3"
+  ? senseLab3BuildSequence()
+  : senseLabV15BuildSequence(),
     index: 0,
     trials: [],
     phase: "ready",

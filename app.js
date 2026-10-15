@@ -7166,6 +7166,8 @@ async function senseLabDashboardRender(mode) {
       </p>
     `;
 
+    senseLab22Achievements(rows, mode);
+
   } catch (error) {
     console.error("SENSE DASHBOARD:", error);
 
@@ -7260,6 +7262,97 @@ function senseLabV1Close() {
 
   $("senseLabV1Panel").style.display = "none";
 }
+
+
+/* =========================================
+   SENSE LAB 2.2
+   PERSONAL RESULT FEEDBACK
+========================================= */
+
+function senseLab22ResultFeedback(data) {
+  const score = Number(data.score || 0);
+  const hits = Number(data.hits || 0);
+  const misses = Number(data.misses || 0);
+  const fa = Number(data.false_alarms || 0);
+  const cr = Number(data.correct_rejections || 0);
+  const combo = Number(data.best_combo || 0);
+
+  const hitRate = hits + misses
+    ? hits / (hits + misses) * 100
+    : 0;
+
+  const faRate = fa + cr
+    ? fa / (fa + cr) * 100
+    : 0;
+
+  let title = "";
+  let message = "";
+
+  if (score >= 90 && fa === 0) {
+    title = "EXCELLENT CONTROL";
+    message =
+      "신호 탐지와 무반응 판단이 모두 안정적입니다. " +
+      "현재 검사 조건에서 높은 수행 수준을 보였습니다.";
+
+  } else if (faRate >= 30) {
+    title = "RESPONSE CONTROL";
+    message =
+      "신호가 없을 때 버튼을 누르는 비율이 높습니다. " +
+      "다음 검사에서는 반응을 서두르지 않고 " +
+      "신호를 확인한 뒤 누르는 데 집중하세요.";
+
+  } else if (hitRate < 60) {
+    title = "SIGNAL DETECTION";
+    message =
+      "실제 신호를 놓치는 비율이 높습니다. " +
+      "다음 검사에서는 화면 중앙에 시선을 유지하고 " +
+      "자극 출현에 집중해 보세요.";
+
+  } else if (combo < 5) {
+    title = "CONSISTENCY TRAINING";
+    message =
+      "연속 정답 유지가 다음 훈련 목표입니다. " +
+      "반응 리듬을 일정하게 유지하는 연습을 권장합니다.";
+
+  } else {
+    title = "BALANCED PERFORMANCE";
+    message =
+      "현재 탐지 수행은 비교적 균형을 이루고 있습니다. " +
+      "다음 검사에서는 오반응을 줄이면서 " +
+      "최고 콤보 기록을 갱신해 보세요.";
+  }
+
+  return `
+    <div style="
+      margin-top:22px;
+      padding:16px;
+      border:1px solid #6ea58d;
+      border-radius:12px;
+      text-align:left;
+      line-height:1.8;
+    ">
+      <strong>PERSONAL FEEDBACK</strong>
+
+      <div style="
+        font-weight:bold;
+        color:#a9dfb7;
+        margin:8px 0;
+      ">
+        ${title}
+      </div>
+
+      <p style="font-size:14px">
+        ${message}
+      </p>
+
+      <div style="font-size:12px;opacity:.7">
+        적중률 ${hitRate.toFixed(1)}%
+        · 오반응률 ${faRate.toFixed(1)}%
+      </div>
+    </div>
+  `;
+}
+
   
 function senseLabV1UpdateCombo() {
   const s = senseLabV1;

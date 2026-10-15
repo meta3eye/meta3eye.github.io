@@ -7892,9 +7892,12 @@ function senseLabV1Start() {
   stimulus.style.height = `${mode.size}px`;
   stimulus.style.opacity = mode.opacity;
   stimulus.style.boxShadow =
-    s.modeKey === "visual2"
-      ? "0 0 9px rgba(201,255,173,.3)"
-      : "0 0 25px #c9ffad";
+  s.modeKey === "visual1"
+    ? "0 0 25px #c9ffad"
+    : "0 0 9px rgba(201,255,173,.3)";
+
+$("senseLabV1Respond").textContent =
+  s.modeKey === "visual3" ? "목표 감지!" : "감지!";
 
   $("senseLabV1Setup").style.display = "none";
   $("senseLabV1Result").style.display = "none";

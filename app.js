@@ -7359,8 +7359,11 @@ background:${
 
             <div style="font-size:12px">
               ${complete
-                ? "OPEN"
-                : `${Math.min(a.current, a.target)} / ${a.target}`}
+  ? `<strong style="color:#a9dfb7">OPEN</strong>`
+  : `<span style="opacity:.65">
+       LOCK · ${Math.min(a.current, a.target)} / ${a.target}
+     </span>`
+}
             </div>          
           </div>
         `;

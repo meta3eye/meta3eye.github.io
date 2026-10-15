@@ -6860,12 +6860,56 @@ function senseLabV1Close() {
     return;
   }
 
+  const setup = $("senseLabV1Setup");
+  const running = $("senseLabV1Running");
+  const result = $("senseLabV1Result");
+  const back = $("senseLabV1Back");
+
+  // 검사 중이라면 검사를 중단하고 선택 화면으로 복귀
+  if (running?.style.display !== "none") {
+    if (!confirm(
+      "진행 중인 검사를 중단하고 이전 화면으로 돌아가시겠습니까?\n" +
+      "미완료 검사는 저장되지 않으며 EXP도 지급되지 않습니다."
+    )) return;
+
+    senseLabV1ClearTimers();
+    senseLabV1 = null;
+
+    running.style.display = "none";
+    result.style.display = "none";
+    setup.style.display = "block";
+
+    $("senseLabV1Message").textContent = "";
+    back.textContent = "검증실 닫기";
+
+    senseLabRenderModes();
+    senseLabDashboardLoad();
+    return;
+  }
+
+  // 결과 화면이라면 검사 선택 화면으로 복귀
+  if (result?.style.display !== "none") {
+    senseLabV1 = null;
+
+    result.style.display = "none";
+    running.style.display = "none";
+    setup.style.display = "block";
+
+    $("senseLabV1Message").textContent = "";
+    back.textContent = "검증실 닫기";
+
+    senseLabRenderModes();
+    senseLabDashboardLoad();
+    return;
+  }
+
+  // 검사 선택 화면에서만 검증실 전체를 닫음
   senseLabV1ClearTimers();
   senseLabV1 = null;
 
   $("senseLabV1Panel").style.display = "none";
 }
-
+  
 function senseLabV1UpdateCombo() {
   const s = senseLabV1;
   if (!s) return;

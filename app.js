@@ -6219,6 +6219,110 @@ function senseLabV15BuildSequence() {
   ]);
 }
 
+/* =========================================
+   SENSE LAB 3.0
+   DISTRACTION CONTROL
+========================================= */
+
+function senseLab3BuildSequence() {
+  const targetCount = 7 + Math.floor(Math.random() * 7);
+
+  const targetSequence = senseLabV1Shuffle([
+    ...Array(targetCount).fill(true),
+    ...Array(20 - targetCount).fill(false)
+  ]);
+
+  // 목표가 있는 문항에도 방해 자극을 배치한다.
+  const targetIndices = senseLabV1Shuffle(
+    targetSequence
+      .map((present, index) => present ? index : -1)
+      .filter(index => index >= 0)
+  );
+
+  const nonTargetIndices = senseLabV1Shuffle(
+    targetSequence
+      .map((present, index) => !present ? index : -1)
+      .filter(index => index >= 0)
+  );
+
+  const distractorIndices = new Set([
+    ...targetIndices.slice(0, Math.min(5, targetIndices.length)),
+    ...nonTargetIndices.slice(0, Math.min(7, nonTargetIndices.length))
+  ]);
+
+  return targetSequence.map((present, index) => ({
+    stimulus_present: present,
+    distractor_present: distractorIndices.has(index)
+  }));
+}
+
+function senseLab3RenderStimulus(trial, mode) {
+  const stage = $("senseLabV1Stage");
+  const target = $("senseLabV1Stimulus");
+
+  if (!stage || !target) return;
+
+  stage.querySelectorAll(".sense-lab-distractor")
+    .forEach(el => el.remove());
+
+  if (mode !== "visual3") {
+    target.style.display =
+      trial.stimulus_present ? "block" : "none";
+    return;
+  }
+
+  // 목표 신호: 중앙의 연두색 원
+  target.style.display =
+    trial.stimulus_present ? "block" : "none";
+
+  if (!trial.distractor_present) return;
+
+  // 방해 자극: 주변의 회색 도형
+  const positions = [
+    [19, 24], [80, 22], [23, 76], [77, 75],
+    [13, 51], [87, 50]
+  ];
+
+  const symbols = ["◆", "■", "▲", "✦", "●", "◇"];
+
+  const selected = senseLabV1Shuffle(
+    positions.map((pos, index) => ({
+      pos,
+      symbol: symbols[index]
+    }))
+  ).slice(0, 4);
+
+  selected.forEach(item => {
+    const el = document.createElement("span");
+
+    el.className = "sense-lab-distractor";
+    el.textContent = item.symbol;
+
+    el.style.cssText = `
+      position:absolute;
+      left:${item.pos[0]}%;
+      top:${item.pos[1]}%;
+      transform:translate(-50%,-50%);
+      color:#84968c;
+      font-size:22px;
+      opacity:.75;
+      pointer-events:none;
+      user-select:none;
+    `;
+
+    stage.appendChild(el);
+  });
+}
+
+function senseLab3ClearStimulus() {
+  $("senseLabV1Stage")
+    ?.querySelectorAll(".sense-lab-distractor")
+    .forEach(el => el.remove());
+
+  const target = $("senseLabV1Stimulus");
+  if (target) target.style.display = "none";
+}
+  
 function senseLabV1Install() {
   if ($("senseLabV1Panel")) return;
 

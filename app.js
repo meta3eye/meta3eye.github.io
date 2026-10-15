@@ -7464,7 +7464,6 @@ async function senseLabDashboardRender(mode) {
     ];
 
     content.innerHTML = `
-  // 기존 성장 분석 HTML  
       <div style="
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));

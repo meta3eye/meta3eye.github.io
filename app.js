@@ -7684,6 +7684,11 @@ async function senseLabV1Finish() {
         : ""}
     `;
 
+    $("senseLabV1ResultText").insertAdjacentHTML(
+  "beforeend",
+  senseLab22ResultFeedback(data)
+);
+
     $("senseLabV1Message").textContent =
       "검사 결과 저장 완료";
 

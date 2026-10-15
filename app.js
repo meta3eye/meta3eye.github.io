@@ -6739,11 +6739,8 @@ function senseLabV1Start() {
   if (senseLabV1Saving) return;
 
   senseLabV1ClearTimers();
-
-  const sequence = senseLabV1Shuffle([
-    ...Array(15).fill(true),
-    ...Array(15).fill(false)
-  ]);
+  
+  const sequence = senseLabV15BuildSequence();
 
   const s = {
     sequence,

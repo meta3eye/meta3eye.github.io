@@ -6802,6 +6802,283 @@ async function senseLabDashboardLoad() {
    Read-only / per mode
 ========================================= */
 
+
+/* =========================================
+   SENSE LAB 2.3
+   PERFORMANCE ANALYSIS
+   Recent 10 tests / per mode
+========================================= */
+
+function senseLab23Performance(rows, mode) {
+  const host = $("senseGrowthContent");
+  if (!host) return;
+
+  $("senseLab23Performance")?.remove();
+
+  const validRows = (rows || [])
+    .filter(row =>
+      row &&
+      Number.isFinite(Number(row.score)) &&
+      row.score !== null
+    )
+    .slice(0, 10)
+    .reverse();
+
+  if (!validRows.length) return;
+
+  const panel = document.createElement("section");
+  panel.id = "senseLab23Performance";
+
+  panel.style.cssText = `
+    margin-top:20px;
+    padding:16px;
+    border:1px solid #52685e;
+    border-radius:12px;
+    line-height:1.7;
+  `;
+
+  const clamp = value =>
+    Math.max(0, Math.min(100, Number(value) || 0));
+
+  const stats = validRows.map((row, index) => {
+    const hits = Number(row.hits || 0);
+    const misses = Number(row.misses || 0);
+    const fa = Number(row.false_alarms || 0);
+    const cr = Number(row.correct_rejections || 0);
+
+    return {
+      number: index + 1,
+      score: clamp(row.score),
+      hitRate: hits + misses
+        ? clamp(hits / (hits + misses) * 100)
+        : 0,
+      faRate: fa + cr
+        ? clamp(fa / (fa + cr) * 100)
+        : 0
+    };
+  });
+
+  const average = (list, key) =>
+    list.length
+      ? list.reduce((sum, item) => sum + item[key], 0)
+        / list.length
+      : 0;
+
+  const current = stats.slice(-5);
+  const previous = stats.slice(-10, -5);
+
+  const currentAvg = average(current, "score");
+  const previousAvg = average(previous, "score");
+
+  let trendText = "비교 기록 축적 중";
+
+  if (previous.length) {
+    const diff = currentAvg - previousAvg;
+
+    trendText =
+      `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}점`;
+
+    if (diff > 5) {
+      trendText += " · 상승 추세";
+    } else if (diff < -5) {
+      trendText += " · 하락 추세";
+    } else {
+      trendText += " · 유지 구간";
+    }
+  }
+
+  const bars = stats.map(item => `
+    <div style="
+      flex:1;
+      min-width:0;
+      text-align:center;
+    ">
+      <div style="
+        height:110px;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+      ">
+        <div style="
+          width:75%;
+          max-width:25px;
+          height:${item.score}%;
+          min-height:2px;
+          border-radius:5px 5px 0 0;
+          background:#a9dfb7;
+        "></div>
+      </div>
+
+      <div style="
+        font-size:11px;
+        margin-top:5px;
+      ">
+        ${Math.round(item.score)}
+      </div>
+
+      <div style="
+        font-size:10px;
+        opacity:.6;
+      ">
+        ${item.number}
+      </div>
+    </div>
+  `).join("");
+
+  const recentHitRate = average(current, "hitRate");
+  const recentFARate = average(current, "faRate");
+
+  const progressBar = (label, value, color) => `
+    <div style="margin:13px 0">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        font-size:13px;
+      ">
+        <span>${label}</span>
+        <strong>${value.toFixed(1)}%</strong>
+      </div>
+
+      <div style="
+        height:8px;
+        background:#293b35;
+        border-radius:20px;
+        overflow:hidden;
+        margin-top:6px;
+      ">
+        <div style="
+          width:${clamp(value)}%;
+          height:100%;
+          border-radius:20px;
+          background:${color};
+        "></div>
+      </div>
+    </div>
+  `;
+
+  let feedback;
+
+  if (recentFARate >= 25) {
+    feedback =
+      "오반응 비율이 높습니다. " +
+      "다음 검사에서는 신호가 없는 상황에서 " +
+      "반응을 억제하는 데 집중하세요.";
+  } else if (recentHitRate < 65) {
+    feedback =
+      "실제 신호를 놓치는 비율이 높습니다. " +
+      "화면 중앙에 시선을 안정적으로 유지하는 " +
+      "훈련을 권장합니다.";
+  } else if (previous.length &&
+             currentAvg > previousAvg + 5) {
+    feedback =
+      "최근 검사 점수가 이전 구간보다 상승했습니다. " +
+      "동일한 검사 조건을 유지하면서 " +
+      "변화가 지속되는지 확인하세요.";
+  } else {
+    feedback =
+      "현재 수행 기록을 유지하면서 " +
+      "적중률과 오반응률을 함께 개선하는 것을 " +
+      "다음 목표로 설정하세요.";
+  }
+
+  panel.innerHTML = `
+    <h3>PERFORMANCE ANALYSIS</h3>
+
+    <p style="font-size:12px;opacity:.7">
+      ${mode === "visual2" ? "VISUAL 2" : "VISUAL 1"}
+      · 최근 최대 10회
+    </p>
+
+    <div style="
+      margin:18px 0;
+      padding:14px 8px;
+      border:1px solid rgba(110,165,141,.35);
+      border-radius:10px;
+    ">
+      <strong style="font-size:13px">
+        SCORE HISTORY
+      </strong>
+
+      <div style="
+        display:flex;
+        gap:5px;
+        align-items:flex-end;
+        margin-top:14px;
+      ">
+        ${bars}
+      </div>
+
+      <p style="
+        font-size:11px;
+        opacity:.65;
+        text-align:center;
+      ">
+        오래된 검사 → 최근 검사
+      </p>
+    </div>
+
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      margin:15px 0;
+    ">
+      <span>최근 평균 점수</span>
+      <strong>${currentAvg.toFixed(1)}점</strong>
+    </div>
+
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+    ">
+      <span>이전 구간 대비</span>
+      <strong>${trendText}</strong>
+    </div>
+
+    <hr style="opacity:.2;margin:18px 0">
+
+    <strong>DETECTION BALANCE</strong>
+
+    ${progressBar(
+      "최근 5회 평균 적중률",
+      recentHitRate,
+      "#a9dfb7"
+    )}
+
+    ${progressBar(
+      "최근 5회 평균 오반응률",
+      recentFARate,
+      "#d5a17d"
+    )}
+
+    <div style="
+      padding:13px;
+      border:1px solid #52685e;
+      border-radius:10px;
+      margin-top:17px;
+      font-size:13px;
+    ">
+      <strong>NEXT TRAINING GUIDE</strong>
+      <p>${feedback}</p>
+    </div>
+
+    <p style="
+      font-size:11px;
+      opacity:.6;
+      margin-top:13px;
+    ">
+      이 분석은 저장된 검사 기록을 기반으로 합니다.
+      적중률과 오반응률은 각각의 문항 유형을
+      기준으로 계산한 최근 검사별 비율의 평균입니다.
+    </p>
+  `;
+
+  host.appendChild(panel);
+}
+
+  
 function senseLab22Achievements(rows, mode) {
   const host = $("senseGrowthContent");
   if (!host) return;

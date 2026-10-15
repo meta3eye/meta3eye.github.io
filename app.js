@@ -6483,7 +6483,8 @@ function senseLabV1Install() {
   `;
 
   document.body.appendChild(panel);
-
+senseLabInstallGrowthRollup();
+  
   $("senseLabV1Open").onclick = senseLabV1Open;
   $("senseLabV1Start").onclick = senseLabV1Start;
   $("senseLabV1Respond").onclick = senseLabV1Respond;
@@ -7131,6 +7132,48 @@ function senseLabMakeCollapsible(panelId, title, initiallyOpen = false) {
 }
 
   
+/* =========================================
+   SENSE GROWTH ROLLUP
+========================================= */
+
+function senseLabInstallGrowthRollup() {
+  const panel = $("senseLabGrowthPanel");
+
+  if (!panel || $("senseLabGrowthRollup")) return;
+
+  const wrapper = document.createElement("details");
+  wrapper.id = "senseLabGrowthRollup";
+  wrapper.open = false;
+
+  wrapper.style.cssText = `
+    margin:20px 0;
+    padding:12px 15px;
+    border:1px solid #52685e;
+    border-radius:12px;
+  `;
+
+  const summary = document.createElement("summary");
+
+  summary.textContent = "SENSE GROWTH · 성장 분석";
+
+  summary.style.cssText = `
+    cursor:pointer;
+    font-weight:bold;
+    padding:7px 0;
+    user-select:none;
+  `;
+
+  panel.parentNode.insertBefore(wrapper, panel);
+
+  wrapper.appendChild(summary);
+  wrapper.appendChild(panel);
+
+  panel.style.border = "none";
+  panel.style.margin = "12px 0 0";
+  panel.style.padding = "0";
+}
+
+  
 function senseLab22Achievements(rows, mode) {
   const host = $("senseGrowthContent");
   if (!host) return;
@@ -7192,13 +7235,6 @@ function senseLab22Achievements(rows, mode) {
   ).length;
 
   const achievements = [
-    {
-      icon: "◈",
-      name: "FIRST SIGNAL",
-      desc: "첫 번째 검사 완료",
-      current: total,
-      target: 1
-    },
     {
       icon: "◇",
       name: "SIGNAL HUNTER",
@@ -7290,11 +7326,7 @@ function senseLab22Achievements(rows, mode) {
     ">
       ${achievements.map(a => {
         const complete = a.current >= a.target;
-        const progress = Math.min(
-          100,
-          Math.round(a.current / a.target * 100)
-        );
-
+        
         return `
           <div style="
             border:1px solid ${
@@ -7324,21 +7356,7 @@ function senseLab22Achievements(rows, mode) {
               ${complete
                 ? "OPEN"
                 : `${Math.min(a.current, a.target)} / ${a.target}`}
-            </div>
-
-            <div style="
-              height:5px;
-              background:#293b35;
-              border-radius:10px;
-              margin-top:8px;
-              overflow:hidden;
-            ">
-              <div style="
-                height:100%;
-                width:${progress}%;
-                background:#a9dfb7;
-              "></div>
-            </div>
+            </div>          
           </div>
         `;
       }).join("")}

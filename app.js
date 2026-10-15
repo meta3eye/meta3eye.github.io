@@ -6585,6 +6585,7 @@ async function senseLabLoadGrowth() {
       </p>
     `;
 
+    senseLab21RenderProgress();
     senseLabRenderModes();
 
   } catch (error) {

@@ -6718,6 +6718,22 @@ function senseLabV1UpdateCombo() {
   if (best) best.textContent = s.bestCombo;
 }
 
+
+function senseLabV15BuildSequence() {
+  // 매 검사마다 출현 개수 자체를 무작위로 선정
+  const targetCount =
+    7 + Math.floor(Math.random() * 7);
+
+  const sequence = [
+    ...Array(targetCount).fill(true),
+    ...Array(20 - targetCount).fill(false)
+  ];
+
+  // 출현/비출현의 배치도 무작위로 섞음
+  return senseLabV1Shuffle(sequence);
+}
+
+
   
 function senseLabV1Start() {
   if (senseLabV1Saving) return;

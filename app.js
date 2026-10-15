@@ -6593,6 +6593,104 @@ async function senseLabLoadGrowth() {
   }
 }
 
+
+/* =========================================
+   SENSE LAB 2.1
+   NEXT UNLOCK + TRAINING MISSION
+========================================= */
+
+function senseLab21ExpRemaining(level, exp, targetLevel) {
+  let remaining = 0;
+
+  for (let lv = level; lv < targetLevel; lv++) {
+    const required = 100 + (lv - 1) * 12;
+
+    remaining += lv === level
+      ? Math.max(0, required - exp)
+      : required;
+  }
+
+  return remaining;
+}
+
+function senseLab21RenderProgress() {
+  const host = $("senseLabGrowthInfo");
+
+  if (!host || !senseLabProfile) return;
+
+  let panel = $("senseLab21Progress");
+
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "senseLab21Progress";
+
+    panel.style.cssText = `
+      margin-top:15px;
+      padding:15px;
+      border:1px solid #6ea58d;
+      border-radius:12px;
+      line-height:1.8;
+    `;
+
+    host.appendChild(panel);
+  }
+
+  const level = Number(senseLabProfile.level || 1);
+  const exp = Number(senseLabProfile.exp || 0);
+
+  const next = Object.entries(SENSE_LAB_MODES)
+    .map(([key, mode]) => ({
+      key,
+      ...mode
+    }))
+    .sort((a, b) => a.level - b.level)
+    .find(mode => mode.level > level);
+
+  const nextUnlock = next
+    ? `
+      <strong>NEXT UNLOCK</strong>
+
+      <div>${next.name} · LV.${next.level}</div>
+
+      <div>
+        남은 EXP:
+        <strong>
+          ${senseLab21ExpRemaining(
+            level,
+            exp,
+            next.level
+          ).toLocaleString()}
+        </strong>
+      </div>
+    `
+    : `
+      <strong>NEXT UNLOCK</strong>
+      <div>현재 등록된 과정 모두 해금 완료</div>
+    `;
+
+  panel.innerHTML = `
+    ${nextUnlock}
+
+    <hr style="opacity:.2;margin:14px 0">
+
+    <strong>TRAINING MISSION</strong>
+
+    <p style="font-size:13px;opacity:.75">
+      다음 검사에서 도전할 수행 목표입니다.
+    </p>
+
+    <div>정확도 90점 이상 달성</div>
+    <div>오반응 1회 이하 유지</div>
+    <div>최고 콤보 10회 이상 달성</div>
+
+    <p style="font-size:12px;opacity:.65">
+      목표는 검사 결과를 평가하기 위한 안내이며,
+      별도의 EXP를 중복 지급하지 않습니다.
+    </p>
+  `;
+}
+
+  
 function senseLabRenderModes() {
   const host = $("senseLabModeList");
   if (!host) return;
@@ -6846,12 +6944,14 @@ function senseLabV1Open() {
   $("senseLabV1Running").style.display = "none";
   $("senseLabV1Result").style.display = "none";
   $("senseLabV1Message").textContent = "";
-
+$("senseLabV1Back").textContent = "검증실 닫기";
+  
   const guide = $("senseLabV1Guide");
   if (guide) guide.open = false;
 
   senseLabLoadGrowth();
   senseLabDashboardLoad();
+  
 }
 
 function senseLabV1Close() {
@@ -6967,6 +7067,7 @@ function senseLabV1Start() {
   $("senseLabV1Setup").style.display = "none";
   $("senseLabV1Result").style.display = "none";
   $("senseLabV1Running").style.display = "block";
+  $("senseLabV1Back").textContent = "검사 중단 · 이전으로";
 
   stimulus.style.display = "none";
 
@@ -7149,6 +7250,7 @@ async function senseLabV1Finish() {
 
   $("senseLabV1Running").style.display = "none";
   $("senseLabV1Result").style.display = "block";
+  $("senseLabV1Back").textContent = "검사 선택으로 돌아가기";
 
   $("senseLabV1ResultText").textContent =
     "서버에서 결과를 계산하고 있습니다...";

@@ -6130,14 +6130,47 @@ function installLabSectionStyle() {
 }
 
   
+
 /* =========================================
-   SENSE LAB 1.0 - VISUAL 1
-   Independent visual detection test
+   SENSE LAB 2.0
+   VISUAL 1 + VISUAL 2
+   Independent growth system
 ========================================= */
 
 let senseLabV1 = null;
 let senseLabV1Timers = [];
 let senseLabV1Saving = false;
+let senseLabProfile = null;
+let senseLabSelectedMode = "visual1";
+
+const SENSE_LAB_MODES = {
+  visual1: {
+    name: "VISUAL 1",
+    subtitle: "기본 시각 탐지",
+    level: 1,
+    exposure: 250,
+    size: 46,
+    opacity: 1,
+    gapMin: 450,
+    gapMax: 850,
+    active: 1500,
+    rpc: "submit_sense_lab_visual1",
+    maxExp: 19
+  },
+  visual2: {
+    name: "VISUAL 2",
+    subtitle: "미세 시각 탐지",
+    level: 15,
+    exposure: 190,
+    size: 24,
+    opacity: 0.55,
+    gapMin: 450,
+    gapMax: 850,
+    active: 1500,
+    rpc: "submit_sense_lab_visual2",
+    maxExp: 21
+  }
+};
 
 function senseLabV1Later(fn, ms) {
   const id = setTimeout(fn, ms);
@@ -6161,59 +6194,54 @@ function senseLabV1Shuffle(items) {
   return a;
 }
 
+function senseLabV15BuildSequence() {
+  const targetCount =
+    7 + Math.floor(Math.random() * 7);
+
+  return senseLabV1Shuffle([
+    ...Array(targetCount).fill(true),
+    ...Array(20 - targetCount).fill(false)
+  ]);
+}
 
 function senseLabV1Install() {
   if ($("senseLabV1Panel")) return;
 
-  const focusPanel = $("focusLabPanel");
-  const questPanel = $("questList")?.closest(".panel");
+  const host =
+    $("focusLabPanel") ||
+    $("questList")?.closest(".panel");
 
-  const host = focusPanel || questPanel;
+  if (!host) return;
 
-  if (!host) {
-    console.warn("SENSE LAB: installation target not found");
-    return;
-  }
+  const card = document.createElement("section");
+  card.id = "senseLabV1Card";
+  card.className = "panel";
 
-  const labCard = document.createElement("section");
-  labCard.id = "senseLabV1Card";
-  labCard.className = "panel";
-
- 
-  labCard.innerHTML = `
+  card.innerHTML = `
     <div class="section-title">
       <h2>SENSE LAB · 감각 검증실</h2>
-      <span class="muted">SENSE LV.1~100</span>
+      <span class="muted">LV.1~100</span>
     </div>
 
     <p class="muted">
-      감각 탐지와 변별 능력을 측정하는 독립 검증실
+      감각 탐지 · 수행 측정 · 독립 성장
     </p>
 
     <div id="senseLabGrowthInfo"
-      style="margin:12px 0;line-height:1.8">
+      style="margin:15px 0;line-height:1.8">
       성장 기록을 불러오는 중...
     </div>
 
     <button id="senseLabV1Open"
       type="button"
-      style="width:100%;padding:14px">
+      style="width:100%;padding:15px">
       SENSE LAB 입장 →
     </button>
   `;
 
-
-  host.insertAdjacentElement("afterend", labCard);
-
-  const openButton = $("senseLabV1Open");
-
-  openButton.addEventListener(
-    "click",
-    senseLabV1Open
-  );
+  host.insertAdjacentElement("afterend", card);
 
   const panel = document.createElement("section");
-
   panel.id = "senseLabV1Panel";
 
   panel.style.cssText = `
@@ -6236,134 +6264,172 @@ function senseLabV1Install() {
       text-align:center;
     ">
 
-      <h2>SENSE LAB 1.0</h2>
+      <h2>SENSE LAB 2.0</h2>
 
-      <p style="opacity:.8">
-        VISUAL 1 · 시각 탐지 초급
+      <p class="muted">
+        VISUAL DETECTION TRAINING
       </p>
 
-      
       <div id="senseLabV1Setup"
-        style="text-align:left;line-height:1.85">
+        style="text-align:left;line-height:1.8">
 
-        <div style="
-          padding:18px;
-          border:1px solid #52685e;
-          border-radius:12px;
-          margin:20px 0;
-        ">
-
-
-<details id="senseLabV1Guide" style="
-  border:1px solid #52685e;
-  border-radius:10px;
-  padding:12px 15px;
-  margin-bottom:16px;
-">
-  <summary style="
-    cursor:pointer;
-    font-weight:bold;
-    font-size:15px;
-    user-select:none;
-  ">
-    검증실 안내 · 검사 방법 보기
-  </summary>
-
-  <div style="padding-top:12px">
-
-          <h3 style="margin-top:0">
-            이 검증실은 왜 필요한가?
-          </h3>
-
-          <p>
-            SENSE LAB은 심리물리학
-            (Psychophysics)과
-            신호탐지이론
-            (Signal Detection Theory)을
-            참고하여 설계한 감각 탐지 검증실입니다.
-          </p>
-
-          <p>
-            사람은 실제 신호를 놓치기도 하고,
-            신호가 없는데도 있다고 판단하기도 합니다.
-            따라서 단순히 많이 반응하는 것보다
-            정확하게 구별하는 능력이 중요합니다.
-          </p>
-
-          <h3>무엇을 측정하는가?</h3>
-
-          <p>
-            적중, 놓침, 오반응,
-            정확한 무반응과 반응시간을 기록합니다.
-            반복 검사 결과를 통해 수행의
-            변화와 안정성을 관찰합니다.
-          </p>
-
-          <h3>현재 검사 · VISUAL 1</h3>
-
-          <p>
-            총 20문항으로 구성됩니다.
-            중앙에 빛이 나타났을 때만
-            감지 버튼을 누르세요.
-            빛이 나타나지 않으면
-            아무것도 누르지 않습니다.
-          </p>
-
-          <p style="font-size:13px;opacity:.75">
-            이 검사는 일반적인 시각 탐지 수행을
-            기록합니다. 높은 점수가 영적 능력이나
-            초감각적 지각의 증거를 의미하지는
-            않습니다.
-          </p>
-  </div>
-</details>
-
+        <div id="senseLabModeList"
+          style="display:grid;gap:12px;margin:22px 0">
         </div>
+
+        <details id="senseLabV1Guide"
+          style="
+            border:1px solid #52685e;
+            border-radius:12px;
+            padding:15px;
+            margin:16px 0;
+          ">
+
+          <summary style="
+            cursor:pointer;
+            font-weight:bold;
+          ">
+            검증실 안내 · 검사 방법 보기
+          </summary>
+
+          <div style="padding-top:12px">
+
+            <h3>이 검증실은 왜 필요한가?</h3>
+
+            <p>
+              SENSE LAB은 심리물리학과
+              신호탐지이론을 참고한
+              시각 탐지 수행 검사입니다.
+            </p>
+
+            <p>
+              실제 신호를 놓치는 경우와
+              신호가 없는데 있다고 판단하는 경우를
+              구분하여 기록합니다.
+            </p>
+
+            <h3>검사 방법</h3>
+
+            <p>
+              총 20문항입니다.
+              중앙에 빛이 나타났을 때만
+              감지 버튼을 누르세요.
+              빛이 없으면 누르지 않습니다.
+            </p>
+
+            <p>
+              + 표시 중 미리 누르면
+              조기 반응으로 기록되고
+              해당 문항을 다시 진행합니다.
+            </p>
+
+            <p style="font-size:13px;opacity:.75">
+              높은 점수는 해당 검사 조건에서의
+              시각 탐지 수행을 의미하며,
+              초감각적 지각이나 영적 능력의
+              증거를 의미하지 않습니다.
+            </p>
+
+          </div>
+        </details>
 
         <button id="senseLabV1Start"
           type="button"
           style="
-            display:block;
             width:100%;
-            padding:16px;
+            padding:17px;
             font-weight:bold;
           ">
           VISUAL 1 · 검사 시작
         </button>
 
+        <div id="senseLabGrowthPanel"
+          style="
+            border:1px solid #6ea58d;
+            border-radius:14px;
+            padding:17px;
+            margin:25px 0;
+            background:rgba(68,139,102,.08);
+          ">
+          성장 분석을 불러오는 중...
+        </div>
+
       </div>
 
+      <div id="senseLabV1Running"
+        style="display:none">
 
-      <div id="senseLabV1Running" style="display:none">
+        <h3 id="senseLabRunningTitle">
+          VISUAL 1
+        </h3>
 
-        <p id="senseLabV1Progress">0 / 30</p>
+        <p id="senseLabV1Progress">
+          0 / 20
+        </p>
 
-        <div id="senseLabV1Stage" style="
-          position:relative;
-          height:260px;
-          max-width:420px;
-          margin:20px auto;
-          border:1px solid #64756e;
-          border-radius:16px;
-          background:#080d0c;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-        ">
+        <div id="senseLabV1ComboPanel"
+          style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:10px;
+            margin:14px 0;
+          ">
 
-          <div id="senseLabV1Stimulus" style="
-            display:none;
-            width:46px;
-            height:46px;
-            border-radius:50%;
-            background:#eafbdc;
-            box-shadow:0 0 25px #c9ffad;
-          "></div>
+          <div style="
+            border:1px solid #6ea58d;
+            border-radius:10px;
+            padding:12px;
+          ">
+            <small>CURRENT COMBO</small>
+            <div>
+              <strong id="senseLabV1Combo"
+                style="font-size:27px">0</strong>
+            </div>
+          </div>
 
-          <span id="senseLabV1Fixation" style="
-            font-size:24px;
-            opacity:.65;
-          ">+</span>
+          <div style="
+            border:1px solid #6ea58d;
+            border-radius:10px;
+            padding:12px;
+          ">
+            <small>BEST COMBO</small>
+            <div>
+              <strong id="senseLabV1BestCombo"
+                style="font-size:27px">0</strong>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="senseLabV1Stage"
+          style="
+            position:relative;
+            height:260px;
+            max-width:420px;
+            margin:20px auto;
+            border:1px solid #64756e;
+            border-radius:16px;
+            background:#080d0c;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+
+          <div id="senseLabV1Stimulus"
+            style="
+              display:none;
+              width:46px;
+              height:46px;
+              border-radius:50%;
+              background:#eafbdc;
+              box-shadow:0 0 25px #c9ffad;
+            ">
+          </div>
+
+          <span id="senseLabV1Fixation"
+            style="font-size:24px;opacity:.65">
+            +
+          </span>
 
         </div>
 
@@ -6386,13 +6452,20 @@ function senseLabV1Install() {
 
       </div>
 
-      <div id="senseLabV1Result" style="display:none">
+      <div id="senseLabV1Result"
+        style="display:none">
 
         <h3>검사 결과</h3>
 
         <div id="senseLabV1ResultText"
           style="line-height:2">
         </div>
+
+        <button id="senseLabRetry"
+          type="button"
+          style="width:100%;padding:14px;margin-top:18px">
+          다른 검사 선택
+        </button>
 
       </div>
 
@@ -6411,87 +6484,36 @@ function senseLabV1Install() {
 
   document.body.appendChild(panel);
 
-  // SENSE LAB 전용 콤보 표시판
-  const comboPanel = document.createElement("div");
-  comboPanel.id = "senseLabV1ComboPanel";
+  $("senseLabV1Open").onclick = senseLabV1Open;
+  $("senseLabV1Start").onclick = senseLabV1Start;
+  $("senseLabV1Respond").onclick = senseLabV1Respond;
+  $("senseLabV1Back").onclick = senseLabV1Close;
 
-  comboPanel.style.cssText = `
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:10px;
-    margin:12px 0;
-  `;
+  $("senseLabRetry").onclick = () => {
+    if (senseLabV1Saving) return;
 
-  comboPanel.innerHTML = `
-    <div style="
-      border:1px solid #6ea58d;
-      border-radius:10px;
-      padding:12px;
-    ">
-      <div style="font-size:12px;opacity:.75">
-        CURRENT COMBO
-      </div>
-      <strong id="senseLabV1Combo"
-        style="font-size:26px">0</strong>
-    </div>
+    senseLabV1 = null;
 
-    <div style="
-      border:1px solid #6ea58d;
-      border-radius:10px;
-      padding:12px;
-    ">
-      <div style="font-size:12px;opacity:.75">
-        BEST COMBO
-      </div>
-      <strong id="senseLabV1BestCombo"
-        style="font-size:26px">0</strong>
-    </div>
-  `;
+    $("senseLabV1Result").style.display = "none";
+    $("senseLabV1Setup").style.display = "block";
+    $("senseLabV1Message").textContent = "";
 
-  $("senseLabV1Progress").insertAdjacentElement(
-    "afterend",
-    comboPanel
-  );
+    senseLabRenderModes();
+    senseLabDashboardLoad();
+  };
 
-
-  openButton.addEventListener(
-    "click",
-    senseLabV1Open
-  );
-
-  $("senseLabV1Start").addEventListener(
-    "click",
-    senseLabV1Start
-  );
-
-  $("senseLabV1Respond").addEventListener(
-    "click",
-    senseLabV1Respond
-  );
-
-  $("senseLabV1Back").addEventListener(
-    "click",
-    senseLabV1Close
-  );
+  senseLabRenderModes();
 }
-
-
-/* =========================================
-   SENSE LAB 1.1
-   Independent Growth Information
-========================================= */
 
 async function senseLabLoadGrowth() {
   const el = $("senseLabGrowthInfo");
 
   if (!el || !state.user?.id) return;
 
-  el.textContent = "성장 기록을 불러오는 중...";
-
   try {
     const { data, error } = await client
       .from("sense_lab_profiles")
-      .select("level, exp, max_level, total_tests")
+      .select("level,exp,max_level,total_tests")
       .eq("user_id", state.user.id)
       .maybeSingle();
 
@@ -6504,26 +6526,29 @@ async function senseLabLoadGrowth() {
       total_tests: 0
     };
 
+    senseLabProfile = p;
+
     const level = Number(p.level);
     const exp = Number(p.exp);
 
-    const needed = level >= 100
-      ? 0
-      : 100 + (level - 1) * 12;
+    const needed =
+      level >= 100
+        ? 0
+        : 100 + (level - 1) * 12;
 
-    const percentage = level >= 100
-      ? 100
-      : Math.min(
-          100,
-          Math.round((exp / needed) * 100)
-        );
+    const percent =
+      level >= 100
+        ? 100
+        : Math.min(
+            100,
+            Math.round(exp / needed * 100)
+          );
 
     el.innerHTML = `
       <div style="
         display:flex;
         justify-content:space-between;
-        gap:12px;
-        margin-bottom:8px;
+        gap:10px;
       ">
         <strong>SENSE LV.${level}</strong>
         <span>
@@ -6534,93 +6559,168 @@ async function senseLabLoadGrowth() {
       </div>
 
       <div style="
-        width:100%;
-        height:8px;
+        height:9px;
         background:#293b35;
         border-radius:20px;
         overflow:hidden;
+        margin:10px 0;
       ">
         <div style="
-          width:${percentage}%;
+          width:${percent}%;
           height:100%;
           background:#88b8a1;
-          border-radius:20px;
         "></div>
       </div>
 
-      <p class="muted" style="margin-top:9px">
+      <p class="muted">
         최고 LV.${Number(p.max_level)}
         · 누적 검사 ${Number(p.total_tests)}회
       </p>
+
+      <p class="muted" style="font-size:12px">
+        다음 과정:
+        ${level < 15
+          ? `VISUAL 2 · LV.15 (${15 - level}레벨 남음)`
+          : "VISUAL 2 해금 완료"}
+      </p>
     `;
 
-  } catch (error) {
-    console.error("SENSE GROWTH ERROR:", error);
+    senseLabRenderModes();
 
-    el.textContent =
-      "성장 기록을 불러오지 못했습니다.";
+  } catch (error) {
+    console.error("SENSE PROFILE:", error);
+    el.textContent = "성장 기록을 불러오지 못했습니다.";
   }
 }
 
+function senseLabRenderModes() {
+  const host = $("senseLabModeList");
+  if (!host) return;
 
-/* =========================================
-   SENSE GROWTH 1.3
-   Read-only performance dashboard
-========================================= */
+  const level = Number(senseLabProfile?.level || 1);
+
+  host.innerHTML = Object.entries(SENSE_LAB_MODES)
+    .map(([key, mode]) => {
+      const locked = level < mode.level;
+      const selected = senseLabSelectedMode === key;
+
+      return `
+        <button
+          type="button"
+          data-sense-mode="${key}"
+          ${locked ? "disabled" : ""}
+          style="
+            text-align:left;
+            padding:17px;
+            border-radius:12px;
+            border:${selected
+              ? "2px solid #a9dfb7"
+              : "1px solid #52685e"};
+            background:${selected
+              ? "rgba(110,165,141,.18)"
+              : "rgba(255,255,255,.025)"};
+            color:inherit;
+            opacity:${locked ? ".55" : "1"};
+            cursor:${locked ? "not-allowed" : "pointer"};
+          ">
+
+          <strong>${mode.name}</strong>
+          <span style="float:right;font-size:12px">
+            ${locked
+              ? `LOCKED · LV.${mode.level}`
+              : selected
+                ? "SELECTED"
+                : "OPEN"}
+          </span>
+
+          <div style="font-size:13px;margin-top:6px">
+            ${mode.subtitle}
+          </div>
+
+          <div style="font-size:12px;opacity:.7">
+            20문항 · 최대 EXP ${mode.maxExp}
+          </div>
+        </button>
+      `;
+    })
+    .join("");
+
+  host.querySelectorAll("[data-sense-mode]")
+    .forEach(button => {
+      button.onclick = () => {
+        senseLabSelectedMode = button.dataset.senseMode;
+        senseLabRenderModes();
+      };
+    });
+
+  const mode = SENSE_LAB_MODES[senseLabSelectedMode];
+
+  $("senseLabV1Start").textContent =
+    `${mode.name} · 검사 시작`;
+}
 
 async function senseLabDashboardLoad() {
-  
-  // 성장 분석은 메인 화면이 아닌 SENSE LAB 내부에 설치
-  const host = $("senseLabV1Setup");
+  const host = $("senseLabGrowthPanel");
+
   if (!host || !state.user?.id) return;
 
-  let panel = $("senseLabGrowthPanel");
+  const previous =
+    $("senseLabHistoryMode")?.value || "visual1";
 
-
-  if (!panel) {
-    panel = document.createElement("section");
-    panel.id = "senseLabGrowthPanel";
-    panel.className = "panel";
-
-    panel.style.cssText = `
-      border:2px solid #6ea58d;
-      border-radius:16px;
-      padding:22px;
-      margin:24px 0;
-      background:rgba(68,139,102,.08);
-    `;
-        host.appendChild(panel);
-  }
-
-  panel.innerHTML = `
+  host.innerHTML = `
     <h2>SENSE GROWTH · 성장 분석</h2>
-    <p class="muted">VISUAL 1 · 누적 검사 기록</p>
+
+    <label for="senseLabHistoryMode">
+      검사 종류
+    </label>
+
+    <select id="senseLabHistoryMode"
+      style="padding:9px;margin:10px 0">
+      <option value="visual1">VISUAL 1</option>
+      <option value="visual2">VISUAL 2</option>
+    </select>
+
     <div id="senseGrowthContent">
-      성장 데이터를 불러오는 중...
+      성장 기록을 불러오는 중...
     </div>
   `;
 
+  $("senseLabHistoryMode").value = previous;
+
+  $("senseLabHistoryMode").onchange = () => {
+    senseLabDashboardRender(
+      $("senseLabHistoryMode").value
+    );
+  };
+
+  await senseLabDashboardRender(previous);
+}
+
+async function senseLabDashboardRender(mode) {
   const content = $("senseGrowthContent");
+
+  if (!content || !state.user?.id) return;
+
+  content.textContent = "기록을 분석하고 있습니다...";
 
   try {
     const { data, error } = await client
       .from("sense_lab_results")
       .select(
-        "score,hits,misses,false_alarms,correct_rejections,completed_at"
+        "score,hits,misses,false_alarms,correct_rejections,average_reaction_ms,exp_delta,result,completed_at"
       )
       .eq("user_id", state.user.id)
-      .eq("mode", "visual1")
+      .eq("mode", mode)
       .order("completed_at", { ascending: false })
       .limit(1000);
 
     if (error) throw error;
 
     const rows = data || [];
-    const count = rows.length;
 
-    if (!count) {
+    if (!rows.length) {
       content.textContent =
-        "아직 저장된 VISUAL 1 검사 기록이 없습니다.";
+        "아직 저장된 검사 기록이 없습니다.";
       return;
     }
 
@@ -6629,12 +6729,8 @@ async function senseLabDashboardLoad() {
       0
     );
 
-    const average = key =>
-      (sum(key) / count).toFixed(1);
-
-    const best = Math.max(
-      ...rows.map(row => Number(row.score || 0))
-    );
+    const avg = key =>
+      (sum(key) / rows.length).toFixed(1);
 
     const targets = sum("hits") + sum("misses");
     const nonTargets =
@@ -6644,35 +6740,70 @@ async function senseLabDashboardLoad() {
       ? (sum("hits") / targets * 100).toFixed(1)
       : "0.0";
 
-    const falseAlarmRate = nonTargets
+    const faRate = nonTargets
       ? (sum("false_alarms") / nonTargets * 100).toFixed(1)
       : "0.0";
+
+    const recent = rows.slice(0, 5);
+    const previous = rows.slice(5, 10);
+
+    const scoreAverage = list =>
+      list.length
+        ? list.reduce(
+            (sum, row) => sum + Number(row.score || 0),
+            0
+          ) / list.length
+        : null;
+
+    const recentAvg = scoreAverage(recent);
+    const previousAvg = scoreAverage(previous);
+
+    const change =
+      previousAvg === null
+        ? "비교 기록 축적 중"
+        : `${recentAvg >= previousAvg ? "+" : ""}${(
+            recentAvg - previousAvg
+          ).toFixed(1)}점`;
+
+    const combos = rows
+      .map(row => Number(row.result?.best_combo))
+      .filter(Number.isFinite);
+
+    const bestCombo = combos.length
+      ? Math.max(...combos)
+      : null;
+
+    const metrics = [
+      ["누적 검사", `${rows.length}회`],
+      ["평균 점수", `${avg("score")}점`],
+      ["최고 점수", `${Math.max(...rows.map(x => Number(x.score)))}점`],
+      ["평균 오반응", `${avg("false_alarms")}회`],
+      ["누적 적중률", `${hitRate}%`],
+      ["누적 오반응률", `${faRate}%`],
+      ["최근 5회 평균", `${recentAvg.toFixed(1)}점`],
+      ["이전 5회 대비", change],
+      ["최고 콤보", bestCombo === null ? "기록 없음" : `${bestCombo}`],
+      ["누적 획득 EXP", `+${sum("exp_delta")}`]
+    ];
 
     content.innerHTML = `
       <div style="
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:12px;
-        margin:16px 0;
+        gap:10px;
+        margin:15px 0;
       ">
-        ${[
-          ["누적 검사", `${count}회`],
-          ["평균 점수", `${average("score")}점`],
-          ["최고 점수", `${best}점`],
-          ["평균 오반응", `${average("false_alarms")}회`],
-          ["누적 적중률", `${hitRate}%`],
-          ["누적 오반응률", `${falseAlarmRate}%`]
-        ].map(([label, value]) => `
+        ${metrics.map(([label, value]) => `
           <div style="
-            border:1px solid rgba(110,165,141,.5);
+            border:1px solid rgba(110,165,141,.45);
             border-radius:10px;
-            padding:13px;
+            padding:12px;
             min-width:0;
           ">
-            <div class="muted" style="font-size:13px">
+            <div style="font-size:12px;opacity:.7">
               ${label}
             </div>
-            <strong style="font-size:22px">
+            <strong style="font-size:19px">
               ${value}
             </strong>
           </div>
@@ -6680,20 +6811,21 @@ async function senseLabDashboardLoad() {
       </div>
 
       <p class="muted" style="font-size:12px">
-        최근 최대 1,000건의 VISUAL 1 기록 기준.
-        조기 반응은 아직 서버 통계에 포함되지 않습니다.
+        동일 검사 종류의 최근 최대 1,000건 기준입니다.
+        이전 5회 비교는 기록 6회 이상부터 표시합니다.
+        기기 및 화면 밝기에 따라 검사 조건이 달라질 수 있습니다.
       </p>
     `;
 
   } catch (error) {
-    console.error("SENSE GROWTH ERROR:", error);
+    console.error("SENSE DASHBOARD:", error);
+
     content.textContent =
-      "성장 분석을 불러오지 못했습니다: " +
+      "성장 분석 오류: " +
       (error.message || "알 수 없는 오류");
   }
 }
 
-  
 function senseLabV1Open() {
   if (!state.user?.id) {
     alert("로그인 후 이용할 수 있습니다.");
@@ -6705,24 +6837,22 @@ function senseLabV1Open() {
     return;
   }
 
-  const panel = $("senseLabV1Panel");
+  if (senseLabV1Saving) return;
 
-  panel.style.display = "block";
+  senseLabV1 = null;
 
+  $("senseLabV1Panel").style.display = "block";
   $("senseLabV1Setup").style.display = "block";
-  
-  // 재입장 시 안내문은 항상 접힌 상태로 시작
+  $("senseLabV1Running").style.display = "none";
+  $("senseLabV1Result").style.display = "none";
+  $("senseLabV1Message").textContent = "";
+
   const guide = $("senseLabV1Guide");
   if (guide) guide.open = false;
 
-  $("senseLabV1Running").style.display = "none";
-  $("senseLabV1Result").style.display = "none";  
-  $("senseLabV1Message").textContent = "";
-
-  // 검증실에 입장할 때 최신 성장 기록 표시
+  senseLabLoadGrowth();
   senseLabDashboardLoad();
 }
-
 
 function senseLabV1Close() {
   if (senseLabV1Saving) {
@@ -6736,51 +6866,40 @@ function senseLabV1Close() {
   $("senseLabV1Panel").style.display = "none";
 }
 
-
 function senseLabV1UpdateCombo() {
   const s = senseLabV1;
   if (!s) return;
 
-  const current = $("senseLabV1Combo");
-  const best = $("senseLabV1BestCombo");
-
-  if (current) current.textContent = s.combo;
-  if (best) best.textContent = s.bestCombo;
+  $("senseLabV1Combo").textContent = s.combo;
+  $("senseLabV1BestCombo").textContent = s.bestCombo;
 }
 
-
-function senseLabV15BuildSequence() {
-  // 매 검사마다 출현 개수 자체를 무작위로 선정
-  const targetCount =
-    7 + Math.floor(Math.random() * 7);
-
-  const sequence = [
-    ...Array(targetCount).fill(true),
-    ...Array(20 - targetCount).fill(false)
-  ];
-
-  // 출현/비출현의 배치도 무작위로 섞음
-  return senseLabV1Shuffle(sequence);
-}
-
-
-  
 function senseLabV1Start() {
-  if (senseLabV1Saving) return;
+  if (senseLabV1Saving || senseLabV1) return;
+
+  const mode = SENSE_LAB_MODES[senseLabSelectedMode];
+
+  if (!mode) return;
+
+  if (Number(senseLabProfile?.level || 1) < mode.level) {
+    alert(`SENSE LV.${mode.level}부터 이용할 수 있습니다.`);
+    return;
+  }
 
   senseLabV1ClearTimers();
-  
-  const sequence = senseLabV15BuildSequence();
 
   const s = {
-    sequence,
+    modeKey: senseLabSelectedMode,
+    mode,
+    sequence: senseLabV15BuildSequence(),
     index: 0,
     trials: [],
     phase: "ready",
     responded: false,
-    startedAt: 0,    
+    startedAt: 0,
     reactionMs: null,
     earlyResponses: 0,
+    earlyPending: 0,
     combo: 0,
     bestCombo: 0
   };
@@ -6788,11 +6907,25 @@ function senseLabV1Start() {
   senseLabV1 = s;
   senseLabV1UpdateCombo();
 
+  $("senseLabRunningTitle").textContent =
+    `${mode.name} · ${mode.subtitle}`;
+
+  const stimulus = $("senseLabV1Stimulus");
+
+  stimulus.style.width = `${mode.size}px`;
+  stimulus.style.height = `${mode.size}px`;
+  stimulus.style.opacity = mode.opacity;
+  stimulus.style.boxShadow =
+    s.modeKey === "visual2"
+      ? "0 0 9px rgba(201,255,173,.3)"
+      : "0 0 25px #c9ffad";
+
   $("senseLabV1Setup").style.display = "none";
   $("senseLabV1Result").style.display = "none";
   $("senseLabV1Running").style.display = "block";
 
-  $("senseLabV1Stimulus").style.display = "none";
+  stimulus.style.display = "none";
+
   $("senseLabV1Fixation").style.display = "block";
   $("senseLabV1Progress").textContent = "검사 준비";
 
@@ -6811,19 +6944,17 @@ function senseLabV1Start() {
       senseLabV1Later(tick, 1000);
     } else {
       $("senseLabV1Fixation").textContent = "START";
-      $("senseLabV1Message").textContent = "검사를 시작합니다.";
+
       senseLabV1Later(() => {
         if (senseLabV1 === s && s.phase === "ready") {
           senseLabV1Next();
         }
-      }, 300);
+      }, 250);
     }
   }
 
   tick();
 }
-
-
 
 function senseLabV1Next() {
   const s = senseLabV1;
@@ -6848,10 +6979,14 @@ function senseLabV1Next() {
   $("senseLabV1Message").textContent =
     "중앙을 주시하세요.";
 
-  const gap = 700 + Math.floor(Math.random() * 501);
+  const gap =
+    s.mode.gapMin +
+    Math.floor(
+      Math.random() *
+      (s.mode.gapMax - s.mode.gapMin + 1)
+    );
 
   senseLabV1Later(() => {
-    // 조기 반응으로 취소된 문항은 실행하지 않음
     if (senseLabV1 !== s || s.phase !== "waiting") return;
 
     const present = s.sequence[s.index];
@@ -6867,43 +7002,36 @@ function senseLabV1Next() {
 
     senseLabV1Later(() => {
       if (senseLabV1 !== s || s.phase !== "active") return;
+
       $("senseLabV1Stimulus").style.display = "none";
-    }, 250);
+    }, s.mode.exposure);
 
     senseLabV1Later(() => {
       if (senseLabV1 !== s || s.phase !== "active") return;
 
       s.phase = "finalizing";
 
-     
-      // 적중 또는 정확한 무반응일 때만 콤보 증가
-      const correct = present
-        ? s.responded
-        : !s.responded;
+      const correct = present === s.responded;
 
       if (correct) {
         s.combo++;
-
-        s.bestCombo = Math.max(
-          s.bestCombo,
-          s.combo
-        );
+        s.bestCombo = Math.max(s.bestCombo, s.combo);
       } else {
         s.combo = 0;
       }
 
       senseLabV1UpdateCombo();
 
-      // 기존 서버 제출 형식은 그대로 유지
       s.trials.push({
         index: s.index + 1,
         stimulus_present: present,
         responded: s.responded,
-        reaction_ms: s.reactionMs
+        reaction_ms: s.reactionMs,
+        early_before: s.earlyPending
       });
 
+      s.earlyPending = 0;
       s.index++;
-
 
       if (s.index >= 20) {
         senseLabV1Finish();
@@ -6912,31 +7040,27 @@ function senseLabV1Next() {
           if (senseLabV1 === s && s.phase === "finalizing") {
             senseLabV1Next();
           }
-        }, 350);
+        }, 180);
       }
-    }, 1500);
+    }, s.mode.active);
+
   }, gap);
 }
-
-
-
 
 function senseLabV1Respond() {
   const s = senseLabV1;
   if (!s) return;
 
-  // 최초 3초 준비 시간은 검사에서 제외
   if (s.phase === "ready") return;
 
-  // + 표시 중 조기 반응
   if (s.phase === "waiting") {
     s.phase = "early";
-    s.earlyResponses++;    
+
+    s.earlyResponses++;
+    s.earlyPending++;
     s.combo = 0;
+
     senseLabV1UpdateCombo();
-
-
-    // 예약된 자극 출현과 채점 타이머 취소
     senseLabV1ClearTimers();
 
     $("senseLabV1Stimulus").style.display = "none";
@@ -6946,11 +7070,11 @@ function senseLabV1Respond() {
     $("senseLabV1Message").textContent =
       `조기 반응 ${s.earlyResponses}회 · 같은 문항 재출제`;
 
-    // index 및 trials는 변경하지 않음
     senseLabV1Later(() => {
-      if (senseLabV1 !== s || s.phase !== "early") return;
-      senseLabV1Next();
-    }, 900);
+      if (senseLabV1 === s && s.phase === "early") {
+        senseLabV1Next();
+      }
+    }, 650);
 
     return;
   }
@@ -6969,7 +7093,6 @@ function senseLabV1Respond() {
   $("senseLabV1Message").textContent = "반응 기록됨";
 }
 
-
 async function senseLabV1Finish() {
   const s = senseLabV1;
 
@@ -6978,6 +7101,7 @@ async function senseLabV1Finish() {
   senseLabV1ClearTimers();
 
   s.phase = "finished";
+  senseLabV1Saving = true;
 
   $("senseLabV1Running").style.display = "none";
   $("senseLabV1Result").style.display = "block";
@@ -6985,14 +7109,10 @@ async function senseLabV1Finish() {
   $("senseLabV1ResultText").textContent =
     "서버에서 결과를 계산하고 있습니다...";
 
-  senseLabV1Saving = true;
-
   try {
     const { data, error } = await client.rpc(
-      "submit_sense_lab_visual1",
-      {
-        p_trials: s.trials
-      }
+      s.mode.rpc,
+      { p_trials: s.trials }
     );
 
     if (error) throw error;
@@ -7001,79 +7121,90 @@ async function senseLabV1Finish() {
       throw new Error("검사 결과 저장에 실패했습니다.");
     }
 
+    const score = Number(data.score);
+    const combo = Number(data.best_combo);
+
+    const grade =
+      combo === 20 && Number(data.early_responses) === 0
+        ? "PERFECT COMBO"
+        : combo >= 15
+          ? "EXCELLENT COMBO"
+          : combo >= 10
+            ? "GOOD COMBO"
+            : "TRAINING COMPLETE";
+
     $("senseLabV1ResultText").innerHTML = `
-      <div style="font-size:30px;font-weight:bold">
-        ${Number(data.score)}점
+      <div style="font-size:14px;opacity:.75">
+        ${s.mode.name}
+      </div>
+
+      <div style="font-size:36px;font-weight:bold">
+        ${score}점
+      </div>
+
+      <div style="
+        color:#a9dfb7;
+        font-weight:bold;
+        margin:10px 0;
+      ">
+        ${grade}
       </div>
 
       <div>적중: ${Number(data.hits)}</div>
       <div>놓침: ${Number(data.misses)}</div>
       <div>오반응: ${Number(data.false_alarms)}</div>
       <div>정확한 무반응: ${Number(data.correct_rejections)}</div>
-      <div>조기 반응: ${s.earlyResponses}회 (별도 참고 기록)</div>
-      
-      <div>최고 콤보: ${s.bestCombo} COMBO</div>
+      <div>조기 반응: ${Number(data.early_responses)}회</div>
+
       <div>
-        정확한 판단:
-        ${Number(data.hits) + Number(data.correct_rejections)} / 20
+        최고 콤보:
+        ${combo} / 20
       </div>
 
-      <div style="
-        font-weight:bold;
-        margin:8px 0;
-        color:#a9dfb7;
-      ">
-        ${
-          s.bestCombo === 20 && s.earlyResponses === 0
-            ? "PERFECT COMBO"
-            : s.bestCombo >= 20
-              ? "EXCELLENT COMBO"
-              : s.bestCombo >= 10
-                ? "GOOD COMBO"
-                : "COMBO RECORD"
-        }
+      <div>
+        평균 반응시간:
+        ${data.average_reaction_ms ?? "-"}ms
       </div>
 
       <hr>
 
-      <div>평균 반응시간:
-        ${data.average_reaction_ms ?? "-"}ms
+      <div>기본 보상: +${Number(data.base_exp)} EXP</div>
+      <div>콤보 보너스: +${Number(data.combo_bonus)} EXP</div>
+
+      <div style="
+        font-size:23px;
+        font-weight:bold;
+        color:#a9dfb7;
+        margin:12px 0;
+      ">
+        TOTAL EXP +${Number(data.exp_delta)}
       </div>
 
       <div>
-        서버 최고 콤보:
-        ${Number(data.best_combo)} COMBO
-      </div>
-
-      <div>
-        콤보 보너스 EXP:
-        +${Number(data.combo_bonus)}
-      </div>
-
-      <div>
-        획득 EXP:
-        +${Number(data.exp_delta)}
-        (기본 + 콤보 보너스 포함)
-      </div>
-
-      <div>
-        SENSE LEVEL:
-        ${Number(data.old_level)}
+        SENSE LV.${Number(data.old_level)}
         →
-        ${Number(data.new_level)}
+        LV.${Number(data.new_level)}
       </div>
+
+      ${Number(data.exp_delta) === 0
+        ? `<p style="font-size:13px;opacity:.75">
+            일일 EXP 지급 제한에 도달했거나
+            최고 레벨입니다. 검사 기록은 저장됩니다.
+          </p>`
+        : ""}
     `;
 
     $("senseLabV1Message").textContent =
-      "서버 저장 완료";
+      "검사 결과 저장 완료";
+
     await senseLabLoadGrowth();
     await senseLabDashboardLoad();
-    
+
   } catch (error) {
-    console.error("SENSE LAB ERROR:", error);
+    console.error("SENSE LAB:", error);
 
     $("senseLabV1ResultText").textContent =
-      "결과 저장에 실패했습니다.";
+      "검사 결과를 저장하지 못했습니다.";
 
     $("senseLabV1Message").textContent =
       error.message || "알 수 없는 오류";
@@ -7083,8 +7214,6 @@ async function senseLabV1Finish() {
   }
 }
 
-// 탭을 벗어나면 진행 중인 검사를 중단.
-// 완료되지 않은 검사는 제출하지 않음.
 document.addEventListener("visibilitychange", () => {
   if (
     document.visibilityState === "hidden" &&
@@ -7101,10 +7230,10 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-
 /* =========================================
-   END SENSE LAB 1.0
+   END SENSE LAB 2.0
 ========================================= */
+
 
   
   loadProfile();

@@ -6392,7 +6392,11 @@ function senseLabV1Install() {
 <div id="senseLabV1Setup"
   style="text-align:left;line-height:1.8">
 
-  <div id="senseLab21ProgressHost"></div>
+  <div id="senseLab21ProgressHost"
+    style="margin:18px 0">
+  </div>
+
+  <div id="senseLabModeList"
 
   <div id="senseLabModeList"
     style="display:grid;gap:12px;margin:22px 0">
@@ -6741,7 +6745,7 @@ function senseLab21ExpRemaining(level, exp, targetLevel) {
 }
 
 function senseLab21RenderProgress() {
- const host = $("senseLab21ProgressHost");
+  const host = $("senseLab21ProgressHost");
 
   if (!host || !senseLabProfile) return;
 
@@ -6762,6 +6766,11 @@ function senseLab21RenderProgress() {
     host.appendChild(panel);
   }
 
+// 안내 패널이 다른 곳에 남아 있으면 검증실 내부로 이동
+if (panel.parentElement !== host) {
+  host.appendChild(panel);
+}
+  
   const level = Number(senseLabProfile.level || 1);
   const exp = Number(senseLabProfile.exp || 0);
 
@@ -7695,8 +7704,11 @@ $("senseLabV1Back").textContent = "검증실 닫기";
   const guide = $("senseLabV1Guide");
   if (guide) guide.open = false;
 
-  senseLabLoadGrowth();
-  senseLabDashboardLoad();
+ senseLabLoadGrowth().then(() => {
+  senseLab21RenderProgress();
+});
+
+senseLabDashboardLoad();
   
 }
 

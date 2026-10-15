@@ -7078,6 +7078,58 @@ function senseLab23Performance(rows, mode) {
   host.appendChild(panel);
 }
 
+
+/* =========================================
+   SENSE LAB 2.4
+   COLLAPSIBLE ANALYSIS PANELS
+========================================= */
+
+function senseLabMakeCollapsible(panelId, title, initiallyOpen = false) {
+  const panel = $(panelId);
+
+  if (!panel || !panel.parentNode) return;
+
+  // 기존 래퍼가 있으면 중복 생성하지 않는다.
+  const existing = document.getElementById(
+    panelId + "Rollup"
+  );
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const wrapper = document.createElement("details");
+  wrapper.id = panelId + "Rollup";
+  wrapper.open = initiallyOpen;
+
+  wrapper.style.cssText = `
+    margin-top:14px;
+    border:1px solid #52685e;
+    border-radius:12px;
+    padding:12px 15px;
+  `;
+
+  const summary = document.createElement("summary");
+  summary.textContent = title;
+
+  summary.style.cssText = `
+    cursor:pointer;
+    font-weight:bold;
+    padding:7px 0;
+    user-select:none;
+  `;
+
+  panel.parentNode.insertBefore(wrapper, panel);
+
+  wrapper.appendChild(summary);
+  wrapper.appendChild(panel);
+
+  // 기존 패널의 외부 테두리와 중복되지 않도록 조정
+  panel.style.border = "none";
+  panel.style.marginTop = "10px";
+  panel.style.padding = "0";
+}
+
   
 function senseLab22Achievements(rows, mode) {
   const host = $("senseGrowthContent");
@@ -7444,7 +7496,19 @@ async function senseLabDashboardRender(mode) {
     `;
 
     senseLab22Achievements(rows, mode);
-    senseLab23Performance(rows, mode);
+senseLab23Performance(rows, mode);
+
+senseLabMakeCollapsible(
+  "senseLab22Achievements",
+  "ACHIEVEMENTS · 성취 기록",
+  false
+);
+
+senseLabMakeCollapsible(
+  "senseLab23Performance",
+  "PERFORMANCE ANALYSIS · 수행 분석",
+  false
+);
 
   } catch (error) {
     console.error("SENSE DASHBOARD:", error);

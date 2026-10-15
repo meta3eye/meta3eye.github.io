@@ -5484,45 +5484,90 @@ document.addEventListener("visibilitychange", () => {
     }
   }
 
-  function openRemoteViewing() {
-    const gamePanel =
-      rvElement("gamePanel");
+/* REMOTE VIEWING — 독립 훈련실 */
 
-    const panel =
-      rvElement(
-        "remoteViewingTrainingPanel"
-      );
+function installRemoteViewingRoom() {
+  const panel = $("remoteViewingTrainingPanel");
+  if (!panel) return;
 
-    if (!gamePanel || !panel) {
-      return;
-    }
-
-    gamePanel.classList.add(
-      "hidden"
-    );
-
-    panel.classList.remove(
-      "hidden"
-    );
-
-    currentRvSessionId = null;
-    currentRvTargetCode = null;
-
-    resetRvFields();
-
-    setRvMessage(
-      "rvMessage",
-      ""
-    );
-
-    setRvMessage(
-      "rvObservationMessage",
-      ""
-    );
-
-    showRvStep("rvSetup");
+  // 기존 HTML과 이벤트 연결을 보존하면서
+  // 메인 화면 바깥으로 실제 요소를 이동한다.
+  if (panel.parentElement !== document.body) {
+    document.body.appendChild(panel);
   }
 
+  if ($("rvIndependentRoomStyle")) return;
+
+  const style = document.createElement("style");
+  style.id = "rvIndependentRoomStyle";
+
+  style.textContent = `
+    #remoteViewingTrainingPanel:not(.hidden) {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: block;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      background: #0b1119;
+      padding: 28px 16px 70px;
+      box-sizing: border-box;
+    }
+
+    #remoteViewingTrainingPanel.hidden {
+      display: none !important;
+    }
+
+    #remoteViewingTrainingPanel .remote-viewing-box {
+      width: 100%;
+      max-width: 850px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    #remoteViewingTrainingPanel button,
+    #remoteViewingTrainingPanel input,
+    #remoteViewingTrainingPanel textarea {
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      #remoteViewingTrainingPanel:not(.hidden) {
+        padding: 16px 12px 45px;
+      }
+
+      #remoteViewingTrainingPanel .remote-viewing-box {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+  
+function openRemoteViewing() {
+  installRemoteViewingRoom();
+
+  const panel = $("remoteViewingTrainingPanel");
+  if (!panel) return;
+
+  currentRvSessionId = null;
+  currentRvTargetCode = null;
+
+  resetRvFields();
+
+  setRvMessage("rvMessage", "");
+  setRvMessage("rvObservationMessage", "");
+
+  showRvStep("rvSetup");
+
+  panel.classList.remove("hidden");
+
+  panel.scrollTop = 0;
+}
+  
   async function startRemoteViewingSession() {
     const button =
       rvElement(

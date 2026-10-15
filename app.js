@@ -6693,10 +6693,13 @@ function senseLabV1Open() {
 
   $("senseLabV1Setup").style.display = "block";
   $("senseLabV1Running").style.display = "none";
-  $("senseLabV1Result").style.display = "none";
-
+  $("senseLabV1Result").style.display = "none";  
   $("senseLabV1Message").textContent = "";
+
+  // 검증실에 입장할 때 최신 성장 기록 표시
+  senseLabDashboardLoad();
 }
+
 
 function senseLabV1Close() {
   if (senseLabV1Saving) {

@@ -7969,7 +7969,15 @@ function senseLabV1Next() {
   senseLabV1Later(() => {
     if (senseLabV1 !== s || s.phase !== "waiting") return;
 
-    const present = s.sequence[s.index];
+const currentTrial = s.sequence[s.index];
+
+const present = s.modeKey === "visual3"
+  ? currentTrial.stimulus_present
+  : currentTrial;
+
+const distractorPresent = s.modeKey === "visual3"
+  ? currentTrial.distractor_present
+  : false;
 
     s.phase = "active";
     s.startedAt = performance.now();

@@ -6799,7 +6799,7 @@ function senseLabV1Next() {
   const s = senseLabV1;
   if (!s) return;
 
-  if (s.index >= 30) {
+  if (s.index >= 20) {
     senseLabV1Finish();
     return;
   }
@@ -6813,7 +6813,7 @@ function senseLabV1Next() {
   $("senseLabV1Fixation").textContent = "+";
 
   $("senseLabV1Progress").textContent =
-    `${s.index + 1} / 30`;
+    `${s.index + 1} / 20`;
 
   $("senseLabV1Message").textContent =
     "중앙을 주시하세요.";
@@ -6875,7 +6875,7 @@ function senseLabV1Next() {
       s.index++;
 
 
-      if (s.index >= 30) {
+      if (s.index >= 20) {
         senseLabV1Finish();
       } else {
         senseLabV1Later(() => {
@@ -6985,7 +6985,7 @@ async function senseLabV1Finish() {
       <div>최고 콤보: ${s.bestCombo} COMBO</div>
       <div>
         정확한 판단:
-        ${Number(data.hits) + Number(data.correct_rejections)} / 30
+        ${Number(data.hits) + Number(data.correct_rejections)} / 20
       </div>
 
       <div style="
@@ -6994,7 +6994,7 @@ async function senseLabV1Finish() {
         color:#a9dfb7;
       ">
         ${
-          s.bestCombo === 30 && s.earlyResponses === 0
+          s.bestCombo === 20 && s.earlyResponses === 0
             ? "PERFECT COMBO"
             : s.bestCombo >= 20
               ? "EXCELLENT COMBO"
@@ -7010,7 +7010,21 @@ async function senseLabV1Finish() {
         ${data.average_reaction_ms ?? "-"}ms
       </div>
 
-      <div>획득 EXP: +${Number(data.exp_delta)}</div>
+      <div>
+        서버 최고 콤보:
+        ${Number(data.best_combo)} COMBO
+      </div>
+
+      <div>
+        콤보 보너스 EXP:
+        +${Number(data.combo_bonus)}
+      </div>
+
+      <div>
+        획득 EXP:
+        +${Number(data.exp_delta)}
+        (기본 + 콤보 보너스 포함)
+      </div>
 
       <div>
         SENSE LEVEL:

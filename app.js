@@ -6383,7 +6383,7 @@ function senseLabV1Install() {
       text-align:center;
     ">
 
-      <h2>SENSE LAB 2.0</h2>
+      <h2>SENSE LAB 3.0</h2>
 
       <p class="muted">
         VISUAL DETECTION TRAINING
@@ -6566,7 +6566,9 @@ function senseLabV1Install() {
         </button>
 
         <p style="font-size:13px;opacity:.7">
-          빛이 나타났을 때만 누르세요.
+         <span id="senseLabResponseGuide">
+  빛이 나타났을 때만 누르세요.
+</span>
         </p>
 
       </div>
@@ -6699,9 +6701,11 @@ async function senseLabLoadGrowth() {
 
       <p class="muted" style="font-size:12px">
         다음 과정:
-        ${level < 15
-          ? `VISUAL 2 · LV.15 (${15 - level}레벨 남음)`
-          : "VISUAL 2 해금 완료"}
+       ${level < 15
+  ? `VISUAL 2 · LV.15 (${15 - level}레벨 남음)`
+  : level < 30
+    ? `VISUAL 3 · LV.30 (${30 - level}레벨 남음)`
+    : "VISUAL 1~3 해금 완료"}
       </p>
     `;
 
@@ -6896,7 +6900,8 @@ async function senseLabDashboardLoad() {
     <select id="senseLabHistoryMode"
       style="padding:9px;margin:10px 0">
       <option value="visual1">VISUAL 1</option>
-      <option value="visual2">VISUAL 2</option>
+<option value="visual2">VISUAL 2</option>
+<option value="visual3">VISUAL 3</option>
     </select>
 
     <div id="senseGrowthContent">
@@ -7106,7 +7111,7 @@ function senseLab23Performance(rows, mode) {
     <h3>PERFORMANCE ANALYSIS</h3>
 
     <p style="font-size:12px;opacity:.7">
-      ${mode === "visual2" ? "VISUAL 2" : "VISUAL 1"}
+      ${SENSE_LAB_MODES[mode]?.name || "VISUAL 1"}
       · 최근 최대 10회
     </p>
 
@@ -7408,7 +7413,7 @@ function senseLab22Achievements(rows, mode) {
     <h3>ACHIEVEMENTS · 성취 기록</h3>
 
     <p style="font-size:13px;opacity:.75">
-      ${mode === "visual2" ? "VISUAL 2" : "VISUAL 1"}
+      ${SENSE_LAB_MODES[mode]?.name || "VISUAL 1"}
       독립 성취 기록
     </p>
 
@@ -7712,6 +7717,7 @@ function senseLabV1Close() {
     )) return;
 
     senseLabV1ClearTimers();
+    senseLab3ClearStimulus();
     senseLabV1 = null;
 
     running.style.display = "none";
@@ -7860,6 +7866,10 @@ function senseLabV1Start() {
     return;
   }
 
+  $("senseLabResponseGuide").textContent =
+  s.modeKey === "visual3"
+    ? "중앙의 연두색 목표 신호에만 반응하세요. 주변 도형은 방해 자극입니다."
+    : "빛이 나타났을 때만 누르세요.";
   senseLabV1ClearTimers();
 
   const s = {
@@ -7940,6 +7950,8 @@ function senseLabV1Next() {
   const s = senseLabV1;
   if (!s) return;
 
+senseLab3ClearStimulus();
+  
   if (s.index >= 20) {
     senseLabV1Finish();
     return;
@@ -7992,11 +8004,11 @@ const distractorPresent = s.modeKey === "visual3"
   s.modeKey
 );
 
-    senseLabV1Later(() => {
-      if (senseLabV1 !== s || s.phase !== "active") return;
+   senseLabV1Later(() => {
+  if (senseLabV1 !== s || s.phase !== "active") return;
 
-      $("senseLabV1Stimulus").style.display = "none";
-    }, s.mode.exposure);
+  senseLab3ClearStimulus();
+}, s.mode.exposure);
 
     senseLabV1Later(() => {
       if (senseLabV1 !== s || s.phase !== "active") return;
@@ -8014,13 +8026,14 @@ const distractorPresent = s.modeKey === "visual3"
 
       senseLabV1UpdateCombo();
 
-      s.trials.push({
-        index: s.index + 1,
-        stimulus_present: present,
-        responded: s.responded,
-        reaction_ms: s.reactionMs,
-        early_before: s.earlyPending
-      });
+    s.trials.push({
+  index: s.index + 1,
+  stimulus_present: present,
+  distractor_present: distractorPresent,
+  responded: s.responded,
+  reaction_ms: s.reactionMs,
+  early_before: s.earlyPending
+});
 
       s.earlyPending = 0;
       s.index++;
@@ -8054,6 +8067,7 @@ function senseLabV1Respond() {
 
     senseLabV1UpdateCombo();
     senseLabV1ClearTimers();
+    senseLab3ClearStimulus();
 
     $("senseLabV1Stimulus").style.display = "none";
     $("senseLabV1Fixation").style.display = "block";
@@ -8220,6 +8234,7 @@ document.addEventListener("visibilitychange", () => {
     !senseLabV1Saving
   ) {
     senseLabV1ClearTimers();
+    senseLab3ClearStimulus();
     senseLabV1 = null;
 
     const panel = $("senseLabV1Panel");

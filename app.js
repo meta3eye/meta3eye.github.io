@@ -6571,7 +6571,7 @@ async function senseLabDashboardLoad() {
       background:rgba(68,139,102,.08);
     `;
 
-    card.insertAdjacentElement("afterend", panel);
+        host.appendChild(panel);
   }
 
   panel.innerHTML = `

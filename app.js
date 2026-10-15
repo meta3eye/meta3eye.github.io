@@ -7444,6 +7444,7 @@ async function senseLabDashboardRender(mode) {
     `;
 
     senseLab22Achievements(rows, mode);
+    senseLab23Performance(rows, mode);
 
   } catch (error) {
     console.error("SENSE DASHBOARD:", error);

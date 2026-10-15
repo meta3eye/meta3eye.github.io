@@ -6157,6 +6157,7 @@ const SENSE_LAB_MODES = {
     rpc: "submit_sense_lab_visual1",
     maxExp: 19
   },
+
   visual2: {
     name: "VISUAL 2",
     subtitle: "미세 시각 탐지",
@@ -6168,6 +6169,20 @@ const SENSE_LAB_MODES = {
     gapMax: 850,
     active: 1500,
     rpc: "submit_sense_lab_visual2",
+    maxExp: 21
+  },
+
+  visual3: {
+    name: "VISUAL 3",
+    subtitle: "DISTRACTION CONTROL · 방해 자극 구분",
+    level: 30,
+    exposure: 210,
+    size: 28,
+    opacity: 0.8,
+    gapMin: 550,
+    gapMax: 1000,
+    active: 1500,
+    rpc: "submit_sense_lab_visual3",
     maxExp: 21
   }
 };

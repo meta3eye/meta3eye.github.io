@@ -3458,7 +3458,7 @@ function installFocusLab(){
   panel.innerHTML=`
     <div class="section-title">
       <h2>FOCUS LAB · 집중력 검증실</h2>
-      <span class="muted">독립 성장 LV1~100</span>
+      <span class="muted">독립 성장 LV.1~100</span>
     </div>
     <div class="quest">
       <div>
@@ -6220,7 +6220,7 @@ function senseLabV1Install() {
   card.innerHTML = `
     <div class="section-title">
       <h2>SENSE LAB · 감각 검증실</h2>
-      <span class="muted">LV.1~100</span>
+      <span class="muted">독립 성장 LV.1~100</span>
     </div>
 
     <p class="muted">

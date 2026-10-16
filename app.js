@@ -5063,6 +5063,7 @@ renderV3Evaluation();
 installAbilityAnalysisRoom();
 installDailyQuestRoom();
 installAwakeningAnalysisRoom();
+installPlayerRecordRoom();
 }
   
   /* =========================

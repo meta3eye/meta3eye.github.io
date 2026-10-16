@@ -1120,29 +1120,71 @@
            PLAYER RECORD
       ========================== -->
 
-      <div class="panel">
+   <!-- PLAYER RECORD · 메인 입장 카드 -->
 
-        <div class="section-title">
+<div id="playerRecordEntry" class="panel">
 
-          <h2>
-            PLAYER RECORD
-          </h2>
+  <div class="section-title">
+    <h2>PLAYER RECORD · 플레이어 기록실</h2>
+    <span class="muted">성장 기록</span>
+  </div>
+
+  <p class="muted">
+    현재 플레이어의 성장 상태와 누적 기록을 확인합니다.
+  </p>
+
+  <button id="playerRecordOpen" type="button">
+    플레이어 기록실 입장 →
+  </button>
+
+</div>
 
 
-          <button
-            id="logoutBtn"
-            class="secondary small"
-          >
-            로그아웃
-          </button>
+<!-- PLAYER RECORD · 독립 화면 -->
 
-        </div>
+<section id="playerRecordRoom" class="hidden">
 
+  <div class="player-record-inner">
 
-        <div id="record"></div>
+    <div class="player-record-header">
 
+      <div>
+        <h2>PLAYER RECORD · 플레이어 기록실</h2>
+
+        <p class="muted">
+          플레이어 정보 · 성장 기록
+        </p>
       </div>
 
+      <button
+        id="playerRecordClose"
+        class="secondary"
+        type="button"
+      >
+        게임으로 돌아가기
+      </button>
+
+    </div>
+
+    <div class="panel player-record-content">
+
+      <div id="record"></div>
+
+      <div class="player-record-footer">
+        <button
+          id="logoutBtn"
+          class="secondary small"
+          type="button"
+        >
+          로그아웃
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
     </section>
 
 

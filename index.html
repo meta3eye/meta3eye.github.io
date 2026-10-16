@@ -27,6 +27,161 @@
       display: block;
       margin-bottom: 8px;
     }
+/* =========================================
+   REMOTE VIEWING · ROOM DESIGN
+========================================= */
+
+/* 전체 훈련실 */
+#remoteViewingTrainingPanel .remote-viewing-box {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+/* 타겟 코드 카드 */
+#remoteViewingTrainingPanel .rv-target-card {
+  text-align: center;
+  padding: 30px 16px;
+  margin: 28px auto;
+  border: 1px solid rgba(150, 190, 175, 0.4);
+  border-radius: 16px;
+  background: rgba(100, 160, 140, 0.06);
+}
+
+#remoteViewingTrainingPanel .rv-target-card .label {
+  display: block;
+  margin-bottom: 16px;
+  letter-spacing: 3px;
+}
+
+/* 타겟 코드 확대 */
+#remoteViewingTrainingPanel .rv-target-card strong {
+  display: block;
+  font-size: clamp(32px, 6vw, 64px);
+  line-height: 1.2;
+  letter-spacing: 2px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* 관찰 화면: 왼쪽 항목 / 오른쪽 입력 */
+#rvObservation:not(.hidden) {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 22px;
+  row-gap: 15px;
+  align-items: center;
+}
+
+/* 제목, 안내문, 타겟 코드는 전체 너비 */
+#rvObservation > .training-status,
+#rvObservation > h2,
+#rvObservation > .rv-target-card,
+#rvObservation > p,
+#rvObservation > .message {
+  grid-column: 1 / -1;
+}
+
+#rvObservation > h2 {
+  text-align: center;
+  margin-bottom: 0;
+}
+
+#rvObservation > .rv-target-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 관찰 항목 */
+#rvObservation > label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* 입력칸 */
+#rvObservation > textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  margin: 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+  box-sizing: border-box;
+  font: inherit;
+  line-height: 1.6;
+}
+
+/* 여섯 항목의 입력 높이를 통일 */
+#rvObservation > textarea:not(#rvFreeDescription) {
+  min-height: 76px;
+}
+
+/* 자유 관찰 기록은 아래에 넓게 배치 */
+#rvObservation > label[for="rvFreeDescription"],
+#rvObservation > #rvFreeDescription {
+  grid-column: 1 / -1;
+}
+
+#rvObservation > label[for="rvFreeDescription"] {
+  margin-top: 18px;
+}
+
+#rvObservation > #rvFreeDescription {
+  min-height: 145px;
+}
+
+/* 제출 / 취소 버튼 */
+#rvObservation > #rvSubmitButton {
+  grid-column: 1;
+  justify-self: stretch;
+  width: 100%;
+}
+
+#rvObservation > #rvCancelButton {
+  grid-column: 2;
+  justify-self: stretch;
+  width: 100%;
+}
+
+#rvObservation > #rvObservationMessage {
+  text-align: center;
+}
+
+/* 작은 화면 */
+@media (max-width: 600px) {
+  #remoteViewingTrainingPanel .remote-viewing-box {
+    padding: 16px 10px;
+  }
+
+  #rvObservation:not(.hidden) {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 10px;
+  }
+
+  #rvObservation > label,
+  #rvObservation > textarea,
+  #rvObservation > #rvSubmitButton,
+  #rvObservation > #rvCancelButton {
+    grid-column: 1 / -1;
+  }
+
+  #rvObservation > label {
+    margin-top: 12px;
+  }
+
+  #rvObservation > .rv-target-card {
+    padding: 24px 10px;
+  }
+
+  #rvObservation > #rvSubmitButton,
+  #rvObservation > #rvCancelButton {
+    margin-top: 8px;
+  }
+}
+    
   </style>
 </head>
 

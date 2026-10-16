@@ -5587,11 +5587,7 @@ function openRemoteViewing() {
     rvElement(
       "rvStartButton"
     );
-    const button =
-      rvElement(
-        "rvStartButton"
-      );
-
+    
     if (button) {
       button.disabled = true;
     }

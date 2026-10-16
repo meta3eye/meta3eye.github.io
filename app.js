@@ -2118,6 +2118,135 @@ function returnToDailyQuestRoom() {
    V3 EVALUATION RENDER
 ========================= */
 
+/* =========================================
+   ABILITY ANALYSIS · INDEPENDENT ROOM
+========================================= */
+
+function installAbilityAnalysisRoom() {
+  const entry = $("abilityAnalysisEntry");
+  const room = $("abilityAnalysisRoom");
+
+  if (!entry || !room) return;
+
+  // 이벤트 중복 연결 방지
+  if (entry.dataset.installed === "true") return;
+
+  entry.dataset.installed = "true";
+
+  $("abilityAnalysisOpen")?.addEventListener(
+    "click",
+    () => {
+      show("abilityAnalysisRoom", true);
+
+      room.scrollTop = 0;
+
+      // 입장할 때 최신 분석 데이터 갱신
+      renderV3Evaluation();
+    }
+  );
+
+  $("abilityAnalysisClose")?.addEventListener(
+    "click",
+    () => {
+      show("abilityAnalysisRoom", false);
+    }
+  );
+
+  if ($("abilityAnalysisStyle")) return;
+
+  const style = document.createElement("style");
+  style.id = "abilityAnalysisStyle";
+
+  style.textContent = `
+
+    /* 메인 화면: 제목은 무채색, 테두리만 색상 적용 */
+    #abilityAnalysisEntry {
+      border: 2px solid #e5a45d !important;
+      border-radius: 16px !important;
+      padding: 24px !important;
+      margin: 22px 0 !important;
+      box-sizing: border-box;
+    }
+
+    #abilityAnalysisEntry h2 {
+      color: inherit !important;
+    }
+
+    #abilityAnalysisOpen {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+    }
+
+    /* 독립 능력 분석실 */
+    #abilityAnalysisRoom:not(.hidden) {
+      position: fixed;
+      inset: 0;
+      z-index: 11000;
+      display: block;
+      overflow-y: auto;
+      background: #0b1119;
+      padding: 28px 16px 70px;
+      box-sizing: border-box;
+    }
+
+    #abilityAnalysisRoom.hidden {
+      display: none !important;
+    }
+
+    .ability-analysis-inner {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .ability-analysis-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .ability-analysis-header h2 {
+      margin-bottom: 8px;
+    }
+
+    #abilityAnalysisRoom .v3-evaluation-panel {
+      border: 1px solid #e5a45d;
+      border-radius: 14px;
+      padding: 22px;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 600px) {
+
+      #abilityAnalysisRoom:not(.hidden) {
+        padding: 18px 12px 45px;
+      }
+
+      .ability-analysis-header {
+        display: block;
+      }
+
+      #abilityAnalysisClose {
+        width: 100%;
+        margin-top: 16px;
+      }
+
+      #abilityAnalysisRoom .v3-evaluation-panel {
+        padding: 16px;
+      }
+
+    }
+
+  `;
+
+  document.head.appendChild(style);
+}
+  
 async function renderV3Evaluation() {
   const container = $("v3Evaluation");
 
@@ -4848,11 +4977,10 @@ renderAwakeningSystem();
 renderRankPromotion();
 
 renderV3Evaluation();
-
+    
+installAbilityAnalysisRoom();
 installDailyQuestRoom();
-  }
-
-  
+  }  
   
   /* =========================
      5 MIN FOCUS TRAINING

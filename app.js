@@ -2291,6 +2291,43 @@ if (room.parentElement !== document.body) {
 
   document.head.appendChild(style);
 }
+
+/* =========================================
+   PLAYER RECORD · ROOM CONTROL
+========================================= */
+
+function installPlayerRecordRoom() {
+
+  const entry = $("playerRecordEntry");
+  const room = $("playerRecordRoom");
+
+  if (!entry || !room) return;
+
+  // 독립 화면을 메인 카드 밖으로 이동
+  if (room.parentElement !== document.body) {
+    document.body.appendChild(room);
+  }
+
+  // 중복 이벤트 연결 방지
+  if (entry.dataset.installed === "true") return;
+
+  entry.dataset.installed = "true";
+
+  $("playerRecordOpen")?.addEventListener(
+    "click",
+    () => {
+      show("playerRecordRoom", true);
+      room.scrollTop = 0;
+    }
+  );
+
+  $("playerRecordClose")?.addEventListener(
+    "click",
+    () => {
+      show("playerRecordRoom", false);
+    }
+  );
+}
   
 async function renderV3Evaluation() {
   const container = $("v3Evaluation");

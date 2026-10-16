@@ -373,6 +373,95 @@
     padding: 16px;
   }
 }
+
+/* =========================================
+   PLAYER RECORD · INDEPENDENT ROOM
+========================================= */
+
+/* 메인 입장 카드 */
+#gamePanel #playerRecordEntry {
+  border: 2px solid #91a3b0 !important;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 22px 0;
+  box-sizing: border-box;
+}
+
+#playerRecordEntry h2 {
+  color: inherit !important;
+}
+
+#playerRecordOpen {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+}
+
+/* 독립 기록실 */
+#playerRecordRoom:not(.hidden) {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  display: block;
+  overflow-y: auto;
+  background: #0b1119;
+  padding: 28px 16px 70px;
+  box-sizing: border-box;
+}
+
+#playerRecordRoom.hidden {
+  display: none !important;
+}
+
+.player-record-inner {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.player-record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+#playerRecordRoom .player-record-content {
+  border: 1px solid #91a3b0;
+  border-radius: 14px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.player-record-footer {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(160, 170, 190, 0.25);
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  #playerRecordRoom:not(.hidden) {
+    padding: 18px 12px 45px;
+  }
+
+  .player-record-header {
+    display: block;
+  }
+
+  #playerRecordClose {
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  #playerRecordRoom .player-record-content {
+    padding: 16px;
+  }
+}
     
   </style>
 </head>

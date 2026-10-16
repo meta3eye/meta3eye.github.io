@@ -5900,6 +5900,24 @@ function openRemoteViewing() {
     showRvStep("rvReveal");
   }
 
+function backRemoteViewingStep() {
+  // 기존 세션과 타겟을 유지한 채
+  // 관찰 화면에서 시작 화면으로 이동한다.
+  showRvStep("rvSetup");
+
+  const targetCode = rvElement("rvTargetCode");
+
+  if (targetCode && currentRvTargetCode) {
+    targetCode.textContent = currentRvTargetCode;
+  }
+
+  const panel = rvElement("remoteViewingTrainingPanel");
+
+  if (panel) {
+    panel.scrollTop = 0;
+  }
+}
+  
   async function cancelRemoteViewing() {
     if (currentRvSessionId) {
       const {

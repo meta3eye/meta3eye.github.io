@@ -4605,8 +4605,11 @@ function showNextV3PerformanceStimulus(){
 
   labUpdateHud();
 
-  $('focusLabStimulus').textContent=
-    stimulus.symbol;
+// 매 시행마다 자극 위치를 새로 결정
+labSetRandomStimulusPosition();
+
+$('focusLabStimulus').textContent =
+  stimulus.symbol;
 
   labLater(()=>{
     if(focusLab===s&&s.phase==='running'){

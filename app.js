@@ -4008,7 +4008,12 @@ labInstallRooms();
   #focusLabOverlay{padding:12px}
   #focusLabTop{left:10px;right:10px}
   #labHud{left:12px;right:12px}
-  #focusLabStimulus{min-width:150px;min-height:150px}
+ #focusLabStimulus{
+  width:90px;
+  height:90px;
+  min-width:0;
+  min-height:0;
+}
 }
 `;
 

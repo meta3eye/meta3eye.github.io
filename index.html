@@ -462,6 +462,37 @@
     padding: 16px;
   }
 }
+
+/* 상단 계정 및 로그아웃 */
+
+.topbar-account {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#mainLogoutBtn {
+  width: auto;
+  white-space: nowrap;
+  margin: 0;
+}
+
+#mainLogoutBtn.hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .topbar-account {
+    gap: 6px;
+  }
+
+  #mainLogoutBtn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
     
   </style>
 </head>

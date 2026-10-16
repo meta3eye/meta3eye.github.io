@@ -1668,6 +1668,220 @@ window.SPIRIT_V3 = {
     life_death: 3
   };
 
+/* =========================================
+   DAILY QUEST · INDEPENDENT ROOM
+========================================= */
+
+function installDailyQuestRoom() {
+  if ($("dailyQuestRoom")) return;
+
+  const list = $("questList");
+  const originalPanel = list?.closest(".panel");
+
+  if (!list || !originalPanel) return;
+
+  // 기존 DAILY QUEST 위치에 입장 카드 생성
+  const entry = document.createElement("section");
+  entry.id = "dailyQuestEntry";
+  entry.className = "panel";
+
+  entry.innerHTML = `
+    <div class="section-title">
+      <h2>DAILY QUEST</h2>
+      <span class="muted">일일 수행 훈련</span>
+    </div>
+
+    <p class="muted">
+      집중훈련 · 감각관찰 · 각성훈련
+    </p>
+
+    <button id="dailyQuestOpen" type="button">
+      DAILY QUEST 입장 →
+    </button>
+  `;
+
+  originalPanel.before(entry);
+
+  // 독립 훈련실 생성
+  const room = document.createElement("section");
+  room.id = "dailyQuestRoom";
+  room.className = "hidden";
+
+  room.innerHTML = `
+    <div class="daily-quest-room-inner">
+      <div class="daily-quest-room-header">
+        <div>
+          <div class="training-status">
+            SPIRIT SYSTEM · TRAINING ROOM
+          </div>
+          <h2>DAILY QUEST</h2>
+          <p class="muted">
+            오늘의 수행 훈련을 선택하십시오.
+          </p>
+        </div>
+
+        <button
+          id="dailyQuestClose"
+          type="button"
+          class="secondary"
+        >
+          게임으로 돌아가기
+        </button>
+      </div>
+
+      <div id="dailyQuestContent"></div>
+    </div>
+  `;
+
+  document.body.appendChild(room);
+
+  // 기존 퀘스트 목록을 복제하지 않고 그대로 이동
+  $("dailyQuestContent").appendChild(originalPanel);
+
+  // 기존 집중/감각 훈련 화면도 독립적으로 표시
+  ["focusTrainingPanel", "senseTrainingPanel"].forEach(id => {
+    const panel = $(id);
+
+    if (panel && panel.parentElement !== document.body) {
+      document.body.appendChild(panel);
+    }
+  });
+
+  $("dailyQuestOpen").addEventListener(
+    "click",
+    openDailyQuestRoom
+  );
+
+  $("dailyQuestClose").addEventListener(
+    "click",
+    closeDailyQuestRoom
+  );
+
+  if (!$("dailyQuestRoomStyle")) {
+    const style = document.createElement("style");
+    style.id = "dailyQuestRoomStyle";
+
+    style.textContent = `
+      /* 메인 화면: 테두리만 보라색 */
+      #dailyQuestEntry {
+        border: 2px solid #a78bfa !important;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 22px 0;
+        box-sizing: border-box;
+      }
+
+      #dailyQuestEntry h2 {
+        color: inherit;
+      }
+
+      #dailyQuestOpen {
+        display: block;
+        width: 100%;
+        margin-top: 20px;
+        padding: 14px;
+      }
+
+      /* 독립 훈련실 */
+      #dailyQuestRoom:not(.hidden),
+      #focusTrainingPanel:not(.hidden),
+      #senseTrainingPanel:not(.hidden) {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: block;
+        overflow-y: auto;
+        background: #0b1119;
+        padding: 28px 16px 70px;
+        box-sizing: border-box;
+      }
+
+      #dailyQuestRoom.hidden,
+      #focusTrainingPanel.hidden,
+      #senseTrainingPanel.hidden {
+        display: none !important;
+      }
+
+      .daily-quest-room-inner {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .daily-quest-room-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+
+      #dailyQuestContent > .panel {
+        border: 1px solid #a78bfa;
+        border-radius: 14px;
+        padding: 22px;
+      }
+
+      #focusTrainingPanel .focus-training-box,
+      #senseTrainingPanel .sense-training-box {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 600px) {
+        #dailyQuestRoom:not(.hidden),
+        #focusTrainingPanel:not(.hidden),
+        #senseTrainingPanel:not(.hidden) {
+          padding: 18px 12px 45px;
+        }
+
+        .daily-quest-room-header {
+          display: block;
+        }
+
+        #dailyQuestClose {
+          width: 100%;
+          margin-top: 15px;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+}
+
+function openDailyQuestRoom() {
+  installDailyQuestRoom();
+
+  show("dailyQuestRoom", true);
+  show("gamePanel", true);
+
+  const room = $("dailyQuestRoom");
+  if (room) room.scrollTop = 0;
+
+  loadQuests();
+}
+
+function closeDailyQuestRoom() {
+  show("dailyQuestRoom", false);
+  show("gamePanel", true);
+}
+
+function returnToDailyQuestRoom() {
+  show("focusTrainingPanel", false);
+  show("senseTrainingPanel", false);
+  show("gamePanel", true);
+  show("dailyQuestRoom", true);
+
+  render();
+
+  const room = $("dailyQuestRoom");
+  if (room) room.scrollTop = 0;
+}
+  
   async function loadQuests() {
     if (!state.profile) return;
 
@@ -4628,14 +4842,18 @@ function formatV3Date(value) {
         .join("");
     }
 
-    loadQuests();
-    renderNextUnlock();
-    renderAwakeningSystem();
-    renderRankPromotion();
+   loadQuests();
+renderNextUnlock();
+renderAwakeningSystem();
+renderRankPromotion();
 
-    renderV3Evaluation();
+renderV3Evaluation();
+
+installDailyQuestRoom();
   }
 
+  
+  
   /* =========================
      5 MIN FOCUS TRAINING
   ========================= */
@@ -4975,12 +5193,9 @@ function startFocusTraining() {
     }
 
     setTimeout(() => {
-      show(
-        "focusTrainingPanel",
-        false
-      );
-
-      show("gamePanel", true);
+      show("focusTrainingPanel", false);
+show("gamePanel", true);
+show("dailyQuestRoom", true);
 
       if ($("focusQuality")) {
         $("focusQuality").value = "";
@@ -5011,12 +5226,13 @@ function openFocusTraining() {
     focusTimerInterval = null;
   }
 
-  show("gamePanel", false);
+  show("dailyQuestRoom", false);
+show("gamePanel", true);
 
-  show(
-    "focusTrainingPanel",
-    true
-  );
+show(
+  "focusTrainingPanel",
+  true
+);
 
   // 항상 처음의 수행 화면으로
   show("focusSetup", true);
@@ -5098,12 +5314,13 @@ document.addEventListener("visibilitychange", () => {
       senseTimerInterval = null;
     }
 
-    show("gamePanel", false);
-    show(
-      "senseTrainingPanel",
-      true
-    );
+   show("dailyQuestRoom", false);
+show("gamePanel", true);
 
+show(
+  "senseTrainingPanel",
+  true
+);
     show("senseSetup", true);
     show("senseRunning", false);
     show("senseResult", false);
@@ -5390,13 +5607,9 @@ document.addEventListener("visibilitychange", () => {
     }
 
     setTimeout(() => {
-      show(
-        "senseTrainingPanel",
-        false
-      );
-
-      show("gamePanel", true);
-
+     show("senseTrainingPanel", false);
+show("gamePanel", true);
+show("dailyQuestRoom", true);
       if ($("senseDiscovery")) {
         $("senseDiscovery").value =
           "";
@@ -6026,21 +6239,15 @@ function backRemoteViewingStep() {
     completeFocusTraining
   );
 
-  $("focusBackButton")?.addEventListener(
+ $("focusBackButton")?.addEventListener(
   "click",
   () => {
-
     if (focusTimerInterval) {
       clearInterval(focusTimerInterval);
       focusTimerInterval = null;
     }
 
-    show(
-      "focusTrainingPanel",
-      false
-    );
-
-    show("gamePanel", true);
+    returnToDailyQuestRoom();
   }
 );
 
@@ -6054,25 +6261,17 @@ function backRemoteViewingStep() {
     completeSenseTraining
   );
 
-  $("senseBackButton")?.addEventListener(
-    "click",
-    () => {
-      if (senseTimerInterval) {
-        clearInterval(
-          senseTimerInterval
-        );
-
-        senseTimerInterval = null;
-      }
-
-      show(
-        "senseTrainingPanel",
-        false
-      );
-
-      show("gamePanel", true);
+ $("senseBackButton")?.addEventListener(
+  "click",
+  () => {
+    if (senseTimerInterval) {
+      clearInterval(senseTimerInterval);
+      senseTimerInterval = null;
     }
-  );
+
+    returnToDailyQuestRoom();
+  }
+);
 
   $("openRemoteViewingButton")?.addEventListener(
     "click",

@@ -3970,7 +3970,25 @@ labInstallRooms();
 #focusLabBody p{margin:3px 0}
 .lab-muted{color:#aec3df;font-size:.9em}
 .lab-target{font-size:clamp(85px,17vmin,155px)}
-#focusLabStimulus{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Segoe UI Symbol','Noto Sans Symbols 2',sans-serif;font-size:clamp(110px,19vmin,205px);line-height:1;color:#fff;pointer-events:none;min-width:220px;min-height:220px;display:flex;align-items:center;justify-content:center}
+
+#focusLabStimulus{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Segoe UI Symbol','Noto Sans Symbols 2',sans-serif;
+  font-size:clamp(70px,13vmin,140px);
+  line-height:1;
+  color:#fff;
+  pointer-events:none;
+  width:110px;
+  height:110px;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 #focusLabOverlay.lab-running{cursor:crosshair}
 #focusLabOverlay.lab-running #focusLabBody{display:none}
 #labHud{position:fixed;top:75px;left:20px;right:20px;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:2;font-variant-numeric:tabular-nums}

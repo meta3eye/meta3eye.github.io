@@ -286,6 +286,93 @@
     margin-top: 16px;
   }
 }
+
+    /* =========================================
+   PLAYER STATUS · COMPACT DESIGN
+========================================= */
+
+/* 플레이어 정보 카드 */
+#gamePanel .player-card {
+  padding: 24px;
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+
+/* 랭크와 레벨 강조 */
+#gamePanel .player-card .rank {
+  font-size: clamp(25px, 4vw, 36px);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+#gamePanel .player-card .level {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700;
+}
+
+/* EXP 영역 */
+#gamePanel .player-card .xpbar {
+  margin-top: 20px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+#gamePanel .player-card #xpText {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+/* 다음 해금 정보 */
+#gamePanel .player-card .next-unlock {
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+/* 기본 능력치 접기/펼치기 */
+#playerStatsDetails {
+  margin-top: 20px;
+  border: 1px solid rgba(160, 170, 190, 0.35);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#playerStatsDetails summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+  user-select: none;
+}
+
+#playerStatsDetails summary::-webkit-details-marker {
+  display: none;
+}
+
+#playerStatsDetails .player-stats-arrow {
+  font-size: 20px;
+  transition: transform 0.2s ease;
+}
+
+#playerStatsDetails[open] .player-stats-arrow {
+  transform: rotate(180deg);
+}
+
+#playerStatsDetails .stats {
+  padding: 16px;
+  border-top: 1px solid rgba(160, 170, 190, 0.2);
+}
+
+@media (max-width: 600px) {
+  #gamePanel .player-card {
+    padding: 16px;
+  }
+}
     
   </style>
 </head>

@@ -2292,10 +2292,57 @@ if (room.parentElement !== document.body) {
   document.head.appendChild(style);
 }
 
+
+/* =========================================
+   MAIN LOGOUT BUTTON
+========================================= */
+
+function installMainLogoutButton() {
+
+  const button = $("mainLogoutBtn");
+  const gamePanel = $("gamePanel");
+  const originalLogout = $("logoutBtn");
+
+  if (!button || !gamePanel || !originalLogout) return;
+
+  // 로그인 화면에서는 숨기고 게임 화면에서만 표시
+  const syncVisibility = () => {
+    button.classList.toggle(
+      "hidden",
+      gamePanel.classList.contains("hidden")
+    );
+  };
+
+  // 이벤트 중복 연결 방지
+  if (button.dataset.installed === "true") {
+    syncVisibility();
+    return;
+  }
+
+  button.dataset.installed = "true";
+
+  button.addEventListener("click", () => {
+
+    // 기존 로그아웃 처리 기능을 그대로 사용
+    originalLogout.click();
+
+  });
+
+  // 로그인/로그아웃으로 화면 상태가 바뀌면 자동 반영
+  const observer = new MutationObserver(syncVisibility);
+
+  observer.observe(gamePanel, {
+    attributes: true,
+    attributeFilter: ["class"]
+  });
+
+  syncVisibility();
+}
+  
 /* =========================================
    PLAYER RECORD · ROOM CONTROL
 ========================================= */
-
+  
 function installPlayerRecordRoom() {
 
   const entry = $("playerRecordEntry");

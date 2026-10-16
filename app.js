@@ -5111,6 +5111,7 @@ installAbilityAnalysisRoom();
 installDailyQuestRoom();
 installAwakeningAnalysisRoom();
 installPlayerRecordRoom();
+installMainLogoutButton();
 }
   
   /* =========================

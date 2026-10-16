@@ -441,6 +441,47 @@
     };
   }
 
+/* =========================================
+   AWAKENING ANALYSIS · ROOM CONTROL
+========================================= */
+
+function installAwakeningAnalysisRoom() {
+
+  const entry = $("awakeningAnalysisEntry");
+  const room = $("awakeningAnalysisRoom");
+
+  if (!entry || !room) return;
+
+  // 독립 화면을 플레이어 카드 밖으로 이동
+  if (room.parentElement !== document.body) {
+    document.body.appendChild(room);
+  }
+
+  // 이벤트 중복 연결 방지
+  if (entry.dataset.installed === "true") return;
+
+  entry.dataset.installed = "true";
+
+  $("awakeningAnalysisOpen")?.addEventListener(
+    "click",
+    () => {
+      show("awakeningAnalysisRoom", true);
+
+      room.scrollTop = 0;
+
+      // 입장 시 최신 분석 데이터 갱신
+      renderAwakeningSystem();
+    }
+  );
+
+  $("awakeningAnalysisClose")?.addEventListener(
+    "click",
+    () => {
+      show("awakeningAnalysisRoom", false);
+    }
+  );
+}
+  
   async function renderAwakeningSystem() {
     const paths =
       await calculateAwakeningPaths();
@@ -2127,6 +2168,10 @@ function installAbilityAnalysisRoom() {
   const room = $("abilityAnalysisRoom");
 
   if (!entry || !room) return;
+  // 플레이어 카드 내부에서 독립 화면을 분리
+if (room.parentElement !== document.body) {
+  document.body.appendChild(room);
+}
 
   // 이벤트 중복 연결 방지
   if (entry.dataset.installed === "true") return;
@@ -4977,10 +5022,11 @@ renderAwakeningSystem();
 renderRankPromotion();
 
 renderV3Evaluation();
-    
+
 installAbilityAnalysisRoom();
 installDailyQuestRoom();
-  }  
+installAwakeningAnalysisRoom();
+}
   
   /* =========================
      5 MIN FOCUS TRAINING

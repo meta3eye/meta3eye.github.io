@@ -181,6 +181,22 @@
     margin-top: 8px;
   }
 }
+
+/* REMOTE VIEWING · 메인 입장 카드 */
+#gamePanel .rv-entry-card {
+  border: 1px solid rgba(150, 190, 175, 0.45);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 22px 0;
+  box-sizing: border-box;
+}
+
+#gamePanel .rv-entry-card #openRemoteViewingButton {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+}
     
   </style>
 </head>
@@ -570,7 +586,7 @@
 
       </div>
 
-      <div class="panel">
+      <div class="panel rv-entry-card">
         <div class="section-title">
           <h2>REMOTE VIEWING</h2>
           <span class="muted">이미지는 기록 제출 후에만 공개됩니다.</span>
@@ -1686,8 +1702,8 @@
           </button>
 
           <button id="rvCancelButton" class="secondary" type="button">
-            취소하고 게임으로 돌아가기
-          </button>
+  ← 이전 단계로 돌아가기
+</button>
 
 
           <p

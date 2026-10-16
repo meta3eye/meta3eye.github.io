@@ -4543,6 +4543,36 @@ function labFinalizeTrial(s,stimulus,target){
   labUpdateHud();
 }
 
+/* =========================================
+   FOCUS LAB · RANDOM STIMULUS POSITION
+========================================= */
+
+function labSetRandomStimulusPosition() {
+
+  const el = $("focusLabStimulus");
+  if (!el) return;
+
+  // 상단 HUD 및 화면 가장자리와 겹치지 않는 영역
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  const marginX = Math.min(120, width * 0.20);
+  const marginTop = Math.min(180, height * 0.28);
+  const marginBottom = Math.min(100, height * 0.15);
+
+  const availableX = Math.max(0, width - marginX * 2);
+  const availableY = Math.max(
+    0,
+    height - marginTop - marginBottom
+  );
+
+  const x = marginX + Math.random() * availableX;
+  const y = marginTop + Math.random() * availableY;
+
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+}
+  
 function showNextV3PerformanceStimulus(){
   const s=focusLab;
 

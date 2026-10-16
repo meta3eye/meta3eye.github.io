@@ -209,6 +209,83 @@
   margin-top: 20px;
   padding: 14px;
 }
+/* =========================================
+   AWAKENING ANALYSIS · INDEPENDENT ROOM
+========================================= */
+
+/* 메인 입장 카드: 푸른색 테두리 */
+#gamePanel #awakeningAnalysisEntry {
+  border: 2px solid #579bff !important;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 22px 0;
+  box-sizing: border-box;
+}
+
+/* 제목은 기본 무채색 */
+#awakeningAnalysisEntry h2 {
+  color: inherit !important;
+}
+
+#awakeningAnalysisOpen {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+}
+
+/* 독립 분석실 */
+#awakeningAnalysisRoom:not(.hidden) {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: block;
+  overflow-y: auto;
+  background: #0b1119;
+  padding: 28px 16px 70px;
+  box-sizing: border-box;
+}
+
+#awakeningAnalysisRoom.hidden {
+  display: none !important;
+}
+
+.awakening-analysis-inner {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.awakening-analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+#awakeningAnalysisRoom .awakening-panel {
+  border: 1px solid #579bff;
+  border-radius: 14px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  #awakeningAnalysisRoom:not(.hidden) {
+    padding: 18px 12px 45px;
+  }
+
+  .awakening-analysis-header {
+    display: block;
+  }
+
+  #awakeningAnalysisClose {
+    width: 100%;
+    margin-top: 16px;
+  }
+}
     
   </style>
 </head>
@@ -503,54 +580,76 @@
 
 
         <!-- 각성 분석 -->
+<!-- 각성 분석실: 메인 입장 카드 -->
+<div id="awakeningAnalysisEntry" class="panel">
+  <div class="section-title">
+    <h2>AWAKENING ANALYSIS · 각성 분석실</h2>
+    <span class="muted">성장 경로 분석</span>
+  </div>
 
-        <div class="awakening-panel">
+  <p class="muted">
+    반복 훈련을 통해 나타나는 각성 유형과
+    잠재 성장 경로를 확인합니다.
+  </p>
 
-          <div class="section-title">
+  <button id="awakeningAnalysisOpen" type="button">
+    각성 분석실 입장 →
+  </button>
+</div>
 
-            <h2>
-              AWAKENING ANALYSIS
-            </h2>
+<!-- 각성 분석실: 독립 화면 -->
+<section id="awakeningAnalysisRoom" class="hidden">
+  <div class="awakening-analysis-inner">
 
-            <span
-              id="awakeningStatus"
-              class="muted"
-            >
-              ANALYZING...
-            </span>
+    <div class="awakening-analysis-header">
+      <div>
+        <h2>AWAKENING ANALYSIS · 각성 분석실</h2>
+        <p class="muted">
+          현재 각성 유형 · 잠재 성장 경로
+        </p>
+      </div>
 
-          </div>
+      <button
+        id="awakeningAnalysisClose"
+        class="secondary"
+        type="button"
+      >
+        게임으로 돌아가기
+      </button>
+    </div>
 
+    <div class="panel awakening-panel">
 
-          <div class="awakening-type">
+      <div class="section-title">
+        <h2>AWAKENING ANALYSIS</h2>
 
-            <span class="label">
-              CURRENT TYPE
-            </span>
+        <span id="awakeningStatus" class="muted">
+          ANALYZING...
+        </span>
+      </div>
 
-            <strong id="primaryTypeValue">
-              UNKNOWN
-            </strong>
+      <div class="awakening-type">
+        <span class="label">CURRENT TYPE</span>
 
-          </div>
+        <strong id="primaryTypeValue">
+          UNKNOWN
+        </strong>
+      </div>
 
+      <div id="awakeningDescription" class="muted">
+        아직 충분한 훈련 데이터가 없습니다.
+        여러 유형의 훈련을 계속하십시오.
+      </div>
 
-          <div
-            id="awakeningDescription"
-            class="muted"
-          >
-            아직 충분한 훈련 데이터가 없습니다.
-            여러 유형의 훈련을 계속하십시오.
-          </div>
+      <div
+        id="potentialPaths"
+        class="potential-paths"
+      ></div>
 
+    </div>
 
-          <div
-            id="potentialPaths"
-            class="potential-paths"
-          ></div>
-
-        </div>
-
+  </div>
+</section>
 
         <!-- 능력치 -->
 

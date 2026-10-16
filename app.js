@@ -4570,27 +4570,90 @@ function labFinalizeTrial(s,stimulus,target){
    FOCUS LAB · RANDOM STIMULUS POSITION
 ========================================= */
 
+/* =========================================
+   FOCUS LAB · 9-ZONE ATTENTION SYSTEM
+========================================= */
+
+let labPositionQueue = [];
+
 function labSetRandomStimulusPosition() {
 
   const el = $("focusLabStimulus");
   if (!el) return;
 
-  // 상단 HUD 및 화면 가장자리와 겹치지 않는 영역
+  // 9개 구역을 모두 사용하면 새 순서 생성
+  if (labPositionQueue.length === 0) {
+
+    labPositionQueue = [
+      0, 1, 2,
+      3, 4, 5,
+      6, 7, 8
+    ];
+
+    // Fisher-Yates Shuffle
+    for (
+      let i = labPositionQueue.length - 1;
+      i > 0;
+      i--
+    ) {
+
+      const j = Math.floor(
+        Math.random() * (i + 1)
+      );
+
+      [
+        labPositionQueue[i],
+        labPositionQueue[j]
+      ] = [
+        labPositionQueue[j],
+        labPositionQueue[i]
+      ];
+    }
+  }
+
+  // 이번 시행에서 사용할 구역
+  const zone = labPositionQueue.pop();
+
+  const col = zone % 3;
+  const row = Math.floor(zone / 3);
+
   const width = window.innerWidth;
   const height = window.innerHeight;
 
-  const marginX = Math.min(120, width * 0.20);
-  const marginTop = Math.min(180, height * 0.28);
-  const marginBottom = Math.min(100, height * 0.15);
+  // 자극 크기를 고려하여 화면 밖으로 나가지 않도록 제한
+  const rect = el.getBoundingClientRect();
 
-  const availableX = Math.max(0, width - marginX * 2);
-  const availableY = Math.max(
-    0,
-    height - marginTop - marginBottom
+  const halfW = rect.width / 2;
+  const halfH = rect.height / 2;
+
+  const left = halfW + 12;
+  const right = Math.max(
+    left,
+    width - halfW - 12
   );
 
-  const x = marginX + Math.random() * availableX;
-  const y = marginTop + Math.random() * availableY;
+  // 상단 HUD와 하단 여백 확보
+  const top = Math.min(
+    height - halfH,
+    Math.max(halfH + 12, 180)
+  );
+
+  const bottom = Math.max(
+    top,
+    height - halfH - 35
+  );
+
+  const cellW = (right - left) / 3;
+  const cellH = (bottom - top) / 3;
+
+  // 선택된 구역 안에서도 위치를 무작위로 결정
+  const x = left + cellW * (
+    col + 0.2 + Math.random() * 0.6
+  );
+
+  const y = top + cellH * (
+    row + 0.2 + Math.random() * 0.6
+  );
 
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;

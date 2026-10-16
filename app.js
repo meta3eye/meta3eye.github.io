@@ -4397,7 +4397,7 @@ function startV3FocusPerformanceTest(){
   let n=3;
 
   $('focusLabBody').innerHTML=`
-    <h2>화면 중앙을 응시하세요</h2>
+    <h2>화면 전체에 주의를 기울이세요</h2>
     <h1 id="labCountdown">3</h1>
     <p>목표 도형에만 반응하십시오.</p>
   `;

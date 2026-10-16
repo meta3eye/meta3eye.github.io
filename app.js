@@ -5569,6 +5569,24 @@ function openRemoteViewing() {
 }
   
   async function startRemoteViewingSession() {
+
+  // 이미 생성된 세션이 있으면 새로운 타겟을 만들지 않는다.
+  if (currentRvSessionId && currentRvTargetCode) {
+    showRvStep("rvObservation");
+
+    const panel = rvElement("remoteViewingTrainingPanel");
+
+    if (panel) {
+      panel.scrollTop = 0;
+    }
+
+    return;
+  }
+
+  const button =
+    rvElement(
+      "rvStartButton"
+    );
     const button =
       rvElement(
         "rvStartButton"
@@ -6080,11 +6098,11 @@ function backRemoteViewingStep() {
     cancelRemoteViewing
   );
 
-  $("rvCancelButton")?.addEventListener(
-    "click",
-    cancelRemoteViewing
-  );
-
+ $("rvCancelButton")?.addEventListener(
+  "click",
+  backRemoteViewingStep
+);
+  
   $("rvFinishButton")?.addEventListener(
     "click",
     finishRemoteViewing

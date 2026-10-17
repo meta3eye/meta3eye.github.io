@@ -4311,6 +4311,11 @@ function prepareFocusLab(){
     );
   }
 
+   // 새로운 검사마다 위치 기록 초기화
+  labZoneTrials = [];
+  labPositionQueue = [];
+  labCurrentZone = null;
+
   focusLab={
     phase:'ready',
     modeKey,
@@ -4558,8 +4563,17 @@ function labFinalizeTrial(s,stimulus,target){
     display_ms:s.currentDisplayMs,
     correct:ok,
 
-    early_inputs:s.currentEarly||0,
+        early_inputs:s.currentEarly||0,
     extra_inputs:s.currentExtra||0
+  });
+
+  // 기존 서버 제출 기록과 별도로 위치 분석 기록 수집
+  labZoneTrials.push({
+    zone:labCurrentZone,
+    isTarget:s.currentTarget,
+    responded:s.responded,
+    correct:ok,
+    reactionMs:s.currentRt??null
   });
 
   s.index++;
@@ -4575,6 +4589,10 @@ function labFinalizeTrial(s,stimulus,target){
 ========================================= */
 
 let labPositionQueue = [];
+
+// 현재 검사에서 사용할 위치별 측정 기록
+let labZoneTrials = [];
+let labCurrentZone = null;
 
 function labSetRandomStimulusPosition() {
 
@@ -4611,12 +4629,14 @@ function labSetRandomStimulusPosition() {
     }
   }
 
-  // 이번 시행에서 사용할 구역
-  const zone = labPositionQueue.pop();
+ // 이번 시행에서 사용할 구역
+const zone = labPositionQueue.pop();
 
-  const col = zone % 3;
-  const row = Math.floor(zone / 3);
+// 0~8을 기록하고 화면에는 1~9로 표시
+labCurrentZone = zone;
 
+const col = zone % 3;
+const row = Math.floor(zone / 3);
   const width = window.innerWidth;
   const height = window.innerHeight;
 
@@ -4806,6 +4826,154 @@ function closeFocusLab(){
   }
 }
 
+/* =========================================
+   FOCUS LAB · ATTENTION MAP
+========================================= */
+
+function labRenderAttentionMap() {
+
+  const zones = Array.from(
+    {length:9},
+    (_,index)=>({
+      zone:index,
+      attempts:0,
+      correct:0,
+      hits:0,
+      misses:0,
+      falseAlarms:0,
+      reactionTimes:[]
+    })
+  );
+
+  // 구역별 기록 집계
+  for(const trial of labZoneTrials){
+
+    const z=zones[trial.zone];
+
+    if(!z)continue;
+
+    z.attempts++;
+
+    if(trial.correct)z.correct++;
+
+    if(trial.isTarget){
+
+      if(trial.responded){
+        z.hits++;
+
+        if(Number.isFinite(trial.reactionMs)){
+          z.reactionTimes.push(trial.reactionMs);
+        }
+
+      }else{
+        z.misses++;
+      }
+
+    }else if(trial.responded){
+      z.falseAlarms++;
+    }
+  }
+
+  const cards=zones.map(z=>{
+
+    const accuracy=z.attempts
+      ?Math.round(z.correct/z.attempts*100)
+      :null;
+
+    const average=z.reactionTimes.length
+      ?Math.round(
+        z.reactionTimes.reduce(
+          (sum,value)=>sum+value,0
+        )/z.reactionTimes.length
+      )
+      :null;
+
+    // 정반응 표본 3개 미만은 속도 비교 보류
+    const sufficient=z.reactionTimes.length>=3;
+
+    return `
+      <div style="
+        background:#16283e;
+        border:1px solid #405a77;
+        border-radius:10px;
+        padding:12px 5px;
+        text-align:center;
+        min-width:0;
+      ">
+
+        <div style="
+          font-size:11px;
+          color:#9fb7d2;
+        ">
+          ZONE ${z.zone+1}
+        </div>
+
+        <div style="
+          font-size:21px;
+          font-weight:800;
+          margin:7px 0;
+          color:#fff;
+        ">
+          ${average===null?'-':average+'ms'}
+        </div>
+
+        <div style="font-size:12px;color:#b7c9dc;">
+          정확도 ${accuracy===null?'-':accuracy+'%'}
+        </div>
+
+        <div style="font-size:11px;color:#91a7bd;">
+          정반응 ${z.hits} · 놓침 ${z.misses}
+        </div>
+
+        <div style="font-size:11px;color:#91a7bd;">
+          오반응 ${z.falseAlarms}
+        </div>
+
+        <div style="
+          font-size:10px;
+          margin-top:7px;
+          color:${sufficient?'#9ee3c1':'#e5c38b'};
+        ">
+          ${sufficient?'속도 표본 확보':'속도 표본 부족'}
+        </div>
+
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <section style="
+      width:min(550px,100%);
+      margin:22px 0;
+      box-sizing:border-box;
+    ">
+
+      <h2>ATTENTION MAP</h2>
+
+      <p class="lab-muted">
+        화면 위치별 수행 분석 · 총 ${labZoneTrials.length}회
+      </p>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:8px;
+        margin-top:15px;
+      ">
+        ${cards}
+      </div>
+
+      <p class="lab-muted" style="margin-top:15px;">
+        평균 반응시간은 목표 도형에 올바르게 반응한
+        시행만 계산합니다.
+        정확도에는 방해 도형을 무시한 정반응도 포함됩니다.
+        정반응 3회 미만인 구역은 속도 비교를 보류합니다.
+      </p>
+
+    </section>
+  `;
+}
+  
 async function finishV3FocusPerformanceTest(){
   const s=focusLab;
 
@@ -4945,6 +5113,8 @@ async function finishV3FocusPerformanceTest(){
       실제 성장 EXP는 서버가 전체 기록을 검증하여 확정합니다.
       수행점수와 게임 EXP는 별개입니다.
     </p>
+
+       ${labRenderAttentionMap()}
 
     <p id="focusLabSaveStatus">
       서버에서 검증 및 정산 중...

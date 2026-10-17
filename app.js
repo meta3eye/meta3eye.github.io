@@ -5065,9 +5065,11 @@ async function finishV3FocusPerformanceTest(){
     completed_at:new Date().toISOString()
   };
 
-  $('focusLabBody').innerHTML=`
+   $('focusLabBody').innerHTML=`
     <h1>집중력 측정 결과</h1>
     <h3>${s.config.name} · ${s.total}회</h3>
+
+    ${labRenderAttentionMap()}
 
     <div class="lab-result">
       순수 수행점수
@@ -5112,9 +5114,7 @@ async function finishV3FocusPerformanceTest(){
     <p class="lab-muted">
       실제 성장 EXP는 서버가 전체 기록을 검증하여 확정합니다.
       수행점수와 게임 EXP는 별개입니다.
-    </p>
-
-       ${labRenderAttentionMap()}
+    </p>     
 
     <p id="focusLabSaveStatus">
       서버에서 검증 및 정산 중...

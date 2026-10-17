@@ -2968,7 +2968,134 @@ async function labDashboardLoad(){
       최대 최근 100회 조회 중 마지막 10회를 표시합니다.
     </p>
 
+   
+    <h3>평균 반응시간 변화 · 최근 ${recent.length}회</h3>
+
+    <p class="muted">
+      동일 과정·동일 검사 횟수에서 측정된 평균 반응시간입니다.
+      수치가 낮을수록 반응이 빠릅니다.
+    </p>
+
+    ${
+      (() => {
+
+        // 유효한 반응시간이 있는 검사만 사용
+        const rtRows=recent.filter(r=>
+          r.average_reaction_ms!==null &&
+          Number.isFinite(r.average_reaction_ms) &&
+          r.average_reaction_ms>=0
+        );
+
+        if(rtRows.length===0){
+          return '<p class="muted">반응시간 기록이 아직 없습니다.</p>';
+        }
+
+        const values=rtRows.map(r=>r.average_reaction_ms);
+
+        const rtMin=Math.max(0,Math.min(...values)-50);
+        const rtMax=Math.max(...values)+50;
+        const rtSpan=Math.max(1,rtMax-rtMin);
+
+        const w=600;
+        const h=190;
+        const p=30;
+
+        const rtPoints=rtRows.map((r,i)=>({
+
+          x:p+(
+            rtRows.length===1
+              ?0.5
+              :i/(rtRows.length-1)
+          )*(w-p*2),
+
+          y:h-p-(
+            (r.average_reaction_ms-rtMin)/rtSpan
+          )*(h-p*2),
+
+          r
+        }));
+
+        return `
+          <svg
+            viewBox="0 0 ${w} ${h}"
+            role="img"
+            aria-label="평균 반응시간 변화"
+            style="
+              display:block;
+              width:100%;
+              max-width:700px;
+              background:#102039;
+              border-radius:10px;
+            "
+          >
+
+            <line
+              x1="${p}" y1="${h-p}"
+              x2="${w-p}" y2="${h-p}"
+              stroke="#7891b1"
+            />
+
+            <line
+              x1="${p}" y1="${p}"
+              x2="${p}" y2="${h-p}"
+              stroke="#7891b1"
+            />
+
+            <text
+              x="${p+3}" y="${p-7}"
+              fill="#d6e5ff"
+              font-size="13"
+            >${Math.round(rtMax)}ms</text>
+
+            <text
+              x="${p+3}" y="${h-5}"
+              fill="#d6e5ff"
+              font-size="13"
+            >${Math.round(rtMin)}ms</text>
+
+            ${
+              rtPoints.length>1
+                ?`
+                  <polyline
+                    fill="none"
+                    stroke="#9ee3c1"
+                    stroke-width="3"
+                    points="${
+                      rtPoints.map(a=>`${a.x},${a.y}`).join(' ')
+                    }"
+                  />
+                `
+                :''
+            }
+
+            ${
+              rtPoints.map(a=>`
+                <circle
+                  cx="${a.x}"
+                  cy="${a.y}"
+                  r="5"
+                  fill="#ffd479"
+                >
+                  <title>
+                    ${Math.round(a.r.average_reaction_ms)}ms
+                    · ${date(a.r)}
+                  </title>
+                </circle>
+              `).join('')
+            }
+
+          </svg>
+
+          <p class="muted">
+            유효한 반응시간 기록 ${rtRows.length}회 기준
+          </p>
+        `;
+
+      })()
+    }
+
     <h3>가장 최근 검사 세부 결과</h3>
+
 
     <p>
       목표 적중률

@@ -2774,6 +2774,419 @@ function labDashboardAdvice(rows){
   return notes.join(' ');
 }
 
+
+/* =========================================
+   FOCUS GROWTH · ADVANCED ANALYSIS
+   동일 과정 / 동일 검사 횟수 비교
+========================================= */
+
+function labGrowthAdvancedAnalysis(rows){
+
+  const recent=rows.slice(-10);
+
+  const mean=values=>{
+    const valid=values.filter(
+      v=>typeof v==='number'&&Number.isFinite(v)
+    );
+
+    return valid.length
+      ?valid.reduce((a,b)=>a+b,0)/valid.length
+      :null;
+  };
+
+  const metrics={
+    score:r=>Number(r.score),
+
+    hit:r=>r.target_count>0
+      ?r.hits/r.target_count*100
+      :null,
+
+    falseRate:r=>r.non_target_count>0
+      ?r.false_alarms/r.non_target_count*100
+      :null,
+
+    rt:r=>r.average_reaction_ms!=null &&
+      Number.isFinite(r.average_reaction_ms)
+        ?r.average_reaction_ms
+        :null
+  };
+
+  const metricValue=(r,key)=>{
+    const value=metrics[key](r);
+
+    return typeof value==='number' &&
+      Number.isFinite(value)
+        ?value
+        :null;
+  };
+
+  const format=(value,unit='',digits=1)=>
+    value===null
+      ?'기록 없음'
+      :value.toFixed(digits)+unit;
+
+  /* -------------------------
+     범용 성장 그래프
+  ------------------------- */
+
+  function graph(key,title,unit,color){
+
+    const valid=recent
+      .map(r=>({
+        row:r,
+        value:metricValue(r,key)
+      }))
+      .filter(x=>x.value!==null);
+
+    if(!valid.length){
+      return `
+        <h3>${title}</h3>
+        <p class="muted">측정 기록이 없습니다.</p>
+      `;
+    }
+
+    const values=valid.map(x=>x.value);
+
+    let low=Math.min(...values);
+    let high=Math.max(...values);
+
+    const margin=Math.max(
+      key==='rt'?20:3,
+      (high-low)*0.15
+    );
+
+    low=Math.max(0,low-margin);
+    high=high+margin;
+
+    if(key==='hit'||key==='falseRate'){
+      high=Math.min(100,high);
+    }
+
+    const span=Math.max(1,high-low);
+
+    const W=600;
+    const H=190;
+    const P=34;
+
+    const points=valid.map((x,i)=>({
+
+      x:P+(
+        valid.length===1
+          ?0.5
+          :i/(valid.length-1)
+      )*(W-P*2),
+
+      y:H-P-(
+        (x.value-low)/span
+      )*(H-P*2),
+
+      value:x.value,
+      row:x.row
+    }));
+
+    const poly=points
+      .map(p=>`${p.x},${p.y}`)
+      .join(' ');
+
+    return `
+      <section style="margin:25px 0">
+
+        <h3>${title} · 최근 ${valid.length}회</h3>
+
+        <svg
+          viewBox="0 0 ${W} ${H}"
+          role="img"
+          aria-label="${title}"
+          style="
+            display:block;
+            width:100%;
+            max-width:700px;
+            background:#102039;
+            border-radius:10px;
+          "
+        >
+
+          <line
+            x1="${P}" y1="${H-P}"
+            x2="${W-P}" y2="${H-P}"
+            stroke="#7891b1"
+          />
+
+          <line
+            x1="${P}" y1="${P}"
+            x2="${P}" y2="${H-P}"
+            stroke="#7891b1"
+          />
+
+          <text
+            x="${P+3}" y="${P-7}"
+            fill="#d6e5ff"
+            font-size="13"
+          >${high.toFixed(0)}${unit}</text>
+
+          <text
+            x="${P+3}" y="${H-5}"
+            fill="#d6e5ff"
+            font-size="13"
+          >${low.toFixed(0)}${unit}</text>
+
+          ${
+            points.length>1
+              ?`
+                <polyline
+                  fill="none"
+                  stroke="${color}"
+                  stroke-width="3"
+                  points="${poly}"
+                />
+              `
+              :''
+          }
+
+          ${
+            points.map(p=>`
+              <circle
+                cx="${p.x}"
+                cy="${p.y}"
+                r="5"
+                fill="#ffd479"
+              >
+                <title>
+                  ${p.value.toFixed(1)}${unit}
+                  · ${new Date(
+                    p.row.completed_at
+                  ).toLocaleString('ko-KR')}
+                </title>
+              </circle>
+            `).join('')
+          }
+
+        </svg>
+
+      </section>
+    `;
+  }
+
+  /* -------------------------
+     최근 3회 / 직전 3회
+  ------------------------- */
+
+  const current=rows.slice(-3);
+  const previous=rows.slice(-6,-3);
+
+  function compare(key,label,unit,lowerBetter=false){
+
+    const now=mean(
+      current.map(r=>metricValue(r,key))
+    );
+
+    const before=mean(
+      previous.map(r=>metricValue(r,key))
+    );
+
+    if(
+      current.length<3 ||
+      previous.length<3 ||
+      now===null ||
+      before===null
+    ){
+      return `
+        <tr>
+          <td>${label}</td>
+          <td colspan="3">비교 기록 부족</td>
+        </tr>
+      `;
+    }
+
+    const difference=now-before;
+
+    let status='유지';
+
+    // 작은 변동을 개선/하락으로 과도하게 해석하지 않음
+    const tolerance=
+      key==='rt'?10:
+      key==='score'?1:1;
+
+    if(Math.abs(difference)>tolerance){
+
+      const improved=lowerBetter
+        ?difference<0
+        :difference>0;
+
+      status=improved?'개선':'하락';
+    }
+
+    return `
+      <tr>
+        <td>${label}</td>
+        <td>${format(before,unit)}</td>
+        <td>${format(now,unit)}</td>
+        <td>
+          ${difference>0?'+':''}
+          ${difference.toFixed(1)}${unit}
+          · ${status}
+        </td>
+      </tr>
+    `;
+  }
+
+  /* -------------------------
+     성장 분석 해석
+  ------------------------- */
+
+  const comments=[];
+
+  if(rows.length>=6){
+
+    const currentScore=mean(
+      current.map(r=>metricValue(r,'score'))
+    );
+
+    const previousScore=mean(
+      previous.map(r=>metricValue(r,'score'))
+    );
+
+    const currentRt=mean(
+      current.map(r=>metricValue(r,'rt'))
+    );
+
+    const previousRt=mean(
+      previous.map(r=>metricValue(r,'rt'))
+    );
+
+    if(
+      currentScore!==null &&
+      previousScore!==null
+    ){
+
+      const delta=currentScore-previousScore;
+
+      if(delta>=5){
+        comments.push(
+          '최근 수행점수가 직전 구간보다 상승했습니다.'
+        );
+      }else if(delta<=-5){
+        comments.push(
+          '최근 수행점수가 직전 구간보다 하락했습니다.'
+        );
+      }else{
+        comments.push(
+          '최근 수행점수는 이전 구간과 큰 차이가 없습니다.'
+        );
+      }
+    }
+
+    if(
+      currentRt!==null &&
+      previousRt!==null
+    ){
+
+      const delta=currentRt-previousRt;
+
+      if(delta<=-30){
+        comments.push(
+          '평균 반응시간이 단축되었습니다.'
+        );
+      }else if(delta>=30){
+        comments.push(
+          '평균 반응시간이 길어졌습니다.'
+        );
+      }
+    }
+
+  }else{
+
+    comments.push(
+      '동일 조건의 검사 6회가 축적되면 구간별 성장 비교가 활성화됩니다.'
+    );
+  }
+
+  return `
+
+    <div style="
+      border-top:1px solid #64748b55;
+      margin-top:28px;
+      padding-top:20px;
+    ">
+
+      <h2>ADVANCED GROWTH ANALYSIS</h2>
+
+      <p class="muted">
+        동일 과정·동일 검사 횟수의 최근 기록을 비교합니다.
+      </p>
+
+      ${graph(
+        'hit',
+        '목표 적중률 변화',
+        '%',
+        '#9ee3c1'
+      )}
+
+      ${graph(
+        'falseRate',
+        '오반응률 변화',
+        '%',
+        '#f5ad8c'
+      )}
+
+      <h3>최근 3회 vs 직전 3회</h3>
+
+      <div style="overflow-x:auto">
+
+        <table style="
+          width:100%;
+          text-align:left;
+          border-collapse:collapse;
+        ">
+
+          <thead>
+            <tr>
+              <th>측정 항목</th>
+              <th>직전 3회</th>
+              <th>최근 3회</th>
+              <th>변화</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            ${compare(
+              'score','수행점수','점'
+            )}
+
+            ${compare(
+              'hit','목표 적중률','%'
+            )}
+
+            ${compare(
+              'falseRate','오반응률','%',true
+            )}
+
+            ${compare(
+              'rt','평균 반응시간','ms',true
+            )}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <h3>성장 변화 해석</h3>
+
+      <p>${comments.join(' ')}</p>
+
+      <p class="muted">
+        적중률은 높을수록, 오반응률과 반응시간은
+        낮을수록 유리합니다.
+        단기간 변화만으로 능력 향상을 확정하지 않습니다.
+      </p>
+
+    </div>
+  `;
+}
+
+  
 async function labDashboardLoad(){
   const box=document.getElementById('labGrowthContent');
   const mode=document.getElementById('labHistoryMode');

@@ -6858,40 +6858,49 @@ function installRemoteViewingRoom() {
   document.head.appendChild(style);
 }
   
+
 function openRemoteViewing() {
   installRemoteViewingRoom();
 
   const panel = $("remoteViewingTrainingPanel");
   if (!panel) return;
 
-   currentRvSessionId = null;
+  // 새로운 입장에서는 이전 세션의 화면 상태를 제거한다.
+  currentRvSessionId = null;
   currentRvTargetCode = null;
 
-  rvSubmitting = false;
-  rvSubmitted = false;
+  resetRvFields();
 
-  const submitButton = rvElement("rvSubmitButton");
+  // 이전 TARGET CODE가 DOM에 남아 있지 않도록 초기화
+  const targetCode = rvElement("rvTargetCode");
 
-  if (submitButton) {
-    submitButton.disabled = false;
-    submitButton.textContent = "관찰 기록 제출";
+  if (targetCode) {
+    targetCode.textContent = "";
   }
 
-  resetRvFields();
   setRvMessage("rvMessage", "");
   setRvMessage("rvObservationMessage", "");
 
   showRvStep("rvSetup");
 
   panel.classList.remove("hidden");
-
   panel.scrollTop = 0;
 }
+
   
   async function startRemoteViewingSession() {
 
-  // 이미 생성된 세션이 있으면 새로운 타겟을 만들지 않는다.
+ 
+  // 진행 중인 세션이 있으면 기존 타겟을 복원한다.
+  // 새로운 서버 세션을 중복 생성하지 않는다.
   if (currentRvSessionId && currentRvTargetCode) {
+
+    const targetCode = rvElement("rvTargetCode");
+
+    if (targetCode) {
+      targetCode.textContent = currentRvTargetCode;
+    }
+
     showRvStep("rvObservation");
 
     const panel = rvElement("remoteViewingTrainingPanel");
@@ -6902,6 +6911,7 @@ function openRemoteViewing() {
 
     return;
   }
+
 
   const button =
     rvElement(
@@ -7257,15 +7267,17 @@ function openRemoteViewing() {
     showRvStep("rvReveal");
   }
 
+
 function backRemoteViewingStep() {
-  // 기존 세션과 타겟을 유지한 채
-  // 관찰 화면에서 시작 화면으로 이동한다.
+
+  // 이전 단계에서는 TARGET CODE를 표시하지 않는다.
+  // 단, 진행 중인 서버 세션 자체는 유지한다.
   showRvStep("rvSetup");
 
   const targetCode = rvElement("rvTargetCode");
 
-  if (targetCode && currentRvTargetCode) {
-    targetCode.textContent = currentRvTargetCode;
+  if (targetCode) {
+    targetCode.textContent = "";
   }
 
   const panel = rvElement("remoteViewingTrainingPanel");
@@ -7274,6 +7286,7 @@ function backRemoteViewingStep() {
     panel.scrollTop = 0;
   }
 }
+
   
   async function cancelRemoteViewing() {
     if (currentRvSessionId) {

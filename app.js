@@ -3507,9 +3507,10 @@ async function labDashboardLoad(){
       })()
     }
 
+       ${labGrowthAdvancedAnalysis(rows)}
+
     <h3>가장 최근 검사 세부 결과</h3>
-
-
+    
     <p>
       목표 적중률
       <strong>${labDashboardMetric(hit,1,'%')}</strong>

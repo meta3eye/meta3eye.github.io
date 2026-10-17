@@ -5130,6 +5130,9 @@ async function finishV3FocusPerformanceTest(){
   `;
 
  
+   // 결과 화면을 항상 맨 위부터 표시
+  $('focusLabBody').scrollTop=0;
+
   focusLabSaving=true;
 
   let error=null;

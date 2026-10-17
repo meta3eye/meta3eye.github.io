@@ -5072,6 +5072,7 @@ async function finishV3FocusPerformanceTest(){
     ${labRenderAttentionMap()}
 
     <div class="lab-result">
+    <div class="lab-result">
       순수 수행점수
       <strong>${score}/100</strong>
 

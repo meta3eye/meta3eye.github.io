@@ -9126,6 +9126,360 @@ function senseLab31DetectionBalance(rows) {
 
   host.appendChild(panel);
 }
+
+  
+/* =========================================
+   SENSE LAB 3.2
+   GROWTH STABILITY ANALYSIS
+   Read-only / per mode
+========================================= */
+
+function senseLab32GrowthStability(rows) {
+
+  const host = $("senseGrowthContent");
+  if (!host) return;
+
+  $("senseLab32Growth")?.remove();
+
+  // 서버 조회 결과는 최신순이다.
+  const valid = (rows || []).filter(r =>
+    r &&
+    r.score !== null &&
+    Number.isFinite(Number(r.score))
+  );
+
+  const current = valid.slice(0, 3);
+  const previous = valid.slice(3, 6);
+
+  const panel = document.createElement("section");
+
+  panel.id = "senseLab32Growth";
+
+  panel.style.cssText = `
+    margin-top:20px;
+    padding:18px;
+    border:1px solid #52685e;
+    border-radius:12px;
+    line-height:1.8;
+  `;
+
+  if (current.length < 3 || previous.length < 3) {
+
+    panel.innerHTML = `
+      <h3>GROWTH STABILITY</h3>
+
+      <p class="muted">
+        동일 과정의 검사 기록이 최소 6회 필요합니다.
+      </p>
+
+      <p>
+        현재 ${valid.length}회 /
+        필요 6회
+      </p>
+
+      <p class="muted">
+        충분한 기록이 축적되기 전에는
+        성장 여부를 판정하지 않습니다.
+      </p>
+    `;
+
+    host.appendChild(panel);
+    return;
+  }
+
+  const sum = (list, key) =>
+    list.reduce(
+      (s, r) => s + Number(r[key] || 0),
+      0
+    );
+
+  const avg = (list, key) => {
+
+    const values = list
+      .map(r => r[key])
+      .filter(v =>
+        v !== null &&
+        v !== undefined &&
+        v !== "" &&
+        Number.isFinite(Number(v))
+      )
+      .map(Number);
+
+    return values.length
+      ? values.reduce((a,b)=>a+b,0)/values.length
+      : null;
+  };
+
+  const getMetrics = list => {
+
+    const hits = sum(list, "hits");
+    const misses = sum(list, "misses");
+    const fa = sum(list, "false_alarms");
+    const cr = sum(list, "correct_rejections");
+
+    return {
+
+      score: avg(list, "score"),
+
+      hitRate: hits + misses
+        ? hits / (hits + misses) * 100
+        : null,
+
+      falseRate: fa + cr
+        ? fa / (fa + cr) * 100
+        : null,
+
+      reaction: avg(
+        list,
+        "average_reaction_ms"
+      )
+    };
+  };
+
+  const a = getMetrics(previous);
+  const b = getMetrics(current);
+
+  const format = (v, unit) =>
+    v === null
+      ? "측정 불가"
+      : v.toFixed(1) + unit;
+
+  const compare = (
+    label,
+    key,
+    unit,
+    lowerBetter,
+    tolerance
+  ) => {
+
+    const oldValue = a[key];
+    const newValue = b[key];
+
+    if (oldValue === null || newValue === null) {
+
+      return `
+        <tr>
+          <td>${label}</td>
+          <td colspan="3">측정 기록 부족</td>
+        </tr>
+      `;
+    }
+
+    const delta = newValue - oldValue;
+
+    let status = "유지";
+
+    if (Math.abs(delta) > tolerance) {
+
+      const improved = lowerBetter
+        ? delta < 0
+        : delta > 0;
+
+      status = improved ? "개선" : "하락";
+    }
+
+    return `
+      <tr>
+        <td>${label}</td>
+        <td>${format(oldValue,unit)}</td>
+        <td>${format(newValue,unit)}</td>
+        <td>
+          ${delta > 0 ? "+" : ""}
+          ${delta.toFixed(1)}${unit}
+          · ${status}
+        </td>
+      </tr>
+    `;
+  };
+
+  /* 종합 판정 */
+
+  const scoreDelta =
+    a.score !== null && b.score !== null
+      ? b.score - a.score
+      : null;
+
+  const hitDelta =
+    a.hitRate !== null && b.hitRate !== null
+      ? b.hitRate - a.hitRate
+      : null;
+
+  const falseDelta =
+    a.falseRate !== null && b.falseRate !== null
+      ? b.falseRate - a.falseRate
+      : null;
+
+  const rtDelta =
+    a.reaction !== null && b.reaction !== null
+      ? b.reaction - a.reaction
+      : null;
+
+  let improved = 0;
+  let declined = 0;
+
+  const evaluate = (delta, tolerance, lowerBetter) => {
+
+    if (delta === null) return;
+
+    if (Math.abs(delta) <= tolerance) return;
+
+    const good = lowerBetter
+      ? delta < 0
+      : delta > 0;
+
+    if (good) improved++;
+    else declined++;
+  };
+
+  evaluate(scoreDelta, 3, false);
+  evaluate(hitDelta, 3, false);
+  evaluate(falseDelta, 3, true);
+  evaluate(rtDelta, 20, true);
+
+  let status = "STABLE";
+  let feedback =
+    "최근 수행은 이전 구간과 큰 차이가 없습니다. " +
+    "동일 조건에서 반복 측정을 유지하세요.";
+
+  if (improved >= 2 && declined === 0) {
+
+    status = "IMPROVING";
+
+    feedback =
+      "복수의 측정 항목에서 개선이 나타났습니다. " +
+      "현재 검사 조건을 유지하면서 변화가 지속되는지 확인하세요.";
+
+  } else if (declined >= 2 && improved === 0) {
+
+    status = "DECLINING";
+
+    feedback =
+      "복수의 측정 항목에서 수행 저하가 나타났습니다. " +
+      "피로도, 집중 상태, 검사 환경을 확인하고 재측정하세요.";
+
+  } else if (improved > 0 && declined > 0) {
+
+    status = "MIXED CHANGE";
+
+    feedback =
+      "일부 항목은 개선되었지만 다른 항목은 하락했습니다. " +
+      "반응속도를 높이는 과정에서 오반응이 증가했는지, " +
+      "신중한 판단으로 반응시간이 길어졌는지 확인하세요.";
+  }
+
+  panel.innerHTML = `
+
+    <h3>GROWTH STABILITY</h3>
+
+    <p class="muted">
+      최근 3회와 직전 3회 비교
+    </p>
+
+    <div style="
+      padding:15px;
+      border:1px solid #6ea58d;
+      border-radius:10px;
+      margin:15px 0;
+    ">
+
+      <small>CURRENT GROWTH STATUS</small>
+
+      <div style="
+        font-size:20px;
+        font-weight:bold;
+        color:#a9dfb7;
+      ">
+        ${status}
+      </div>
+
+    </div>
+
+    <div style="overflow-x:auto">
+
+      <table style="
+        width:100%;
+        border-collapse:collapse;
+        text-align:left;
+        font-size:12px;
+        min-width:440px;
+      ">
+
+        <thead>
+          <tr>
+            <th>측정 항목</th>
+            <th>직전 3회</th>
+            <th>최근 3회</th>
+            <th>변화</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${compare(
+            "수행점수",
+            "score",
+            "점",
+            false,
+            3
+          )}
+
+          ${compare(
+            "목표 적중률",
+            "hitRate",
+            "%",
+            false,
+            3
+          )}
+
+          ${compare(
+            "오반응률",
+            "falseRate",
+            "%",
+            true,
+            3
+          )}
+
+          ${compare(
+            "평균 반응시간",
+            "reaction",
+            "ms",
+            true,
+            20
+          )}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <div style="
+      margin-top:20px;
+      border-top:1px solid #52685e;
+      padding-top:15px;
+    ">
+
+      <strong>GROWTH INTERPRETATION</strong>
+
+      <p style="font-size:13px">
+        ${feedback}
+      </p>
+
+    </div>
+
+    <p style="
+      font-size:11px;
+      opacity:.6;
+      margin-top:15px;
+    ">
+      변화 판정은 최근 검사 기록의 비교 결과입니다.
+      장기적인 능력 향상을 확정하는 판정은 아닙니다.
+    </p>
+  `;
+
+  host.appendChild(panel);
+}
+
   
 async function senseLabDashboardRender(mode) {
   const content = $("senseGrowthContent");
@@ -9248,12 +9602,14 @@ async function senseLabDashboardRender(mode) {
       </p>
     `;
 
-        senseLab22Achievements(rows, mode);
+     senseLab22Achievements(rows, mode);
     senseLab23Performance(rows, mode);
 
-    // SENSE LAB 3.1 · 신호 탐지 균형 분석
+    // SENSE LAB 3.1
     senseLab31DetectionBalance(rows);
 
+    // SENSE LAB 3.2
+    senseLab32GrowthStability(rows);
 senseLabMakeCollapsible(
   "senseLab22Achievements",
   "ACHIEVEMENTS · 성취 기록",

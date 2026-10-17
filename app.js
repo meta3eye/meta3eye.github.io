@@ -7766,12 +7766,9 @@ function senseLabV1Install() {
     style="margin:18px 0">
   </div>
 
-  <div id="senseLabModeList"
-
-  <div id="senseLabModeList"
-    style="display:grid;gap:12px;margin:22px 0">
-  </div>
-
+ <div id="senseLabModeList"
+  style="display:grid;gap:12px;margin:22px 0">
+</div>
         <details id="senseLabV1Guide"
           style="
             border:1px solid #52685e;
@@ -8904,6 +8901,232 @@ background:${
 }
 
   
+/* =========================================
+   SENSE LAB 3.1
+   SIGNAL DETECTION BALANCE
+   Read-only analysis
+========================================= */
+
+function senseLab31DetectionBalance(rows) {
+
+  const host = $("senseGrowthContent");
+  if (!host) return;
+
+  $("senseLab31Balance")?.remove();
+
+  // 최신 검사 최대 10회
+  const recent = (rows || []).slice(0, 10);
+
+  if (!recent.length) return;
+
+  const sum = key => recent.reduce(
+    (total, row) => total + Number(row[key] || 0),
+    0
+  );
+
+  const hits = sum("hits");
+  const misses = sum("misses");
+  const falseAlarms = sum("false_alarms");
+  const correctRejections = sum("correct_rejections");
+
+  const targets = hits + misses;
+  const nonTargets = falseAlarms + correctRejections;
+
+  const hitRate = targets > 0
+    ? hits / targets * 100
+    : null;
+
+  const falseAlarmRate = nonTargets > 0
+    ? falseAlarms / nonTargets * 100
+    : null;
+
+  const correctRejectionRate = nonTargets > 0
+    ? correctRejections / nonTargets * 100
+    : null;
+
+  const missRate = targets > 0
+    ? misses / targets * 100
+    : null;
+
+  const format = value =>
+    value === null
+      ? "측정 불가"
+      : value.toFixed(1) + "%";
+
+  const bar = (label, value, color) => `
+    <div style="margin:15px 0">
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        font-size:13px;
+      ">
+        <span>${label}</span>
+        <strong>${format(value)}</strong>
+      </div>
+
+      <div style="
+        height:9px;
+        background:#293b35;
+        border-radius:20px;
+        overflow:hidden;
+        margin-top:7px;
+      ">
+        <div style="
+          width:${value === null ? 0 : Math.max(0,Math.min(100,value))}%;
+          height:100%;
+          background:${color};
+          border-radius:20px;
+        "></div>
+      </div>
+
+    </div>
+  `;
+
+  let type = "DATA REQUIRED";
+  let feedback = "추가 검사 기록이 필요합니다.";
+
+  if (hitRate !== null && falseAlarmRate !== null) {
+
+    if (hitRate >= 85 && falseAlarmRate <= 10) {
+
+      type = "BALANCED DETECTION";
+
+      feedback =
+        "실제 신호 탐지와 불필요한 반응 억제가 " +
+        "함께 안정적으로 나타났습니다. " +
+        "동일 조건에서 이 수행을 반복 유지하는 것이 다음 목표입니다.";
+
+    } else if (hitRate >= 80 && falseAlarmRate >= 25) {
+
+      type = "HIGH RESPONSE TENDENCY";
+
+      feedback =
+        "신호를 적극적으로 탐지하지만 " +
+        "신호가 없는 상황에서도 반응하는 경향이 있습니다. " +
+        "다음 검사에서는 무반응 판단의 정확도를 높여 보세요.";
+
+    } else if (hitRate < 60 && falseAlarmRate <= 10) {
+
+      type = "CAUTIOUS RESPONSE";
+
+      feedback =
+        "불필요한 반응은 적지만 실제 신호를 놓치는 비율이 높습니다. " +
+        "반응을 억제하는 것뿐 아니라 목표 신호를 정확히 포착하는 " +
+        "훈련도 필요합니다.";
+
+    } else if (hitRate < 60 && falseAlarmRate >= 25) {
+
+      type = "UNSTABLE DETECTION";
+
+      feedback =
+        "신호 누락과 오반응이 함께 나타납니다. " +
+        "검사 환경을 일정하게 유지하고 " +
+        "VISUAL 1부터 수행을 안정화하는 것이 좋습니다.";
+
+    } else {
+
+      type = "DEVELOPING BALANCE";
+
+      feedback =
+        "신호 탐지와 반응 억제 사이의 균형을 형성하는 단계입니다. " +
+        "점수뿐 아니라 적중률과 오반응률의 변화를 함께 관찰하세요.";
+    }
+  }
+
+  const panel = document.createElement("section");
+
+  panel.id = "senseLab31Balance";
+
+  panel.style.cssText = `
+    margin-top:20px;
+    padding:16px;
+    border:1px solid #52685e;
+    border-radius:12px;
+    line-height:1.8;
+  `;
+
+  panel.innerHTML = `
+
+    <h3>DETECTION BALANCE</h3>
+
+    <p style="font-size:12px;opacity:.7">
+      최근 최대 ${recent.length}회 검사 · 신호 탐지 균형
+    </p>
+
+    <div style="
+      padding:14px;
+      border:1px solid #6ea58d;
+      border-radius:10px;
+      margin:15px 0;
+    ">
+
+      <small>DETECTION PATTERN</small>
+
+      <div style="
+        font-size:19px;
+        font-weight:bold;
+        color:#a9dfb7;
+        margin-top:7px;
+      ">
+        ${type}
+      </div>
+
+    </div>
+
+    ${bar("목표 적중률 · HIT",hitRate,"#a9dfb7")}
+
+    ${bar("신호 누락률 · MISS",missRate,"#d5a17d")}
+
+    ${bar("오반응률 · FALSE ALARM",falseAlarmRate,"#e09b8d")}
+
+    ${bar("정확한 무반응률 · CORRECT REJECTION",
+      correctRejectionRate,"#8eb9d8")}
+
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin:20px 0;
+      font-size:13px;
+    ">
+
+      <div>정확한 감지: <strong>${hits}</strong></div>
+      <div>신호 누락: <strong>${misses}</strong></div>
+      <div>잘못된 반응: <strong>${falseAlarms}</strong></div>
+      <div>정확한 무반응: <strong>${correctRejections}</strong></div>
+
+    </div>
+
+    <div style="
+      border-top:1px solid #52685e;
+      padding-top:15px;
+    ">
+
+      <strong>NEXT TRAINING GUIDE</strong>
+
+      <p style="font-size:13px">
+        ${feedback}
+      </p>
+
+    </div>
+
+    <p style="
+      font-size:11px;
+      opacity:.6;
+      margin-top:15px;
+    ">
+      이 분석은 저장된 검사 기록의 관찰 가능한 수행 패턴을
+      설명합니다. 개인의 초감각적 능력이나 영적 상태를
+      판정하는 결과는 아닙니다.
+    </p>
+
+  `;
+
+  host.appendChild(panel);
+}
+  
 async function senseLabDashboardRender(mode) {
   const content = $("senseGrowthContent");
 
@@ -9025,8 +9248,11 @@ async function senseLabDashboardRender(mode) {
       </p>
     `;
 
-    senseLab22Achievements(rows, mode);
-senseLab23Performance(rows, mode);
+        senseLab22Achievements(rows, mode);
+    senseLab23Performance(rows, mode);
+
+    // SENSE LAB 3.1 · 신호 탐지 균형 분석
+    senseLab31DetectionBalance(rows);
 
 senseLabMakeCollapsible(
   "senseLab22Achievements",

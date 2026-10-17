@@ -6726,8 +6726,12 @@ show("dailyQuestRoom", true);
      REMOTE VIEWING
   ========================= */
 
-  let currentRvSessionId = null;
+   let currentRvSessionId = null;
   let currentRvTargetCode = null;
+
+  // 서버 제출 중 중복 실행 방지
+  let rvSubmitting = false;
+  let rvSubmitted = false;
 
   const rvFieldIds = [
     "rvFormDescription",
@@ -6860,11 +6864,20 @@ function openRemoteViewing() {
   const panel = $("remoteViewingTrainingPanel");
   if (!panel) return;
 
-  currentRvSessionId = null;
+   currentRvSessionId = null;
   currentRvTargetCode = null;
 
-  resetRvFields();
+  rvSubmitting = false;
+  rvSubmitted = false;
 
+  const submitButton = rvElement("rvSubmitButton");
+
+  if (submitButton) {
+    submitButton.disabled = false;
+    submitButton.textContent = "관찰 기록 제출";
+  }
+
+  resetRvFields();
   setRvMessage("rvMessage", "");
   setRvMessage("rvObservationMessage", "");
 
@@ -7019,6 +7032,17 @@ function openRemoteViewing() {
   }
 
   async function submitRemoteViewingSession() {
+
+    if (rvSubmitting) return;
+
+    if (rvSubmitted) {
+      setRvMessage(
+        "rvObservationMessage",
+        "이미 제출된 기록입니다. 타겟 공개 결과를 확인하세요."
+      );
+      return;
+    }
+
     if (!currentRvSessionId) {
       setRvMessage(
         "rvObservationMessage",
@@ -7049,13 +7073,16 @@ function openRemoteViewing() {
         "rvSubmitButton"
       );
 
+    rvSubmitting = true;
+
     if (button) {
       button.disabled = true;
+      button.textContent = "제출 처리 중...";
     }
 
     setRvMessage(
       "rvObservationMessage",
-      "기록을 저장하고 타겟을 공개하고 있습니다..."
+      "기록을 서버에 제출하고 있습니다. 잠시 기다려 주세요."
     );
 
     const {
@@ -7070,9 +7097,12 @@ function openRemoteViewing() {
       }
     );
 
+      rvSubmitting = false;
+
     if (error) {
       if (button) {
         button.disabled = false;
+        button.textContent = "관찰 기록 제출";
       }
 
       console.error(
@@ -7093,6 +7123,11 @@ function openRemoteViewing() {
       Array.isArray(data)
         ? data[0]
         : data;
+
+    // 서버가 제출 결과를 반환했다면 재제출을 잠근다.
+    if (result && result.storage_path) {
+      rvSubmitted = true;
+    }
 
     if (
       !result ||
@@ -7212,8 +7247,9 @@ function openRemoteViewing() {
       }
     );
 
-    if (button) {
-      button.disabled = false;
+      if (button) {
+      button.disabled = true;
+      button.textContent = "제출 완료";
     }
 
     currentRvSessionId = null;

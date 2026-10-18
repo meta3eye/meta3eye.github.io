@@ -6995,19 +6995,7 @@ function openRemoteViewing() {
   
   async function startRemoteViewingSession() {
 
-        // 복구 대기 중에는 새 타겟을 만들지 않는다.
-    if (
-      rvReadRecovery()?.sessionId &&
-      !currentRvSessionId
-    ) {
-      setRvMessage(
-        "rvMessage",
-        "이전 세션의 결과 확인이 필요합니다. 먼저 복구 버튼을 이용하세요."
-      );
-
-      rvShowRecoveryButton();
-      return;
-    }
+        
  
   // 진행 중인 세션이 있으면 기존 타겟을 복원한다.
   // 새로운 서버 세션을 중복 생성하지 않는다.

@@ -6978,6 +6978,18 @@ function openRemoteViewing() {
   setRvMessage("rvMessage", "");
   setRvMessage("rvObservationMessage", "");
 
+  // RV 3.3: 재입장 시 이전 제출 버튼 상태 초기화
+  rvSubmitting = false;
+
+  const submitButton = rvElement("rvSubmitButton");
+
+  if (submitButton) {
+    submitButton.disabled = false;
+    submitButton.textContent = "관찰 기록 제출";
+  }
+
+  setRvMessage("rvObservationMessage", "");
+  
     showRvStep("rvSetup");
 
   // 재입장 시 TARGET CODE는 계속 비공개로 유지

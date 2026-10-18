@@ -6318,12 +6318,19 @@ renderRankPromotion();
 
 renderV3Evaluation();
 
-installAbilityAnalysisRoom();
-coreInstall();    
-installDailyQuestRoom();
-installAwakeningAnalysisRoom();
-installPlayerRecordRoom();
-installMainLogoutButton();
+
+    // 메인 기능 및 독립 훈련실 설치
+    installAbilityAnalysisRoom();
+    installDailyQuestRoom();
+    installAwakeningAnalysisRoom();
+    installPlayerRecordRoom();
+
+    // 개인 성장 분석
+    coreInstall();
+
+    // 메인 화면의 마지막 요소
+    installMainLogoutButton();
+
 }
   
   /* =========================

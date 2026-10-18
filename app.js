@@ -7250,21 +7250,7 @@ function openRemoteViewing() {
       showRvStep("rvSetup");
       rvShowRecoveryButton();
       return;
-    }
-
-      console.error(
-        "submit_rv_session failed",
-        error
-      );
-
-      setRvMessage(
-        "rvObservationMessage",
-        "제출 실패: " +
-          error.message
-      );
-
-      return;
-    }
+    }  
 
     const result =
       Array.isArray(data)

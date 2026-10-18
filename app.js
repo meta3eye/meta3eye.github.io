@@ -6173,6 +6173,10 @@ function formatV3Date(value) {
   }
 
 
+  /* =========================
+     MAIN RENDER
+  ========================= */
+  
   function render() {
     const p = state.profile;
     if (!p) return;

@@ -7068,11 +7068,15 @@ function openRemoteViewing() {
       return;
     }
 
-    currentRvSessionId =
-      session.session_id;
+       currentRvSessionId = session.session_id;
+    currentRvTargetCode = session.target_code;
 
-    currentRvTargetCode =
-      session.target_code;
+    rvSubmitting = false;
+    rvSubmitted = false;
+    rvRecoveryId = null;
+
+    // 세션 ID를 먼저 보존한다.
+    rvSaveRecovery(currentRvSessionId);
 
     if (
       rvElement(

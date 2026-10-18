@@ -7184,7 +7184,10 @@ function openRemoteViewing() {
         "rvSubmitButton"
       );
 
-    rvSubmitting = true;
+      rvSubmitting = true;
+
+    rvRecoveryId = currentRvSessionId;
+    rvSaveRecovery(rvRecoveryId, observation);
 
     if (button) {
       button.disabled = true;

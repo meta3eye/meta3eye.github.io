@@ -1544,7 +1544,7 @@ function v3EvaluateAbilities(profile, logs) {
 
     const values =
       Object.values(abilities || {})
-        .map(x => Number(x.score))
+       .map(x => x.score == null ? null : Number(x.score))
         .filter(Number.isFinite);
 
     if (!values.length) {

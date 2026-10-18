@@ -7213,11 +7213,23 @@ function openRemoteViewing() {
 
       rvSubmitting = false;
 
-    if (error) {
+       if (error) {
       if (button) {
-        button.disabled = false;
-        button.textContent = "관찰 기록 제출";
+        button.disabled = true;
+        button.textContent = "서버 결과 확인 필요";
       }
+
+      console.error("submit_rv_session failed", error);
+
+      setRvMessage(
+        "rvObservationMessage",
+        "서버 응답을 확인하지 못했습니다. 중복 제출하지 말고 이전 제출 결과 복구를 이용하세요."
+      );
+
+      showRvStep("rvSetup");
+      rvShowRecoveryButton();
+      return;
+    }
 
       console.error(
         "submit_rv_session failed",

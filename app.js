@@ -7487,19 +7487,21 @@ function backRemoteViewingStep() {
   }
 
   function finishRemoteViewing() {
-    currentRvSessionId = null;
-    currentRvTargetCode = null;
 
-    show(
-      "remoteViewingTrainingPanel",
-      false
-    );
+  // 사용자가 결과 확인을 마쳤을 때만 임시 기록 정리
+  rvClearRecovery();
 
-    show("gamePanel", true);
+  currentRvSessionId = null;
+  currentRvTargetCode = null;
 
-    render();
-  }
+  rvSubmitting = false;
+  rvSubmitted = false;
 
+  show("remoteViewingTrainingPanel", false);
+  show("gamePanel", true);
+
+  render();
+}
   /* =========================
      EVENT BINDINGS
   ========================= */

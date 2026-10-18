@@ -7364,6 +7364,133 @@ function openRemoteViewing() {
     showRvStep("rvReveal");
   }
 
+  
+async function rvDisplayRevealedResult(result, observation) {
+
+  if (!result?.storage_path) {
+    throw new Error("공개할 이미지 경로가 없습니다.");
+  }
+
+  const { data: signed, error } = await client.storage
+    .from("rv-images")
+    .createSignedUrl(result.storage_path, 600);
+
+  if (error || !signed?.signedUrl) {
+    throw error || new Error("이미지 URL 발급 실패");
+  }
+
+  const image = rvElement("rvTargetImage");
+
+  if (image) {
+    image.src = signed.signedUrl;
+  }
+
+  const code = rvElement("rvRevealedTargetCode");
+  if (code) code.textContent = result.target_code || "—";
+
+  const title = rvElement("rvTargetTitle");
+  if (title) {
+    title.textContent =
+      result.source_title || "REMOTE VIEWING TARGET";
+  }
+
+  const fields = {
+    Form: "p_form_description",
+    Color: "p_color_description",
+    Texture: "p_texture_description",
+    Temperature: "p_temperature_description",
+    Movement: "p_movement_description",
+    Environment: "p_environment_description",
+    Free: "p_free_description"
+  };
+
+  Object.entries(fields).forEach(([name, key]) => {
+    const el = rvElement("rvResult" + name);
+
+    if (el) {
+      el.textContent = observation?.[key] || "—";
+    }
+  });
+
+  rvSubmitted = true;
+  rvSubmitting = false;
+
+  const button = rvElement("rvSubmitButton");
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "제출 완료";
+  }
+
+  currentRvSessionId = null;
+  currentRvTargetCode = null;
+
+  showRvStep("rvReveal");
+}
+
+async function recoverRemoteViewingResult() {
+
+  if (rvRecoveryBusy || rvSubmitting) return;
+
+  const saved = rvReadRecovery();
+  const sessionId = rvRecoveryId || saved?.sessionId;
+
+  if (!sessionId) {
+    setRvMessage("rvMessage", "복구할 세션이 없습니다.");
+    return;
+  }
+
+  rvRecoveryBusy = true;
+
+  const button = rvElement("rvRecoveryButton");
+  if (button) button.disabled = true;
+
+  setRvMessage("rvMessage", "서버의 확정 기록을 확인하고 있습니다...");
+
+  try {
+
+    const { data, error } = await client.rpc(
+      "recover_rv_session",
+      { p_session_id: sessionId }
+    );
+
+    if (error) throw error;
+
+    const result = Array.isArray(data) ? data[0] : data;
+
+    if (!result?.storage_path) {
+      throw new Error("확정된 공개 결과를 찾지 못했습니다.");
+    }
+
+    await rvDisplayRevealedResult(
+      result,
+      saved?.observation || readRvObservation()
+    );
+
+    rvRecoveryId = sessionId;
+
+    setRvMessage("rvMessage", "");
+    setRvMessage("rvObservationMessage", "");
+
+  } catch (error) {
+
+    console.error("RV recovery failed", error);
+
+    setRvMessage(
+      "rvMessage",
+      "결과 복구 실패: " + error.message
+    );
+
+    // 실패해도 세션 식별자를 삭제하지 않는다.
+
+  } finally {
+
+    rvRecoveryBusy = false;
+
+    if (button) button.disabled = false;
+  }
+}
+
 
 function backRemoteViewingStep() {
 

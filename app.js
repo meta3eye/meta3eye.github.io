@@ -6224,6 +6224,169 @@ function formatV3Date(value) {
   }
 
 
+/* =========================================
+   SPIRIT CORE 1.1
+   FOCUS PERFORMANCE ANALYSIS
+========================================= */
+
+async function coreRenderFocusPerformance() {
+  const output = $("coreFocusPerformance");
+
+  if (!output || !state.user?.id) return;
+
+  const userId = state.user.id;
+
+  output.textContent = "집중력 수행 기록 분석 중...";
+
+  const { data, error } = await client
+    .from("focus_lab_results")
+    .select(
+      "id,mode,total_trials,score,completed_at"
+    )
+    .eq("user_id", userId)
+    .order("completed_at", { ascending: false })
+    .limit(1000);
+
+  if (state.user?.id !== userId) return;
+
+  if (error) {
+    output.textContent =
+      "집중력 기록 조회 실패: " + error.message;
+    return;
+  }
+
+  const groups = new Map();
+
+  for (const row of data || []) {
+    if (row.score == null) continue;
+
+    const score = Number(row.score);
+
+    if (
+      !Number.isFinite(score) ||
+      score < 0 ||
+      score > 100
+    ) continue;
+
+    const key =
+      String(row.mode) + "|" +
+      String(row.total_trials);
+
+    if (!groups.has(key)) groups.set(key, []);
+
+    groups.get(key).push({
+      ...row,
+      score
+    });
+  }
+
+  if (!groups.size) {
+    output.textContent =
+      "아직 유효한 집중력 수행 기록이 없습니다.";
+    return;
+  }
+
+  const average = values =>
+    values.reduce((a, b) => a + b, 0) /
+    values.length;
+
+  const escapeHtml = value =>
+    String(value).replace(/[&<>"']/g, char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]);
+
+  const sections = [];
+
+  for (const [key, rows] of groups) {
+    const [mode, trials] = key.split("|");
+
+    const recent = rows
+      .slice(0, 5)
+      .map(row => row.score);
+
+    const previous = rows
+      .slice(5, 10)
+      .map(row => row.score);
+
+    const enough = recent.length >= 5;
+
+    const recentAvg = enough
+      ? average(recent)
+      : null;
+
+    const previousAvg = previous.length === 5
+      ? average(previous)
+      : null;
+
+    let trend = "비교 자료 부족";
+
+    if (recentAvg !== null && previousAvg !== null) {
+      const difference = recentAvg - previousAvg;
+
+      trend =
+        difference > 2 ? "상승" :
+        difference < -2 ? "하락" :
+        "유지";
+
+      trend +=
+        " (" +
+        (difference >= 0 ? "+" : "") +
+        difference.toFixed(1) +
+        "점)";
+    }
+
+    let stability = "DATA REQUIRED";
+
+    if (enough) {
+      const variance = average(
+        recent.map(score =>
+          Math.pow(score - recentAvg, 2)
+        )
+      );
+
+      stability =
+        "표준편차 " +
+        Math.sqrt(variance).toFixed(1) +
+        "점";
+    }
+
+    sections.push(`
+      <div class="spirit-core-card">
+        <h3>
+          ${escapeHtml(mode)} · ${escapeHtml(trials)}문항
+        </h3>
+
+        <p>유효 기록: ${rows.length}회</p>
+
+        <p>
+          최근 수행 평균:
+          <strong>
+            ${enough
+              ? recentAvg.toFixed(1) + "점"
+              : "DATA REQUIRED"}
+          </strong>
+        </p>
+
+        <p>성장 추세: ${trend}</p>
+        <p>점수 안정성: ${stability}</p>
+
+        <p class="spirit-core-note">
+          최근 5회 기준.
+          성장 비교에는 총 10회 이상의
+          동일 조건 기록이 필요합니다.
+        </p>
+      </div>
+    `);
+  }
+
+  output.innerHTML = sections.join("");
+}
+
+  
   /* =========================
      MAIN RENDER
   ========================= */

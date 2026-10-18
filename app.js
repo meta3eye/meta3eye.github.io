@@ -2324,73 +2324,111 @@ if (room.parentElement !== document.body) {
 ========================================= */
 
 
+
+/* =========================================
+   MAIN LOGOUT · TOP AND BOTTOM
+========================================= */
+
 function installMainLogoutButton() {
-  const gamePanel = $("gamePanel");
-  const originalLogout = $("logoutBtn");
+  const panel = $("gamePanel");
+  const original = $("logoutBtn");
 
-  if (!gamePanel || !originalLogout) return;
+  if (!panel || !original) return;
 
-  // 기존 상단 버튼 유지
-  const topButton = $("mainLogoutBtn");
+  // 상단 버튼: HTML에 없어도 자동 생성
+  let top = $("mainLogoutBtn");
 
-  if (topButton && topButton.dataset.installed !== "true") {
-    topButton.dataset.installed = "true";
-    topButton.addEventListener("click", () => {
-      originalLogout.click();
-    });
+  if (!top) {
+    top = document.createElement("button");
+    top.id = "mainLogoutBtn";
+    top.type = "button";
+    top.className = "secondary";
+    top.textContent = "로그아웃";
   }
 
-  // 첫 화면 하단 버튼 추가
+  let topArea = $("mainLogoutTopArea");
+
+  if (!topArea) {
+    topArea = document.createElement("div");
+    topArea.id = "mainLogoutTopArea";
+  }
+
+  topArea.appendChild(top);
+  panel.prepend(topArea);
+
+  // 하단 버튼
   let footer = $("mainLogoutFooter");
 
   if (!footer) {
     footer = document.createElement("footer");
     footer.id = "mainLogoutFooter";
+  }
 
-    footer.innerHTML = `
-      <div class="main-logout-divider"></div>
-      <button
-        id="bottomLogoutBtn"
-        type="button"
-        class="secondary"
-      >
-        로그아웃
-      </button>
+  let bottom = $("bottomLogoutBtn");
+
+  if (!bottom) {
+    bottom = document.createElement("button");
+    bottom.id = "bottomLogoutBtn";
+    bottom.type = "button";
+    bottom.className = "secondary";
+    bottom.textContent = "로그아웃";
+  }
+
+  footer.appendChild(bottom);
+  panel.appendChild(footer);
+
+  // 두 버튼 모두 기존 로그아웃 기능을 사용
+  [top, bottom].forEach(button => {
+    button.classList.remove("hidden");
+
+    if (button.dataset.installed === "true") return;
+
+    button.dataset.installed = "true";
+    button.addEventListener("click", () => original.click());
+  });
+
+  // 스타일은 한 번만 설치
+  if (!$("mainLogoutFooterStyle")) {
+    const style = document.createElement("style");
+    style.id = "mainLogoutFooterStyle";
+
+    style.textContent = `
+      #mainLogoutTopArea {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0 0 20px;
+      }
+
+      #mainLogoutBtn {
+        width: auto;
+        min-width: 110px;
+        padding: 10px 18px;
+        cursor: pointer;
+      }
+
+      #mainLogoutFooter {
+        width: 100%;
+        margin-top: 48px;
+        padding: 28px 0 36px;
+        border-top: 1px solid rgba(160,170,190,.22);
+        text-align: center;
+        box-sizing: border-box;
+      }
+
+      #bottomLogoutBtn {
+        display: block;
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+        padding: 13px 24px;
+        cursor: pointer;
+      }
     `;
 
-    if (!$("mainLogoutFooterStyle")) {
-      const style = document.createElement("style");
-      style.id = "mainLogoutFooterStyle";
-
-      style.textContent = `
-        #mainLogoutFooter {
-          width: 100%;
-          box-sizing: border-box;
-          margin-top: 48px;
-          padding: 24px 0 36px;
-          text-align: center;
-        }
-
-        #mainLogoutFooter .main-logout-divider {
-          height: 1px;
-          background: rgba(160,170,190,.22);
-          margin-bottom: 28px;
-        }
-
-        #bottomLogoutBtn {
-          display: block;
-          width: 100%;
-          max-width: 280px;
-          margin: 0 auto;
-          padding: 13px 24px;
-          border-radius: 10px;
-          cursor: pointer;
-        }
-      `;
-
-      document.head.appendChild(style);
-    }
+    document.head.appendChild(style);
   }
+}
+
 
   // 메인 화면의 맨 마지막 요소로 유지
   gamePanel.appendChild(footer);

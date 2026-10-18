@@ -7271,116 +7271,30 @@ function openRemoteViewing() {
       return;
     }
 
-    const {
-      data: signed,
-      error: signedError
-    } = await client.storage
-      .from("rv-images")
-      .createSignedUrl(
-        result.storage_path,
-        600
+    
+    try {
+
+      await rvDisplayRevealedResult(
+        result,
+        observation
       );
 
-    if (
-      signedError ||
-      !signed?.signedUrl
-    ) {
-      if (button) {
-        button.disabled = false;
-      }
+    } catch (error) {
 
-      console.error(
-        "Signed URL creation failed",
-        signedError
-      );
+      console.error("RV reveal failed", error);
+
+      // 제출은 이미 확정되었으므로 재제출하지 않는다.
+      rvSubmitted = true;
 
       setRvMessage(
         "rvObservationMessage",
-        "타겟은 공개되었지만 이미지를 불러오지 못했습니다. 다시 시도하세요."
+        "관찰 기록은 확정되었습니다. 이미지 공개에 실패했으므로 기존 결과를 복구하세요."
       );
 
+      showRvStep("rvSetup");
+      rvShowRecoveryButton();
       return;
     }
-
-    if (
-      rvElement(
-        "rvRevealedTargetCode"
-      )
-    ) {
-      rvElement(
-        "rvRevealedTargetCode"
-      ).textContent =
-        result.target_code ||
-        currentRvTargetCode;
-    }
-
-    if (
-      rvElement(
-        "rvTargetTitle"
-      )
-    ) {
-      rvElement(
-        "rvTargetTitle"
-      ).textContent =
-        result.source_title ||
-        "REMOTE VIEWING TARGET";
-    }
-
-    const image =
-      rvElement(
-        "rvTargetImage"
-      );
-
-    if (image) {
-      image.onerror = () =>
-        setRvMessage(
-          "rvObservationMessage",
-          "이미지를 불러오지 못했습니다. 잠시 후 다시 시도하세요."
-        );
-
-      image.src =
-        signed.signedUrl;
-    }
-
-    const resultFields = {
-      Form: "form_description",
-      Color: "color_description",
-      Texture: "texture_description",
-      Temperature:
-        "temperature_description",
-      Movement:
-        "movement_description",
-      Environment:
-        "environment_description",
-      Free: "free_description"
-    };
-
-    Object.entries(
-      resultFields
-    ).forEach(
-      ([name, key]) => {
-        const element =
-          rvElement(
-            "rvResult" + name
-          );
-
-        if (element) {
-          element.textContent =
-            observation[
-              "p_" + key
-            ] || "—";
-        }
-      }
-    );
-
-      if (button) {
-      button.disabled = true;
-      button.textContent = "제출 완료";
-    }
-
-    currentRvSessionId = null;
-
-    showRvStep("rvReveal");
   }
 
   

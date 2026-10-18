@@ -177,6 +177,27 @@
 
     if (!user) {
       state.profile = null;
+      
+// 로그아웃 시 메인 화면 밖의 독립 화면도 모두 닫는다.
+[
+  "playerRecordRoom",
+  "abilityAnalysisRoom",
+  "awakeningAnalysisRoom",
+  "dailyQuestRoom",
+  "spiritCoreRoom",
+  "focusTrainingPanel",
+  "senseTrainingPanel",
+  "remoteViewingTrainingPanel",
+  "focusLabPanel"
+].forEach(id => show(id, false));
+
+// 독립 LAB 화면이 별도 표시 속성을 사용하므로 함께 초기화
+const senseLab = $("senseLabV1Panel");
+if (senseLab) senseLab.style.display = "none";
+
+// 로그인 화면으로 복귀
+show("assessmentPanel", false);
+
 
       show("authPanel", true);
       show("startPanel", false);

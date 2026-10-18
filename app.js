@@ -5832,9 +5832,346 @@ function formatV3Date(value) {
     day: "numeric"
   });
 }
+ 
   /* =========================
-     MAIN RENDER
+     SPIRIT CORE 1.0
+     기존 훈련 기록 기반 읽기 전용 분석
   ========================= */
+
+  const CORE_CODES = Object.keys(V3_TRAINING_MAP);
+  const CORE_DAY = 86400000;
+  let coreBusy = false;
+
+  function coreDate(log) {
+    const value = log?.completed_at || log?.created_at;
+    const time = value ? new Date(value).getTime() : NaN;
+
+    return Number.isFinite(time) ? time : null;
+  }
+
+  function coreCount(logs, days, now) {
+    return logs.filter(log => {
+      const time = coreDate(log);
+
+      return (
+        time !== null &&
+        time <= now &&
+        time >= now - days * CORE_DAY
+      );
+    }).length;
+  }
+
+  function coreInstall() {
+    if (!$("gamePanel") || $("spiritCoreEntry")) return;
+
+    const entry = document.createElement("section");
+    entry.id = "spiritCoreEntry";
+    entry.className = "panel";
+
+    entry.innerHTML = `
+      <h2>SPIRIT CORE</h2>
+      <p class="muted">
+        훈련 기록 · 최근 7일/30일 · 다음 훈련 제안
+      </p>
+      <button type="button" id="spiritCoreOpen">
+        개인 훈련 분석 보기 →
+      </button>
+    `;
+
+    $("gamePanel").appendChild(entry);
+
+    const room = document.createElement("section");
+    room.id = "spiritCoreRoom";
+    room.className = "hidden";
+
+    room.innerHTML = `
+      <div class="spirit-core-inner">
+        <div class="spirit-core-head">
+          <h2>SPIRIT CORE 1.0</h2>
+          <button
+            type="button"
+            class="secondary"
+            id="spiritCoreClose"
+          >
+            게임으로 돌아가기
+          </button>
+        </div>
+
+        <div id="spiritCoreContent" role="status">
+          기록을 불러올 준비가 되었습니다.
+        </div>
+
+        <button
+          type="button"
+          class="secondary"
+          id="spiritCoreRefresh"
+        >
+          기록 새로고침
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(room);
+
+    const style = document.createElement("style");
+
+    style.textContent = `
+      #spiritCoreRoom:not(.hidden) {
+        position: fixed;
+        inset: 0;
+        z-index: 12000;
+        overflow-y: auto;
+        background: #0b1119;
+        padding: 26px 16px 65px;
+        box-sizing: border-box;
+      }
+
+      #spiritCoreRoom.hidden {
+        display: none !important;
+      }
+
+      .spirit-core-inner {
+        max-width: 860px;
+        margin: auto;
+      }
+
+      .spirit-core-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+      }
+
+      .spirit-core-grid {
+        display: grid;
+        grid-template-columns:
+          repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+
+      .spirit-core-card {
+        border: 1px solid #657387;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .spirit-core-card strong {
+        display: block;
+        font-size: 24px;
+        margin-top: 8px;
+      }
+
+      .spirit-core-note {
+        opacity: .75;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      #spiritCoreEntry {
+        border: 1px solid #8b9bba;
+        border-radius: 16px;
+        margin: 22px 0;
+        padding: 22px;
+      }
+
+      #spiritCoreOpen {
+        width: 100%;
+        margin-top: 12px;
+      }
+    `;
+
+    document.head.appendChild(style);
+
+    $("spiritCoreOpen").addEventListener("click", () => {
+      show("spiritCoreRoom", true);
+      coreRender();
+    });
+
+    $("spiritCoreClose").addEventListener(
+      "click",
+      () => show("spiritCoreRoom", false)
+    );
+
+    $("spiritCoreRefresh").addEventListener(
+      "click",
+      coreRender
+    );
+  }
+
+  async function coreRender() {
+    if (coreBusy || !state.user?.id) return;
+
+    const userId = state.user.id;
+    const output = $("spiritCoreContent");
+
+    if (!output) return;
+
+    coreBusy = true;
+
+    output.textContent =
+      "기존 훈련 기록을 분석하고 있습니다...";
+
+    try {
+      const logs = [];
+      let complete = true;
+
+      for (let start = 0; start < 10000; start += 1000) {
+        const { data, error } = await client
+          .from("quest_logs")
+          .select("*")
+          .eq("user_id", userId)
+          .order("completed_at", { ascending: false })
+          .range(start, start + 999);
+
+        if (error) throw error;
+
+        logs.push(...(data || []));
+
+        if (!data || data.length < 1000) break;
+
+        if (start === 9000) complete = false;
+      }
+
+      if (state.user?.id !== userId) return;
+
+      const relevant = logs.filter(
+        x => CORE_CODES.includes(x.quest_code)
+      );
+
+      const now = Date.now();
+
+      const seven = coreCount(relevant, 7, now);
+      const thirty = coreCount(relevant, 30, now);
+
+      const priorSeven = relevant.filter(x => {
+        const t = coreDate(x);
+
+        return (
+          t !== null &&
+          t < now - 7 * CORE_DAY &&
+          t >= now - 14 * CORE_DAY
+        );
+      }).length;
+
+      const abilities = ABILITY_KEYS.map(key => {
+        const matching = relevant.filter(
+          x => V3_TRAINING_MAP[x.quest_code]?.includes(key)
+        );
+
+        return {
+          key,
+          label: ABILITY_LABELS[key],
+          count: matching.length,
+          recent: coreCount(matching, 30, now)
+        };
+      });
+
+      const sorted = [...abilities].sort(
+        (a, b) =>
+          a.recent - b.recent ||
+          a.count - b.count
+      );
+
+      const next = sorted[0];
+
+      const recommendation = !relevant.length
+        ? "첫 훈련을 완료하면 실제 기록에 기반한 제안을 시작합니다."
+        : `${next.label} 관련 훈련의 최근 기록이 상대적으로 적습니다. 해당 영역의 훈련을 다음 목표로 고려하세요.`;
+
+      const card = (name, value, detail) => `
+        <div class="spirit-core-card">
+          <span>${name}</span>
+          <strong>${value}</strong>
+          <span class="spirit-core-note">${detail}</span>
+        </div>
+      `;
+
+      output.innerHTML = `
+        <p class="spirit-core-note">
+          기존 quest_logs를 읽기만 합니다.
+          이 수치는 훈련 참여 기록이며
+          초감각 능력의 검증 점수가 아닙니다.
+        </p>
+
+        <div class="spirit-core-grid">
+          ${card(
+            "분석 대상 훈련",
+            relevant.length + "회",
+            "알려진 훈련 코드 기준"
+          )}
+
+          ${card(
+            "최근 7일",
+            seven + "회",
+            "직전 7일 " + priorSeven + "회"
+          )}
+
+          ${card(
+            "최근 30일",
+            thirty + "회",
+            "완료 시각 기준"
+          )}
+
+          ${card(
+            "기록 상태",
+            relevant.length >= 10
+              ? "패턴 관찰 가능"
+              : "자료 축적 중",
+            "10회는 표시 기준이며 능력 판정 기준이 아닙니다."
+          )}
+        </div>
+
+        <h3>영역별 훈련 참여</h3>
+
+        <div class="spirit-core-grid">
+          ${abilities.map(a =>
+            card(
+              a.label,
+              a.count + "회",
+              "최근 30일 " + a.recent + "회"
+            )
+          ).join("")}
+        </div>
+
+        <div class="spirit-core-card">
+          <h3>다음 훈련 제안</h3>
+          <p id="spiritCoreAdvice"></p>
+        </div>
+
+        <p class="spirit-core-note">
+          ${
+            complete
+              ? "조회 범위: 저장된 훈련 기록"
+              : "기록이 10,000건 이상입니다. 최신 10,000건만 집계했습니다."
+          }
+
+          · 훈련 유형 하나가 여러 영역에 연결되므로
+          영역별 합계는 총 기록과 다를 수 있습니다.
+
+          정확도·일관성·독립 검증은 아직 미측정입니다.
+        </p>
+      `;
+
+      $("spiritCoreAdvice").textContent = recommendation;
+
+    } catch (error) {
+      console.error(
+        "[SPIRIT CORE] analysis failed:",
+        error
+      );
+
+      output.textContent =
+        "분석 기록 조회 실패: " +
+        (error?.message || "알 수 없는 오류");
+
+    } finally {
+      coreBusy = false;
+    }
+  }
+
 
   function render() {
     const p = state.profile;

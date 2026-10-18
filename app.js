@@ -7080,13 +7080,14 @@ function openRemoteViewing() {
        currentRvSessionId = session.session_id;
     currentRvTargetCode = session.target_code;
 
-    rvSubmitting = false;
+       rvSubmitting = false;
     rvSubmitted = false;
-    rvRecoveryId = null;
 
-    // 세션 ID를 먼저 보존한다.
+    // 새 세션 생성이 성공했을 때만 이전 임시 정보 정리
+    rvClearRecovery();
+
+    rvRecoveryId = currentRvSessionId;
     rvSaveRecovery(currentRvSessionId);
-
     if (
       rvElement(
         "rvObservationTargetCode"

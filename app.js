@@ -6283,6 +6283,7 @@ renderRankPromotion();
 renderV3Evaluation();
 
 installAbilityAnalysisRoom();
+coreInstall();    
 installDailyQuestRoom();
 installAwakeningAnalysisRoom();
 installPlayerRecordRoom();

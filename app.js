@@ -2297,47 +2297,83 @@ if (room.parentElement !== document.body) {
    MAIN LOGOUT BUTTON
 ========================================= */
 
-function installMainLogoutButton() {
 
-  const button = $("mainLogoutBtn");
+/* =========================================
+   MAIN SCREEN · BOTTOM LOGOUT
+========================================= */
+
+function installMainLogoutButton() {
   const gamePanel = $("gamePanel");
   const originalLogout = $("logoutBtn");
 
-  if (!button || !gamePanel || !originalLogout) return;
+  if (!gamePanel || !originalLogout) return;
 
-  // 로그인 화면에서는 숨기고 게임 화면에서만 표시
-  const syncVisibility = () => {
-    button.classList.toggle(
-      "hidden",
-      gamePanel.classList.contains("hidden")
-    );
-  };
+  let footer = $("mainLogoutFooter");
 
-  // 이벤트 중복 연결 방지
-  if (button.dataset.installed === "true") {
-    syncVisibility();
-    return;
+  if (!footer) {
+    footer = document.createElement("footer");
+    footer.id = "mainLogoutFooter";
+
+    footer.innerHTML = `
+      <div class="main-logout-divider"></div>
+      <button
+        id="mainLogoutBtn"
+        type="button"
+        class="secondary"
+      >
+        로그아웃
+      </button>
+    `;
+
+    const style = document.createElement("style");
+    style.id = "mainLogoutFooterStyle";
+
+    style.textContent = `
+      #mainLogoutFooter {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 48px;
+        padding: 24px 0 36px;
+        text-align: center;
+      }
+
+      #mainLogoutFooter .main-logout-divider {
+        width: 100%;
+        height: 1px;
+        background: rgba(160, 170, 190, 0.22);
+        margin-bottom: 28px;
+      }
+
+      #mainLogoutBtn {
+        display: block;
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+        padding: 13px 24px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+    `;
+
+    if (!$("mainLogoutFooterStyle")) {
+      document.head.appendChild(style);
+    }
   }
 
-  button.dataset.installed = "true";
+  // 다른 기능이 추가되어도 항상 메인 화면 마지막에 배치
+  gamePanel.appendChild(footer);
 
-  button.addEventListener("click", () => {
+  const button = $("mainLogoutBtn");
 
-    // 기존 로그아웃 처리 기능을 그대로 사용
-    originalLogout.click();
+  if (button && button.dataset.installed !== "true") {
+    button.dataset.installed = "true";
 
-  });
-
-  // 로그인/로그아웃으로 화면 상태가 바뀌면 자동 반영
-  const observer = new MutationObserver(syncVisibility);
-
-  observer.observe(gamePanel, {
-    attributes: true,
-    attributeFilter: ["class"]
-  });
-
-  syncVisibility();
+    button.addEventListener("click", () => {
+      originalLogout.click();
+    });
+  }
 }
+
   
 /* =========================================
    PLAYER RECORD · ROOM CONTROL

@@ -6978,7 +6978,15 @@ function openRemoteViewing() {
   setRvMessage("rvMessage", "");
   setRvMessage("rvObservationMessage", "");
 
-  showRvStep("rvSetup");
+    showRvStep("rvSetup");
+
+  // 재입장 시 TARGET CODE는 계속 비공개로 유지
+  const previous = rvReadRecovery();
+
+  rvRecoveryId = previous?.sessionId || null;
+
+  // 제출 완료 여부는 서버 복구 RPC가 판단한다.
+  rvShowRecoveryButton();
 
   panel.classList.remove("hidden");
   panel.scrollTop = 0;

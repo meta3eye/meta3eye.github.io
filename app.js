@@ -2302,12 +2302,24 @@ if (room.parentElement !== document.body) {
    MAIN SCREEN · BOTTOM LOGOUT
 ========================================= */
 
+
 function installMainLogoutButton() {
   const gamePanel = $("gamePanel");
   const originalLogout = $("logoutBtn");
 
   if (!gamePanel || !originalLogout) return;
 
+  // 기존 상단 버튼 유지
+  const topButton = $("mainLogoutBtn");
+
+  if (topButton && topButton.dataset.installed !== "true") {
+    topButton.dataset.installed = "true";
+    topButton.addEventListener("click", () => {
+      originalLogout.click();
+    });
+  }
+
+  // 첫 화면 하단 버튼 추가
   let footer = $("mainLogoutFooter");
 
   if (!footer) {
@@ -2317,7 +2329,7 @@ function installMainLogoutButton() {
     footer.innerHTML = `
       <div class="main-logout-divider"></div>
       <button
-        id="mainLogoutBtn"
+        id="bottomLogoutBtn"
         type="button"
         class="secondary"
       >
@@ -2325,54 +2337,57 @@ function installMainLogoutButton() {
       </button>
     `;
 
-    const style = document.createElement("style");
-    style.id = "mainLogoutFooterStyle";
-
-    style.textContent = `
-      #mainLogoutFooter {
-        width: 100%;
-        box-sizing: border-box;
-        margin-top: 48px;
-        padding: 24px 0 36px;
-        text-align: center;
-      }
-
-      #mainLogoutFooter .main-logout-divider {
-        width: 100%;
-        height: 1px;
-        background: rgba(160, 170, 190, 0.22);
-        margin-bottom: 28px;
-      }
-
-      #mainLogoutBtn {
-        display: block;
-        width: 100%;
-        max-width: 280px;
-        margin: 0 auto;
-        padding: 13px 24px;
-        border-radius: 10px;
-        cursor: pointer;
-      }
-    `;
-
     if (!$("mainLogoutFooterStyle")) {
+      const style = document.createElement("style");
+      style.id = "mainLogoutFooterStyle";
+
+      style.textContent = `
+        #mainLogoutFooter {
+          width: 100%;
+          box-sizing: border-box;
+          margin-top: 48px;
+          padding: 24px 0 36px;
+          text-align: center;
+        }
+
+        #mainLogoutFooter .main-logout-divider {
+          height: 1px;
+          background: rgba(160,170,190,.22);
+          margin-bottom: 28px;
+        }
+
+        #bottomLogoutBtn {
+          display: block;
+          width: 100%;
+          max-width: 280px;
+          margin: 0 auto;
+          padding: 13px 24px;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+      `;
+
       document.head.appendChild(style);
     }
   }
 
-  // 다른 기능이 추가되어도 항상 메인 화면 마지막에 배치
+  // 메인 화면의 맨 마지막 요소로 유지
   gamePanel.appendChild(footer);
 
-  const button = $("mainLogoutBtn");
+  const bottomButton = $("bottomLogoutBtn");
 
-  if (button && button.dataset.installed !== "true") {
-    button.dataset.installed = "true";
+  if (
+    bottomButton &&
+    bottomButton.dataset.installed !== "true"
+  ) {
+    bottomButton.dataset.installed = "true";
 
-    button.addEventListener("click", () => {
+    bottomButton.addEventListener("click", () => {
       originalLogout.click();
     });
   }
 }
+
 
   
 /* =========================================

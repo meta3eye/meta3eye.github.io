@@ -6206,7 +6206,26 @@ function formatV3Date(value) {
         </p>
       `;
 
-      $("spiritCoreAdvice").textContent = recommendation;
+    
+$("spiritCoreAdvice").textContent = recommendation;
+
+// SPIRIT CORE 1.1 · 집중력 수행 분석
+const focusSection = document.createElement("section");
+focusSection.id = "coreFocusPerformanceSection";
+
+focusSection.innerHTML = `
+  <h3>FOCUS PERFORMANCE</h3>
+  <p class="spirit-core-note">
+    실제 집중력 LAB 수행 기록을 분석합니다.
+    동일한 검사 과정과 문항 수끼리 비교합니다.
+  </p>
+  <div id="coreFocusPerformance"></div>
+`;
+
+output.appendChild(focusSection);
+
+await coreRenderFocusPerformance();
+
 
     } catch (error) {
       console.error(

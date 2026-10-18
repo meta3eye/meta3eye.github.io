@@ -6733,6 +6733,103 @@ show("dailyQuestRoom", true);
   let rvSubmitting = false;
   let rvSubmitted = false;
 
+
+/* =========================================
+   REMOTE VIEWING 3.3 · RECOVERY ENGINE
+========================================= */
+
+let rvRecoveryId = null;
+let rvRecoveryBusy = false;
+
+function rvRecoveryKey() {
+  return state.user?.id
+    ? "spirit_rv_recovery_" + state.user.id
+    : null;
+}
+
+function rvSaveRecovery(sessionId, observation = null) {
+  const key = rvRecoveryKey();
+  if (!key || !sessionId) return;
+
+  try {
+    sessionStorage.setItem(key, JSON.stringify({
+      sessionId,
+      observation,
+      savedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.warn("RV recovery storage unavailable", error);
+  }
+}
+
+function rvReadRecovery() {
+  const key = rvRecoveryKey();
+  if (!key) return null;
+
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+function rvClearRecovery() {
+  const key = rvRecoveryKey();
+
+  if (key) {
+    try {
+      sessionStorage.removeItem(key);
+    } catch {}
+  }
+
+  rvRecoveryId = null;
+}
+
+function rvRestoreObservation(observation) {
+  if (!observation) return;
+
+  const fields = {
+    rvFormDescription: "p_form_description",
+    rvColorDescription: "p_color_description",
+    rvTextureDescription: "p_texture_description",
+    rvTemperatureDescription: "p_temperature_description",
+    rvMovementDescription: "p_movement_description",
+    rvEnvironmentDescription: "p_environment_description",
+    rvFreeDescription: "p_free_description"
+  };
+
+  Object.entries(fields).forEach(([id, key]) => {
+    const field = rvElement(id);
+
+    if (field) {
+      field.value = observation[key] || "";
+    }
+  });
+}
+
+function rvShowRecoveryButton() {
+  const panel = rvElement("rvSetup");
+  if (!panel) return;
+
+  let button = rvElement("rvRecoveryButton");
+
+  if (!button) {
+    button = document.createElement("button");
+    button.id = "rvRecoveryButton";
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = "이전 제출 결과 복구";
+    button.style.cssText = "display:block;width:100%;margin-top:12px;";
+    panel.appendChild(button);
+
+    button.addEventListener("click", recoverRemoteViewingResult);
+  }
+
+  button.classList.toggle("hidden", !rvReadRecovery());
+}
+
+  
   const rvFieldIds = [
     "rvFormDescription",
     "rvColorDescription",

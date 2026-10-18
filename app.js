@@ -6826,7 +6826,15 @@ function rvShowRecoveryButton() {
     button.addEventListener("click", recoverRemoteViewingResult);
   }
 
-  button.classList.toggle("hidden", !rvReadRecovery());
+ 
+  const saved = rvReadRecovery();
+
+  // 제출 기록이 보존된 경우에만 복구 버튼 표시
+  button.classList.toggle(
+    "hidden",
+    !saved?.sessionId || !saved?.observation
+  );
+
 }
 
   
@@ -7437,6 +7445,15 @@ function backRemoteViewingStep() {
 
   // 이전 단계에서는 TARGET CODE를 표시하지 않는다.
   // 단, 진행 중인 서버 세션 자체는 유지한다.
+
+
+  // 제출하지 않은 관찰은 결과 복구 대상이 아니다.
+  if (!rvSubmitted && !rvSubmitting) {
+    rvClearRecovery();
+    rvShowRecoveryButton();
+  }
+
+  
   showRvStep("rvSetup");
 
   const targetCode = rvElement("rvTargetCode");

@@ -6550,6 +6550,88 @@ async function coreRenderFocusPerformance() {
       }
     }
 
+
+    // SPIRIT CORE 1.4 · 성장 추세 지속성 검증
+    let core14Status = "DATA REQUIRED";
+    let core14Description =
+      "동일 조건의 유효 기록 20회가 필요합니다.";
+
+    let core14History = "";
+
+    if (rows.length >= 20) {
+      // completed_at 내림차순으로 조회된 기존 기록 사용
+      // 오래된 구간부터 최근 구간까지 정렬
+      const core14Blocks = [
+        rows.slice(15, 20),
+        rows.slice(10, 15),
+        rows.slice(5, 10),
+        rows.slice(0, 5)
+      ];
+
+      const core14Averages = core14Blocks.map(block =>
+        average(block.map(row => row.score))
+      );
+
+      const core14Changes = [
+        core14Averages[1] - core14Averages[0],
+        core14Averages[2] - core14Averages[1],
+        core14Averages[3] - core14Averages[2]
+      ];
+
+      const core14First = core14Averages[0];
+      const core14Last = core14Averages[3];
+
+      const core14NetChange =
+        core14Last - core14First;
+
+      const core14PositiveCount =
+        core14Changes.filter(value => value > 2).length;
+
+      const core14NegativeCount =
+        core14Changes.filter(value => value < -2).length;
+
+      const core14StableCount =
+        core14Changes.filter(
+          value => Math.abs(value) <= 2
+        ).length;
+
+      if (
+        core14PositiveCount >= 2 &&
+        core14NegativeCount === 0 &&
+        core14NetChange > 2
+      ) {
+        core14Status = "SUSTAINED IMPROVEMENT";
+        core14Description =
+          "여러 구간에 걸쳐 평균 점수가 상승했습니다. 현재 검사 조건에서 긍정적인 수행 추세가 관찰됩니다.";
+      } else if (
+        core14NegativeCount >= 2 &&
+        core14PositiveCount === 0 &&
+        core14NetChange < -2
+      ) {
+        core14Status = "SUSTAINED DECLINE";
+        core14Description =
+          "여러 구간에 걸쳐 평균 점수가 하락했습니다. 훈련 조건과 수행 환경을 점검하십시오.";
+      } else if (core14StableCount === 3) {
+        core14Status = "STABLE PERFORMANCE";
+        core14Description =
+          "네 구간의 평균 점수에 큰 변화가 없습니다. 현재 수행 수준이 비교적 일정하게 유지되고 있습니다.";
+      } else {
+        core14Status = "VARIABLE PERFORMANCE";
+        core14Description =
+          "구간별 상승과 하락이 혼재합니다. 지속적인 성장이나 하락으로 단정하지 않습니다.";
+      }
+
+      core14History = core14Averages
+        .map((value, index) =>
+          "<p>구간 " +
+          (index + 1) +
+          ": <strong>" +
+          value.toFixed(1) +
+          "점</strong></p>"
+        )
+        .join("");
+    }
+
     
     sections.push(`
       <div class="spirit-core-card">
@@ -6597,11 +6679,28 @@ async function coreRenderFocusPerformance() {
         </div>
 
 
+    
+        <div class="spirit-core-card">
+          <h3>GROWTH CONTINUITY</h3>
+
+          <p><strong>${core14Status}</strong></p>
+          <p>${core14Description}</p>
+
+          ${core14History}
+
+          <p class="spirit-core-note">
+            구간 1은 가장 오래된 5회,
+            구간 4는 가장 최근 5회입니다.
+            최근 20회의 동일 조건 기록만 비교합니다.
+          </p>
+        </div>
+
         <div class="spirit-core-card">
           <h3>NEXT TRAINING</h3>
           <p><strong>${analysisStatus}</strong></p>
           <p>${nextTraining}</p>
         </div>
+
 
 
         <p class="spirit-core-note">

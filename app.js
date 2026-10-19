@@ -6500,7 +6500,15 @@ async function coreRenderFocusPerformance() {
         </p>
 
         <p>성장 추세: ${trend}</p>
+       
         <p>점수 안정성: ${stability}</p>
+
+        <div class="spirit-core-card">
+          <h3>NEXT TRAINING</h3>
+          <p><strong>${analysisStatus}</strong></p>
+          <p>${nextTraining}</p>
+        </div>
+
 
         <p class="spirit-core-note">
           최근 5회 기준.

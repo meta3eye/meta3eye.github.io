@@ -6412,6 +6412,76 @@ async function coreRenderFocusPerformance() {
         "점";
     }
 
+
+    // SPIRIT CORE 1.2 · 다음 훈련 목표
+    let nextTraining = "동일한 조건으로 검사 기록을 축적하십시오.";
+    let analysisStatus = "DATA REQUIRED";
+
+    if (rows.length >= 5) {
+      analysisStatus = "INITIAL ANALYSIS";
+
+      if (rows.length < 10) {
+        nextTraining =
+          "현재 조건으로 " +
+          (10 - rows.length) +
+          "회 더 검사하십시오. 이후 이전 5회와 최근 5회를 비교할 수 있습니다.";
+      } else {
+        analysisStatus = "TREND AVAILABLE";
+
+        const recentVariance = average(
+          recent.map(score =>
+            Math.pow(score - recentAvg, 2)
+          )
+        );
+
+        const previousVariance = average(
+          previous.map(score =>
+            Math.pow(score - previousAvg, 2)
+          )
+        );
+
+        const recentSD = Math.sqrt(recentVariance);
+        const previousSD = Math.sqrt(previousVariance);
+
+        const scoreChange = recentAvg - previousAvg;
+        const stabilityChange = recentSD - previousSD;
+
+        if (scoreChange < -2) {
+          nextTraining =
+            "최근 평균 점수가 하락했습니다. 난도를 올리지 말고 현재 조건에서 정확한 수행을 반복하십시오.";
+        } else if (stabilityChange > 2) {
+          nextTraining =
+            "최근 점수 변동이 커졌습니다. 높은 점수 한 번보다 일정한 수행을 유지하는 데 집중하십시오.";
+        } else if (
+          scoreChange > 2 &&
+          stabilityChange <= 0
+        ) {
+          nextTraining =
+            "최근 평균이 상승했고 점수 변동도 증가하지 않았습니다. 현재 조건을 유지하며 5회 더 검사하십시오.";
+        } else if (
+          scoreChange >= -2 &&
+          scoreChange <= 2 &&
+          stabilityChange < -2
+        ) {
+          nextTraining =
+            "평균 점수는 유지되면서 수행이 안정되고 있습니다. 동일한 조건에서 반복 검사를 이어가십시오.";
+        } else {
+          nextTraining =
+            "뚜렷한 변화가 확인되지 않았습니다. 동일한 조건으로 5회 더 검사하여 추세를 확인하십시오.";
+        }
+      }
+    }
+
+    const remainingTrials = Math.max(0, 5 - rows.length);
+
+    if (remainingTrials > 0) {
+      nextTraining =
+        "분석을 위해 동일한 조건의 검사 " +
+        remainingTrials +
+        "회가 추가로 필요합니다.";
+    }
+
+    
     sections.push(`
       <div class="spirit-core-card">
         <h3>

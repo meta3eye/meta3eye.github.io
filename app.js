@@ -2428,26 +2428,6 @@ function installMainLogoutButton() {
     document.head.appendChild(style);
   }
 }
-
-
-  // 메인 화면의 맨 마지막 요소로 유지
-  gamePanel.appendChild(footer);
-
-  const bottomButton = $("bottomLogoutBtn");
-
-  if (
-    bottomButton &&
-    bottomButton.dataset.installed !== "true"
-  ) {
-    bottomButton.dataset.installed = "true";
-
-    bottomButton.addEventListener("click", () => {
-      originalLogout.click();
-    });
-  }
-}
-
-
   
 /* =========================================
    PLAYER RECORD · ROOM CONTROL

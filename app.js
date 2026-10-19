@@ -6481,6 +6481,75 @@ async function coreRenderFocusPerformance() {
         "회가 추가로 필요합니다.";
     }
 
+
+    
+    // SPIRIT CORE 1.3 · 기록 충분도 및 판정 신뢰도
+    const core13Count = rows.length;
+
+    const core13Stage =
+      core13Count < 5 ? "DATA REQUIRED" :
+      core13Count < 10 ? "INITIAL ANALYSIS" :
+      core13Count < 20 ? "TREND AVAILABLE" :
+      "EXTENDED HISTORY";
+
+    const core13StageDescription =
+      core13Count < 5
+        ? "최근 수행 평균을 판단하기 위한 기록이 부족합니다."
+        : core13Count < 10
+        ? "최근 5회의 수행 상태를 확인할 수 있습니다. 성장 추세 비교에는 기록이 더 필요합니다."
+        : core13Count < 20
+        ? "최근 5회와 이전 5회의 수행 결과를 비교할 수 있습니다."
+        : "누적 기록이 충분하여 최근 수행 변화와 과거 기록을 함께 살펴볼 수 있습니다.";
+
+    let core13Judgement =
+      "아직 성장 여부를 판정하지 않습니다.";
+
+    if (recentAvg !== null && previousAvg !== null) {
+      const core13Difference = recentAvg - previousAvg;
+
+      const core13RecentSD = Math.sqrt(
+        average(
+          recent.map(score =>
+            Math.pow(score - recentAvg, 2)
+          )
+        )
+      );
+
+      const core13PreviousSD = Math.sqrt(
+        average(
+          previous.map(score =>
+            Math.pow(score - previousAvg, 2)
+          )
+        )
+      );
+
+      if (
+        core13Difference > 2 &&
+        core13RecentSD > core13PreviousSD + 2
+      ) {
+        core13Judgement =
+          "평균 점수는 상승했지만 변동 폭도 커졌습니다. 안정적인 성장으로 단정하지 않습니다.";
+      } else if (
+        core13Difference > 2 &&
+        core13RecentSD <= core13PreviousSD
+      ) {
+        core13Judgement =
+          "최근 평균이 상승했고 수행 변동도 증가하지 않았습니다. 긍정적인 수행 변화가 관찰됩니다.";
+      } else if (core13Difference < -2) {
+        core13Judgement =
+          "최근 평균 점수가 하락했습니다. 동일 조건에서 추가 검사가 필요합니다.";
+      } else if (
+        Math.abs(core13Difference) <= 2 &&
+        core13RecentSD < core13PreviousSD - 2
+      ) {
+        core13Judgement =
+          "평균 점수는 비슷하지만 최근 수행 결과가 더 일정해졌습니다.";
+      } else {
+        core13Judgement =
+          "현재 기록에서는 뚜렷하고 안정적인 변화가 확인되지 않았습니다.";
+      }
+    }
+
     
     sections.push(`
       <div class="spirit-core-card">
@@ -6502,6 +6571,31 @@ async function coreRenderFocusPerformance() {
         <p>성장 추세: ${trend}</p>
        
         <p>점수 안정성: ${stability}</p>
+
+
+        <div class="spirit-core-card">
+          <h3>ANALYSIS CONFIDENCE</h3>
+
+          <p>
+            기록 분석 단계:
+            <strong>${core13Stage}</strong>
+          </p>
+
+          <p>${core13StageDescription}</p>
+
+          <p>
+            <strong>GROWTH ASSESSMENT</strong>
+          </p>
+
+          <p>${core13Judgement}</p>
+
+          <p class="spirit-core-note">
+            이 판정은 동일 조건의 검사 기록에 대한
+            통계적 비교이며, 실제 능력 향상을
+            확정하는 결과는 아닙니다.
+          </p>
+        </div>
+
 
         <div class="spirit-core-card">
           <h3>NEXT TRAINING</h3>

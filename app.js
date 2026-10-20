@@ -6689,6 +6689,100 @@ if (rows.length < 5) {
       "일시적인 최고 점수보다 결과의 일관성을 우선하십시오.";
   }
 }
+
+    // SPIRIT CORE 1.6 · TRAINING EFFECT VERIFICATION
+
+let core16Status = "DATA REQUIRED";
+let core16Description =
+  "동일 조건의 유효 기록 20회가 필요합니다.";
+
+let core16BeforeText = "DATA REQUIRED";
+let core16AfterText = "DATA REQUIRED";
+let core16ChangeText = "DATA REQUIRED";
+let core16StabilityText = "DATA REQUIRED";
+
+if (rows.length >= 20) {
+
+  // 조회 결과는 최신 기록부터 정렬되어 있음
+  const core16After = rows.slice(0, 10).map(row => row.score);
+  const core16Before = rows.slice(10, 20).map(row => row.score);
+
+  const core16BeforeAvg = average(core16Before);
+  const core16AfterAvg = average(core16After);
+
+  const core16SD = (values, mean) =>
+    Math.sqrt(
+      average(
+        values.map(value => Math.pow(value - mean, 2))
+      )
+    );
+
+  const core16BeforeSD =
+    core16SD(core16Before, core16BeforeAvg);
+
+  const core16AfterSD =
+    core16SD(core16After, core16AfterAvg);
+
+  const core16Change =
+    core16AfterAvg - core16BeforeAvg;
+
+  const core16SDChange =
+    core16AfterSD - core16BeforeSD;
+
+  core16BeforeText =
+    core16BeforeAvg.toFixed(1) + "점";
+
+  core16AfterText =
+    core16AfterAvg.toFixed(1) + "점";
+
+  core16ChangeText =
+    (core16Change >= 0 ? "+" : "") +
+    core16Change.toFixed(1) + "점";
+
+  core16StabilityText =
+    "이전 " + core16BeforeSD.toFixed(1) +
+    "점 → 최근 " + core16AfterSD.toFixed(1) + "점";
+
+  if (
+    core16Change > 2 &&
+    core16SDChange <= 0
+  ) {
+    core16Status = "POSITIVE CHANGE";
+
+    core16Description =
+      "최근 10회의 평균이 상승했고 점수 변동도 증가하지 않았습니다. 긍정적인 수행 변화가 관찰됩니다.";
+
+  } else if (
+    core16Change > 2 &&
+    core16SDChange > 0
+  ) {
+    core16Status = "IMPROVEMENT WITH VARIABILITY";
+
+    core16Description =
+      "평균 점수는 상승했지만 수행 변동도 증가했습니다. 추가 기록을 통해 변화의 안정성을 확인해야 합니다.";
+
+  } else if (core16Change < -2) {
+    core16Status = "PERFORMANCE DECLINE";
+
+    core16Description =
+      "최근 10회의 평균이 하락했습니다. 검사 환경과 수행 조건을 점검하고 추가 기록을 확보하십시오.";
+
+  } else if (
+    Math.abs(core16Change) <= 2 &&
+    core16SDChange < -2
+  ) {
+    core16Status = "STABILITY IMPROVEMENT";
+
+    core16Description =
+      "평균 점수는 비슷하지만 최근 수행 결과의 변동이 감소했습니다.";
+
+  } else {
+    core16Status = "NO CLEAR CHANGE";
+
+    core16Description =
+      "현재 기록에서는 뚜렷한 평균 변화나 안정성 개선을 확인하기 어렵습니다.";
+  }
+}
     
     sections.push(`
       <div class="spirit-core-card">
@@ -6751,6 +6845,35 @@ if (rows.length < 5) {
             최근 20회의 동일 조건 기록만 비교합니다.
           </p>
         </div>
+
+<div class="spirit-core-card">
+  <h3>TRAINING EFFECT VERIFICATION</h3>
+
+  <p>
+    검증 상태:
+    <strong>${core16Status}</strong>
+  </p>
+
+  <p>이전 10회 평균: ${core16BeforeText}</p>
+
+  <p>최근 10회 평균: ${core16AfterText}</p>
+
+  <p>
+    평균 점수 변화:
+    <strong>${core16ChangeText}</strong>
+  </p>
+
+  <p>점수 표준편차: ${core16StabilityText}</p>
+
+  <p>${core16Description}</p>
+
+  <p class="spirit-core-note">
+    동일 검사 모드와 문항 수의 최근 20회를
+    이전 10회와 최근 10회로 나누어 비교합니다.
+    기록상 변화가 실제 훈련에 의해 발생했는지는
+    이 분석만으로 확정할 수 없습니다.
+  </p>
+</div>
 
 <div class="spirit-core-card">
   <h3>ADAPTIVE TRAINING</h3>

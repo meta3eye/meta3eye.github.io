@@ -6632,6 +6632,63 @@ async function coreRenderFocusPerformance() {
         .join("");
     }
 
+    // SPIRIT CORE 1.5 · ADAPTIVE TRAINING
+let core15Status = "RECORD BUILDING";
+let core15Goal = "";
+let core15Action = "";
+
+if (rows.length < 5) {
+  core15Goal = "기초 수행 기록 5회 확보";
+  core15Action =
+    "현재 검사 모드와 문항 수를 변경하지 않고 " +
+    (5 - rows.length) +
+    "회 추가 수행하십시오.";
+
+} else if (rows.length < 10) {
+  core15Status = "BASELINE TRAINING";
+  core15Goal = "성장 비교를 위한 기준 기록 확보";
+  core15Action =
+    "동일 조건으로 " +
+    (10 - rows.length) +
+    "회 추가 수행하십시오. 이후 최근 5회와 이전 5회를 비교합니다.";
+
+} else if (rows.length < 20) {
+  core15Status = "TREND VALIDATION";
+  core15Goal = "현재 수행 추세의 반복 검증";
+  core15Action =
+    "검사 조건을 유지하고 5회 추가 수행하십시오. " +
+    "단일 최고 점수보다 최근 5회의 평균과 표준편차를 확인하십시오.";
+
+} else {
+  if (core14Status === "SUSTAINED IMPROVEMENT") {
+    core15Status = "CONSOLIDATION";
+    core15Goal = "상승 추세 유지";
+    core15Action =
+      "현재 조건에서 5회 추가 수행하십시오. " +
+      "최근 평균이 유지되는지 확인한 후 난도 변경을 검토하십시오.";
+
+  } else if (core14Status === "SUSTAINED DECLINE") {
+    core15Status = "RECOVERY";
+    core15Goal = "수행 하락 원인 점검";
+    core15Action =
+      "난도를 높이지 마십시오. 휴식, 집중 환경, 검사 시간을 점검하고 " +
+      "동일 조건으로 5회 추가 수행하십시오.";
+
+  } else if (core14Status === "STABLE PERFORMANCE") {
+    core15Status = "STABILITY CHECK";
+    core15Goal = "안정적인 수행 수준 재확인";
+    core15Action =
+      "현재 조건에서 5회 추가 수행하십시오. " +
+      "평균과 표준편차가 계속 유지되는지 확인하십시오.";
+
+  } else {
+    core15Status = "CONSISTENCY TRAINING";
+    core15Goal = "수행 변동 감소";
+    core15Action =
+      "검사 시간과 환경을 일정하게 유지하고 5회 추가 수행하십시오. " +
+      "일시적인 최고 점수보다 결과의 일관성을 우선하십시오.";
+  }
+}
     
     sections.push(`
       <div class="spirit-core-card">

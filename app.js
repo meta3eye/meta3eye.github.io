@@ -6752,6 +6752,28 @@ if (rows.length < 5) {
           </p>
         </div>
 
+<div class="spirit-core-card">
+  <h3>ADAPTIVE TRAINING</h3>
+
+  <p>
+    훈련 단계:
+    <strong>${core15Status}</strong>
+  </p>
+
+  <p>
+    다음 목표:
+    <strong>${core15Goal}</strong>
+  </p>
+
+  <p>${core15Action}</p>
+
+  <p class="spirit-core-note">
+    동일한 검사 모드와 문항 수의 기록을 기준으로
+    다음 훈련 방향을 제안합니다.
+    실제 능력 향상을 확정하는 판정은 아닙니다.
+  </p>
+</div>
+
         <div class="spirit-core-card">
           <h3>NEXT TRAINING</h3>
           <p><strong>${analysisStatus}</strong></p>

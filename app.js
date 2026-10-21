@@ -7882,6 +7882,15 @@ show(
 
   senseSeconds = duration;
 
+// CORE 2.3 · 감각 변화 기록 초기화
+senseChangeCount = 0;
+
+installSenseChangeTraining();
+
+if ($("senseChangeCount")) {
+  $("senseChangeCount").textContent = "0";
+}
+   
   if (duration === 180) {
     selectedSenseExp = 5;
   } else if (duration === 300) {

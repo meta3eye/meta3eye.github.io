@@ -6902,6 +6902,34 @@ if (rows.length >= 10) {
         </div>
 
 <div class="spirit-core-card">
+  <h3>PERSONAL BASELINE</h3>
+
+  <p>
+    기준선 상태:
+    <strong>${core17Status}</strong>
+  </p>
+
+  <p>초기 기준선: ${core17Baseline}</p>
+
+  <p>최근 수행 평균: ${core17Current}</p>
+
+  <p>
+    기준선 대비 변화:
+    <strong>${core17Difference}</strong>
+  </p>
+
+  <p>${core17Description}</p>
+
+  <p class="spirit-core-note">
+    동일 조건의 최초 10회를 기준선으로 사용합니다.
+    기준선과 겹치지 않는 최근 5회 비교에는
+    총 15회 이상의 기록이 필요합니다.
+    이는 검사 수행 기록의 비교이며,
+    실제 능력 향상을 확정하지 않습니다.
+  </p>
+</div>
+
+<div class="spirit-core-card">
   <h3>TRAINING EFFECT VERIFICATION</h3>
 
   <p>

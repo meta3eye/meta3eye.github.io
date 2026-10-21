@@ -8091,9 +8091,13 @@ if ($("senseChangeCount")) {
       target,
       duration_seconds:
         duration,
-      discovery,
+           discovery,
       difficulty,
       memo,
+
+      // CORE 2.3 · 직접 기록한 감각 변화 횟수
+      sensory_change_count: senseChangeCount,
+
       completed_at:
         new Date().toISOString()
     };

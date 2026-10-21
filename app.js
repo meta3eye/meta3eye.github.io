@@ -2008,6 +2008,157 @@ function returnToDailyQuestRoom() {
   const room = $("dailyQuestRoom");
   if (room) room.scrollTop = 0;
 }
+
+// CORE 2.4 · INTUITION BLIND TRAINING
+// 기존 EXP 및 승급 시스템과 독립적으로 작동한다.
+
+let intuitionLab = null;
+
+function intuitionNewTarget() {
+  // 0~3에 편향이 생기지 않도록 균등한 난수 사용
+  const values = new Uint32Array(1);
+  const limit = Math.floor(4294967296 / 4) * 4;
+  let n;
+
+  do {
+    crypto.getRandomValues(values);
+    n = values[0];
+  } while (n >= limit);
+
+  return n % 4;
+}
+
+function openIntuitionLab() {
+  const room = $("intuitionLabRoom");
+  if (!room) return;
+
+  if (!intuitionLab || intuitionLab.finished) {
+    intuitionLab = {
+      target: intuitionNewTarget(),
+      results: [],
+      revealed: false,
+      finished: false
+    };
+  }
+
+  show("dailyQuestRoom", false);
+  show("intuitionLabRoom", true);
+
+  renderIntuitionLab();
+}
+
+function closeIntuitionLab() {
+  show("intuitionLabRoom", false);
+  show("dailyQuestRoom", true);
+}
+
+function renderIntuitionLab() {
+  const output = $("intuitionLabContent");
+  if (!output || !intuitionLab) return;
+
+  const lab = intuitionLab;
+  const total = lab.results.length;
+  const correct = lab.results.filter(x => x.correct).length;
+
+  if (lab.finished) {
+    output.innerHTML = `
+      <h2>훈련 완료</h2>
+      <p style="font-size:32px;font-weight:bold;">
+        ${correct} / 10
+      </p>
+      <p>실제 일치율: ${correct * 10}%</p>
+      <p>무작위 선택의 기대 일치율: 25%</p>
+      <p class="muted">
+        10회 결과만으로 특별한 능력을 판정할 수 없습니다.
+        이번 결과는 브라우저에만 임시 보관됩니다.
+      </p>
+      <button id="intuitionRestart" type="button">
+        새로운 10회 훈련
+      </button>
+    `;
+
+    $("intuitionRestart").onclick = () => {
+      intuitionLab = null;
+      openIntuitionLab();
+    };
+    return;
+  }
+
+  if (lab.revealed) {
+    const last = lab.results[total - 1];
+
+    output.innerHTML = `
+      <h2>${last.correct ? "일치!" : "불일치"}</h2>
+      <p>나의 선택: ${last.choice + 1}번</p>
+      <p>실제 표적: ${last.target + 1}번</p>
+      <p>현재 기록: ${correct} / ${total}</p>
+      <button id="intuitionNext" type="button">
+        ${total >= 10 ? "최종 결과 확인" : "다음 훈련"}
+      </button>
+    `;
+
+    $("intuitionNext").onclick = () => {
+      if (total >= 10) {
+        lab.finished = true;
+      } else {
+        lab.target = intuitionNewTarget();
+        lab.revealed = false;
+      }
+      renderIntuitionLab();
+    };
+    return;
+  }
+
+  output.innerHTML = `
+    <div style="text-align:center;padding:20px 0;">
+      <p class="muted">BLIND TRIAL ${total + 1} / 10</p>
+      <h2>숨겨진 표적을 선택하십시오</h2>
+      <p class="muted">
+        네 개 중 하나의 표적이 미리 결정되어 있습니다.
+        선택을 확정하면 실제 표적이 공개됩니다.
+      </p>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:12px;
+        margin:24px 0;
+      ">
+        ${[0, 1, 2, 3].map(n => `
+          <button type="button"
+            class="intuitionBlindChoice"
+            data-choice="${n}"
+            style="min-height:90px;font-size:25px;">
+            ${n + 1}
+          </button>
+        `).join("")}
+      </div>
+
+      <p class="muted">
+        현재 일치 기록: ${correct} / ${total}
+      </p>
+    </div>
+  `;
+
+  output.querySelectorAll(".intuitionBlindChoice")
+    .forEach(button => {
+      button.onclick = () => {
+        if (lab.revealed || lab.finished) return;
+
+        const choice = Number(button.dataset.choice);
+        const target = lab.target;
+
+        lab.results.push({
+          choice,
+          target,
+          correct: choice === target
+        });
+
+        lab.revealed = true;
+        renderIntuitionLab();
+      };
+    });
+}
   
   async function loadQuests() {
     if (!state.profile) return;

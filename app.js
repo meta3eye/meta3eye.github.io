@@ -7232,6 +7232,74 @@ renderV3Evaluation();
   let selectedFocusExp = 10;
   let selectedFocusDuration = 300;
 
+// SPIRIT CORE 2.2 · ATTENTION RETURN TRAINING
+
+let focusReturnCount = 0;
+
+function installFocusReturnTraining() {
+  const running = $("focusRunning");
+  if (!running || $("focusReturnTraining")) return;
+
+  const box = document.createElement("div");
+
+  box.id = "focusReturnTraining";
+
+  box.style.cssText = `
+    margin:24px 0;
+    padding:24px;
+    border:1px solid #a78bfa;
+    border-radius:16px;
+    text-align:center;
+    background:rgba(167,139,250,0.06);
+  `;
+
+  box.innerHTML = `
+    <div style="font-size:12px;letter-spacing:2px;color:#a78bfa;">
+      ATTENTION RETURN
+    </div>
+
+    <h3 style="margin:14px 0;">
+      주의 복귀 훈련
+    </h3>
+
+    <p class="muted">
+      집중이 흐트러진 것을 알아차렸다면
+      아래 버튼을 누르고 다시 집중 대상으로 돌아오십시오.
+    </p>
+
+    <div
+      id="focusReturnCount"
+      style="font-size:42px;font-weight:bold;margin:22px 0;"
+    >0</div>
+
+    <p class="muted">알아차림 및 복귀 기록</p>
+
+    <button
+      type="button"
+      id="focusReturnButton"
+      style="width:100%;padding:18px;margin-top:12px;"
+    >
+      ↺ 알아차리고 다시 집중하기
+    </button>
+
+    <p class="muted" style="font-size:12px;margin-top:15px;">
+      횟수를 줄이려고 노력하지 마십시오.
+      알아차리는 순간을 정확하게 기록하십시오.
+    </p>
+  `;
+
+  running.appendChild(box);
+
+  $("focusReturnButton").addEventListener("click", () => {
+    if (!focusTimerInterval) return;
+
+    focusReturnCount++;
+
+    $("focusReturnCount").textContent =
+      focusReturnCount;
+  });
+}
+  
 function startFocusTraining() {
   const target =
     $("focusTarget")?.value;

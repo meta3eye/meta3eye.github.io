@@ -1791,6 +1791,71 @@ function installDailyQuestRoom() {
         </button>
       </div>
 
+      <div id="spiritTrainingGuide" style="
+  border:1px solid #a78bfa;
+  border-radius:16px;
+  padding:22px;
+  margin-bottom:22px;
+  background:rgba(167,139,250,0.06);
+">
+
+  <div style="
+    font-size:12px;
+    letter-spacing:2px;
+    color:#a78bfa;
+    margin-bottom:10px;
+  ">
+    SPIRIT TRAINING · STAGE 01
+  </div>
+
+  <h2 style="margin:0 0 12px;">
+    기초 각성 훈련
+  </h2>
+
+  <p class="muted">
+    특별한 경험을 만들어내려 하지 마십시오.
+    자신의 주의와 감각을 정확하게 관찰하는 것부터 시작합니다.
+  </p>
+
+  <div style="
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:12px;
+    margin-top:20px;
+  ">
+
+    <div style="border:1px solid #526b87;border-radius:12px;padding:16px;">
+      <div style="font-size:25px;margin-bottom:8px;">◎</div>
+      <strong>집중력 훈련</strong>
+      <p class="muted">
+        주의 유지 · 이탈 인식 · 복귀
+      </p>
+    </div>
+
+    <div style="border:1px solid #526b87;border-radius:12px;padding:16px;">
+      <div style="font-size:25px;margin-bottom:8px;">◈</div>
+      <strong>감각 관찰</strong>
+      <p class="muted">
+        감각 구분 · 변화 관찰 · 기록
+      </p>
+    </div>
+
+    <div style="border:1px solid #526b87;border-radius:12px;padding:16px;">
+      <div style="font-size:25px;margin-bottom:8px;">✧</div>
+      <strong>직관 훈련</strong>
+      <p class="muted">
+        사전 선택 · 결과 확인 · 반복 검증
+      </p>
+    </div>
+
+  </div>
+
+  <p style="margin:20px 0 0;font-size:13px;color:#a78bfa;">
+    ▼ 아래에서 오늘 수행할 훈련을 선택하십시오.
+  </p>
+
+</div>
+
       <div id="dailyQuestContent"></div>
     </div>
   `;

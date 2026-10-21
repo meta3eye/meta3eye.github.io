@@ -2445,6 +2445,437 @@ function renderIntuitionLab() {
     });
 }
 
+
+/* =========================================
+   SPIRIT CORE 2.6 · ESP SYMBOL TRAINING
+   기존 직관 블라인드 훈련과 독립
+========================================= */
+
+let espLab = null;
+
+const ESP_SYMBOLS = ["◯", "✚", "≋", "◇", "✦"];
+
+function espRandomTarget() {
+  // 5로 나눌 때의 난수 편향 제거
+  const values = new Uint32Array(1);
+  const limit = Math.floor(4294967296 / 5) * 5;
+  let n;
+
+  do {
+    crypto.getRandomValues(values);
+    n = values[0];
+  } while (n >= limit);
+
+  return n % 5;
+}
+
+function installEspLab() {
+  const content = $("dailyQuestContent");
+  if (!content) return;
+
+  if (!$("espLabEntry")) {
+    const entry = document.createElement("section");
+    entry.id = "espLabEntry";
+    entry.className = "panel";
+
+    entry.innerHTML = `
+      <div class="section-title">
+        <h2>✦ ESP SYMBOL TRAINING</h2>
+        <span class="muted">5 SYMBOLS</span>
+      </div>
+
+      <p class="muted">
+        다섯 문양 중 숨겨진 표적을 예측하는 직관 훈련
+      </p>
+
+      <button id="espLabOpen" type="button">
+        ESP 훈련 입장 →
+      </button>
+    `;
+
+    content.before(entry);
+    $("espLabOpen").onclick = openEspLab;
+  }
+
+  if ($("espLabRoom")) return;
+
+  const room = document.createElement("section");
+  room.id = "espLabRoom";
+  room.className = "hidden";
+
+  room.innerHTML = `
+    <div class="esp-inner">
+      <button id="espLabClose" type="button"
+        class="secondary">
+        ← 훈련실로 돌아가기
+      </button>
+
+      <div id="espLabContent"></div>
+    </div>
+  `;
+
+  document.body.appendChild(room);
+
+  $("espLabClose").onclick = () => {
+    show("espLabRoom", false);
+    show("dailyQuestRoom", true);
+  };
+
+  if (!$("espLabStyle")) {
+    const style = document.createElement("style");
+    style.id = "espLabStyle";
+
+    style.textContent = `
+      #espLabRoom:not(.hidden) {
+        position:fixed;
+        inset:0;
+        z-index:12000;
+        display:block;
+        overflow-y:auto;
+        background:#090f1b;
+        padding:24px 14px 70px;
+        box-sizing:border-box;
+        color:#eee6d2;
+      }
+
+      #espLabRoom.hidden {
+        display:none!important;
+      }
+
+      .esp-inner {
+        max-width:800px;
+        margin:auto;
+      }
+
+      .esp-board {
+        margin-top:25px;
+        padding:25px 16px;
+        border:1px solid #88754f;
+        border-radius:20px;
+        background:
+          radial-gradient(circle at top,
+            #293452,#101a2d 70%);
+        text-align:center;
+      }
+
+      .esp-title {
+        color:#e8d49b;
+        letter-spacing:2px;
+      }
+
+      .esp-muted {
+        color:#abb8ca;
+        font-size:14px;
+        line-height:1.8;
+      }
+
+      .esp-grid {
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        gap:8px;
+        margin:25px 0;
+      }
+
+      .esp-card {
+        min-width:0;
+        min-height:115px;
+        border:1px solid #a18b5f;
+        border-radius:12px;
+        background:linear-gradient(145deg,#263955,#111d30);
+        color:#ead39c;
+        font-size:35px;
+        cursor:pointer;
+        transition:transform .18s,border-color .18s;
+      }
+
+      .esp-card:hover {
+        transform:translateY(-4px);
+        border-color:#f3d895;
+      }
+
+      .esp-card:focus-visible {
+        outline:3px solid #f3d895;
+        outline-offset:3px;
+      }
+
+      .esp-card:disabled {
+        cursor:default;
+        opacity:.8;
+      }
+
+      .esp-action {
+        width:100%;
+        padding:16px;
+        margin-top:18px;
+        border:1px solid #d4bc80;
+        border-radius:12px;
+        background:#584c78;
+        color:white;
+        cursor:pointer;
+      }
+
+      .esp-progress {
+        height:7px;
+        background:#303b52;
+        border-radius:10px;
+        overflow:hidden;
+        margin:20px 0;
+      }
+
+      .esp-progress div {
+        height:100%;
+        background:linear-gradient(90deg,#8270b8,#e1c580);
+      }
+
+      .esp-result {
+        font-size:40px;
+        color:#e8d49b;
+        font-weight:bold;
+        margin:22px 0;
+      }
+
+      @media(max-width:500px) {
+        .esp-grid {
+          grid-template-columns:repeat(3,minmax(0,1fr));
+        }
+        .esp-card {
+          min-height:95px;
+          font-size:30px;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+}
+
+function openEspLab() {
+  installEspLab();
+
+  show("dailyQuestRoom", false);
+  show("espLabRoom", true);
+
+  renderEspLab();
+}
+
+function renderEspLab() {
+  const output = $("espLabContent");
+  if (!output) return;
+
+  // 난이도 선택
+  if (!espLab) {
+    output.innerHTML = `
+      <div class="esp-board">
+        <p class="esp-title">SPIRIT SYSTEM</p>
+        <h2>ESP SYMBOL TRAINING</h2>
+
+        <p class="esp-muted">
+          다섯 문양 중 숨겨진 표적을 예측하십시오.<br>
+          훈련 단계를 선택하면 세션이 시작됩니다.
+        </p>
+
+        <div class="esp-grid">
+          ${ESP_SYMBOLS.map(s => `
+            <div class="esp-card"
+              style="display:grid;place-items:center;cursor:default;">
+              ${s}
+            </div>
+          `).join("")}
+        </div>
+
+        <button class="esp-action" data-esp-start="10">
+          입문 · 10회
+        </button>
+
+        <button class="esp-action" data-esp-start="25">
+          기본 · 25회
+        </button>
+
+        <button class="esp-action" data-esp-start="50">
+          심화 · 50회
+        </button>
+      </div>
+    `;
+
+    output.querySelectorAll("[data-esp-start]")
+      .forEach(button => {
+        button.onclick = () => {
+          const maxTrials = Number(button.dataset.espStart);
+
+          espLab = {
+            maxTrials,
+            target: espRandomTarget(),
+            results: [],
+            revealed: false,
+            finished: false
+          };
+
+          renderEspLab();
+        };
+      });
+
+    return;
+  }
+
+  const lab = espLab;
+  const total = lab.results.length;
+  const correct = lab.results.filter(r => r.correct).length;
+
+  const progress = `
+    <div class="esp-progress">
+      <div style="width:${total / lab.maxTrials * 100}%"></div>
+    </div>
+  `;
+
+  // 최종 결과
+  if (lab.finished) {
+    const rate = (correct / lab.maxTrials * 100).toFixed(1);
+
+    output.innerHTML = `
+      <div class="esp-board">
+        <p class="esp-title">SESSION COMPLETE</p>
+        <h2>ESP 훈련 완료</h2>
+
+        ${progress}
+
+        <div class="esp-result">
+          ${correct} / ${lab.maxTrials}
+        </div>
+
+        <p>실제 일치율 ${rate}%</p>
+        <p class="esp-muted">
+          무작위 선택 기대 일치율 20%
+        </p>
+
+        <p class="esp-muted">
+          단일 세션의 결과만으로 초감각 능력을
+          판정하지 않습니다.
+        </p>
+
+        <button class="esp-action" id="espRestart">
+          새로운 세션 시작
+        </button>
+      </div>
+    `;
+
+    $("espRestart").onclick = () => {
+      espLab = null;
+      renderEspLab();
+    };
+
+    return;
+  }
+
+  // 선택 후 표적 공개
+  if (lab.revealed) {
+    const last = lab.results[total - 1];
+
+    output.innerHTML = `
+      <div class="esp-board">
+        <p class="esp-title">TARGET REVEALED</p>
+        <h2>${last.correct ? "✦ 표적 일치" : "표적 불일치"}</h2>
+
+        ${progress}
+
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:15px;
+          margin:25px 0;
+        ">
+          <div>
+            <p class="esp-muted">MY CHOICE</p>
+            <div class="esp-result">
+              ${ESP_SYMBOLS[last.choice]}
+            </div>
+          </div>
+
+          <div>
+            <p class="esp-muted">ACTUAL TARGET</p>
+            <div class="esp-result">
+              ${ESP_SYMBOLS[last.target]}
+            </div>
+          </div>
+        </div>
+
+        <p class="esp-muted">
+          현재 기록 ${correct} / ${total}
+        </p>
+
+        <button class="esp-action" id="espNext">
+          ${total >= lab.maxTrials
+            ? "최종 결과 확인 →"
+            : "다음 표적 →"}
+        </button>
+      </div>
+    `;
+
+    $("espNext").onclick = () => {
+      if (total >= lab.maxTrials) {
+        lab.finished = true;
+      } else {
+        lab.target = espRandomTarget();
+        lab.revealed = false;
+      }
+
+      renderEspLab();
+    };
+
+    return;
+  }
+
+  // 표적 선택 화면
+  output.innerHTML = `
+    <div class="esp-board">
+      <p class="esp-title">ESP · BLIND SESSION</p>
+      <h2>숨겨진 문양을 선택하십시오</h2>
+
+      <p class="esp-muted">
+        첫인상을 관찰하고 하나의 문양을 선택하십시오.
+      </p>
+
+      ${progress}
+
+      <p class="esp-title">
+        TRIAL ${total + 1} / ${lab.maxTrials}
+      </p>
+
+      <div class="esp-grid">
+        ${ESP_SYMBOLS.map((symbol, index) => `
+          <button class="esp-card"
+            type="button"
+            data-esp-choice="${index}">
+            ${symbol}
+          </button>
+        `).join("")}
+      </div>
+
+      <p class="esp-muted">
+        현재 일치 ${correct}회
+      </p>
+    </div>
+  `;
+
+  output.querySelectorAll("[data-esp-choice]")
+    .forEach(button => {
+      button.onclick = () => {
+        if (lab.revealed || lab.finished) return;
+
+        const choice = Number(button.dataset.espChoice);
+        const target = lab.target;
+
+        lab.results.push({
+          choice,
+          target,
+          correct: choice === target
+        });
+
+        lab.revealed = true;
+        renderEspLab();
+      };
+    });
+}
+
   
   async function loadQuests() {
     if (!state.profile) return;

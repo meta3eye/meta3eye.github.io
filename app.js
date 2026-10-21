@@ -1862,6 +1862,83 @@ function installDailyQuestRoom() {
 
   document.body.appendChild(room);
 
+// CORE 2.4 · 직관 블라인드 훈련실
+
+if (!$("intuitionLabRoom")) {
+  const intuitionRoom = document.createElement("section");
+
+  intuitionRoom.id = "intuitionLabRoom";
+  intuitionRoom.className = "hidden";
+
+  intuitionRoom.innerHTML = `
+    <div style="max-width:760px;margin:auto;">
+      <button id="intuitionLabClose"
+        type="button" class="secondary">
+        ← 훈련실로 돌아가기
+      </button>
+
+      <div style="margin-top:30px;">
+        <p style="color:#a78bfa;letter-spacing:2px;">
+          SPIRIT SYSTEM · INTUITION LAB
+        </p>
+
+        <div id="intuitionLabContent"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(intuitionRoom);
+
+  $("intuitionLabClose").onclick = closeIntuitionLab;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    #intuitionLabRoom:not(.hidden) {
+      position:fixed;
+      inset:0;
+      z-index:12000;
+      display:block;
+      overflow-y:auto;
+      background:#0b1119;
+      padding:28px 16px 70px;
+      box-sizing:border-box;
+    }
+
+    #intuitionLabRoom.hidden {
+      display:none !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// 기존 DAILY QUEST 화면에 입장 버튼 추가
+if (!$("intuitionLabEntry")) {
+  const entry = document.createElement("div");
+  entry.id = "intuitionLabEntry";
+
+  entry.style.cssText = `
+    border:1px solid #a78bfa;
+    border-radius:14px;
+    padding:20px;
+    margin:0 0 20px;
+  `;
+
+  entry.innerHTML = `
+    <h3>✧ 직관 블라인드 훈련</h3>
+    <p class="muted">
+      숨겨진 표적을 예측하고 결과를 확인하는 10회 훈련
+    </p>
+    <button id="intuitionLabOpen"
+      type="button" style="width:100%;padding:15px;">
+      직관 훈련 시작 →
+    </button>
+  `;
+
+  $("dailyQuestContent").before(entry);
+
+  $("intuitionLabOpen").onclick = openIntuitionLab;
+}
+  
   // 기존 퀘스트 목록을 복제하지 않고 그대로 이동
   $("dailyQuestContent").appendChild(originalPanel);
 

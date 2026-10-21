@@ -6103,6 +6103,11 @@ function formatV3Date(value) {
 
     document.head.appendChild(style);
 
+    // CORE 2.0 · 메인 훈련 허브
+$("coreStartTraining").addEventListener("click", () => {
+  openDailyQuestRoom();
+});
+
     $("spiritCoreOpen").addEventListener("click", () => {
       show("spiritCoreRoom", true);
       coreRender();

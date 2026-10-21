@@ -2059,6 +2059,7 @@ if (!$("intuitionLabEntry")) {
 
 function openDailyQuestRoom() {
   installDailyQuestRoom();
+  installEspLab();
 
   show("dailyQuestRoom", true);
   show("gamePanel", true);

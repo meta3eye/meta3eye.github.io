@@ -7607,8 +7607,12 @@ if ($("focusReturnCount")) {
       focus_quality: quality,
       obstacle,
       experience,
-      memo,
-      completed_at:
+     memo,
+
+// CORE 2.2 · 사용자가 직접 기록한 주의 복귀 횟수
+attention_return_count: focusReturnCount,
+
+completed_at:
         new Date().toISOString()
     };
 

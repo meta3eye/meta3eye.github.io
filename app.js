@@ -7324,6 +7324,15 @@ function startFocusTraining() {
   selectedFocusDuration = 300;
   selectedFocusExp = 10;
 
+// CORE 2.2 · 주의 복귀 기록 초기화
+focusReturnCount = 0;
+
+installFocusReturnTraining();
+
+if ($("focusReturnCount")) {
+  $("focusReturnCount").textContent = "0";
+}
+  
   if ($("selectedFocusTarget")) {
     $("selectedFocusTarget").textContent =
       target;

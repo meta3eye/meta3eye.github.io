@@ -6783,6 +6783,61 @@ if (rows.length >= 20) {
       "현재 기록에서는 뚜렷한 평균 변화나 안정성 개선을 확인하기 어렵습니다.";
   }
 }
+
+// SPIRIT CORE 1.7 · PERSONAL BASELINE
+
+let core17Status = "DATA REQUIRED";
+let core17Baseline = "DATA REQUIRED";
+let core17Current = "DATA REQUIRED";
+let core17Difference = "DATA REQUIRED";
+let core17Description =
+  "개인별 기준선 설정을 위해 동일 조건의 유효 기록 10회가 필요합니다.";
+
+if (rows.length >= 10) {
+  // 최초 10회 기록을 기준선으로 고정
+  const baselineRows = rows.slice(-10);
+  const baselineAvg = average(
+    baselineRows.map(row => row.score)
+  );
+
+  core17Baseline = baselineAvg.toFixed(1) + "점";
+  core17Status = "BASELINE ESTABLISHED";
+
+  if (rows.length === 10) {
+    core17Description =
+      "최초 10회의 개인별 수행 기준선이 설정되었습니다. 이후 추가 기록부터 기준선과 비교합니다.";
+  } else {
+    const currentRows = rows.slice(0, 5);
+    const currentAvg = average(
+      currentRows.map(row => row.score)
+    );
+
+    const difference = currentAvg - baselineAvg;
+
+    core17Current = currentAvg.toFixed(1) + "점";
+    core17Difference =
+      (difference >= 0 ? "+" : "") +
+      difference.toFixed(1) + "점";
+
+    if (rows.length < 15) {
+      core17Status = "EARLY COMPARISON";
+      core17Description =
+        "기준선 이후의 기록이 아직 5회 미만입니다. 현재 비교에는 최초 기준선 기록과 겹치는 부분이 있으므로 추가 수행이 필요합니다.";
+    } else if (difference > 2) {
+      core17Status = "ABOVE BASELINE";
+      core17Description =
+        "최근 수행 평균이 개인별 초기 기준선보다 높습니다.";
+    } else if (difference < -2) {
+      core17Status = "BELOW BASELINE";
+      core17Description =
+        "최근 수행 평균이 개인별 초기 기준선보다 낮습니다.";
+    } else {
+      core17Status = "WITHIN BASELINE";
+      core17Description =
+        "최근 수행 평균이 개인별 초기 기준선과 비슷한 범위에 있습니다.";
+    }
+  }
+}
     
     sections.push(`
       <div class="spirit-core-card">

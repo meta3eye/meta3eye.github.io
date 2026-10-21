@@ -7755,6 +7755,71 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+  // SPIRIT CORE 2.3 · SENSORY CHANGE OBSERVATION
+
+let senseChangeCount = 0;
+
+function installSenseChangeTraining() {
+  const running = $("senseRunning");
+
+  if (!running || $("senseChangeTraining")) return;
+
+  const box = document.createElement("div");
+  box.id = "senseChangeTraining";
+
+  box.style.cssText = `
+    margin:24px 0;
+    padding:22px;
+    border:1px solid #a78bfa;
+    border-radius:16px;
+    text-align:center;
+    background:rgba(167,139,250,0.06);
+  `;
+
+  box.innerHTML = `
+    <div style="font-size:12px;letter-spacing:2px;color:#a78bfa;">
+      SENSORY OBSERVATION
+    </div>
+
+    <h3>감각 변화 관찰</h3>
+
+    <p class="muted">
+      처음 느껴지는 감각을 관찰하십시오.
+      감각의 강도나 형태가 달라졌다고 느껴지면
+      아래 버튼을 누르십시오.
+    </p>
+
+    <div id="senseChangeCount"
+      style="font-size:42px;font-weight:bold;margin:20px 0;">
+      0
+    </div>
+
+    <p class="muted">감각 변화 관찰 횟수</p>
+
+    <button
+      id="senseChangeButton"
+      type="button"
+      style="width:100%;padding:18px;margin-top:12px;">
+      ◈ 감각의 변화를 알아차렸습니다
+    </button>
+
+    <p class="muted" style="font-size:12px;margin-top:15px;">
+      특별한 감각을 억지로 만들어내지 마십시오.
+      변화가 없었다면 기록하지 않아도 됩니다.
+    </p>
+  `;
+
+  running.appendChild(box);
+
+  $("senseChangeButton").addEventListener("click", () => {
+    if (!senseTimerInterval) return;
+
+    senseChangeCount++;
+
+    $("senseChangeCount").textContent =
+      senseChangeCount;
+  });
+}
   
   function openSenseTraining() {
     if (senseTimerInterval) {

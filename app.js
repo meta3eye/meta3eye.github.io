@@ -5958,16 +5958,44 @@ function formatV3Date(value) {
     entry.id = "spiritCoreEntry";
     entry.className = "panel";
 
-    entry.innerHTML = `
-      <h2>SPIRIT CORE</h2>
-      <p class="muted">
-        훈련 기록 · 최근 7일/30일 · 다음 훈련 제안
-      </p>
-      <button type="button" id="spiritCoreOpen">
-        개인 훈련 분석 보기 →
-      </button>
-    `;
+   entry.innerHTML = `
+  <div class="section-title">
+    <h2>✦ TODAY'S TRAINING</h2>
+    <span class="muted">SPIRIT SYSTEM</span>
+  </div>
 
+  <p class="muted">
+    오늘의 훈련을 시작하고 성장 기록을 쌓으십시오.
+  </p>
+
+  <div style="
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:12px;
+    margin:20px 0;
+  ">
+
+    <button type="button" id="coreStartTraining"
+      style="padding:22px 14px;min-height:110px;">
+      <span style="display:block;font-size:27px;">✦</span>
+      오늘의 훈련 시작
+      <small style="display:block;margin-top:8px;">
+        집중 · 감각 · 직관
+      </small>
+    </button>
+
+    <button type="button" id="spiritCoreOpen"
+      class="secondary"
+      style="padding:22px 14px;min-height:110px;">
+      <span style="display:block;font-size:27px;">◈</span>
+      나의 성장 기록
+      <small style="display:block;margin-top:8px;">
+        수행 결과 · 다음 목표
+      </small>
+    </button>
+
+  </div>
+`;
     $("gamePanel").appendChild(entry);
 
     const room = document.createElement("section");

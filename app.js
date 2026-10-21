@@ -2129,49 +2129,248 @@ function closeIntuitionLab() {
   show("dailyQuestRoom", true);
 }
 
+
 function renderIntuitionLab() {
   const output = $("intuitionLabContent");
   if (!output || !intuitionLab) return;
+
+  // 디자인은 최초 한 번만 설치
+  if (!$("intuitionGameStyle")) {
+    const style = document.createElement("style");
+    style.id = "intuitionGameStyle";
+
+    style.textContent = `
+      #intuitionLabContent {
+        color:#e9e5da;
+        font-family:inherit;
+      }
+
+      .ig-board {
+        padding:28px 20px;
+        border:1px solid #76694b;
+        border-radius:22px;
+        background:
+          radial-gradient(circle at 50% 0%,
+            rgba(114,93,164,.24),transparent 65%),
+          linear-gradient(160deg,#14243a,#090f1b);
+        text-align:center;
+        box-shadow:0 18px 45px rgba(0,0,0,.25);
+      }
+
+      .ig-kicker {
+        color:#cbb783;
+        font-size:12px;
+        letter-spacing:3px;
+        margin-bottom:12px;
+      }
+
+      .ig-title {
+        color:#f0e6ca;
+        font-size:25px;
+        margin:12px 0;
+      }
+
+      .ig-description {
+        color:#abb7c8;
+        line-height:1.8;
+        font-size:14px;
+      }
+
+      .ig-progress {
+        height:7px;
+        background:#26354b;
+        border-radius:20px;
+        overflow:hidden;
+        margin:22px 0;
+      }
+
+      .ig-progress > div {
+        height:100%;
+        background:linear-gradient(90deg,#8570b7,#d4bc80);
+        transition:width .25s;
+      }
+
+      .ig-grid {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px;
+        margin:24px 0;
+      }
+
+      .ig-card {
+        position:relative;
+        min-height:155px;
+        padding:18px 8px;
+        border:1px solid #8a7954;
+        border-radius:15px;
+        background:linear-gradient(145deg,#233752,#101b2d);
+        color:#ead9ac;
+        cursor:pointer;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+        gap:15px;
+        transition:transform .18s,border-color .18s,
+          box-shadow .18s;
+      }
+
+      .ig-card:hover {
+        transform:translateY(-4px);
+        border-color:#e2c98c;
+        box-shadow:0 0 24px rgba(203,183,131,.18);
+      }
+
+      .ig-card:focus-visible {
+        outline:3px solid #e2c98c;
+        outline-offset:3px;
+      }
+
+      .ig-symbol {
+        font-size:49px;
+        line-height:1;
+        font-weight:300;
+      }
+
+      .ig-number {
+        font-size:11px;
+        letter-spacing:2px;
+        opacity:.75;
+      }
+
+      .ig-result {
+        font-size:45px;
+        font-weight:bold;
+        color:#e2c98c;
+        margin:20px 0;
+      }
+
+      .ig-button {
+        width:100%;
+        padding:17px;
+        margin-top:20px;
+        border:1px solid #d4bc80;
+        border-radius:12px;
+        background:#594c77;
+        color:white;
+        font-weight:bold;
+        cursor:pointer;
+      }
+
+      .ig-button:hover {
+        background:#71618f;
+      }
+
+      .ig-stats {
+        display:flex;
+        justify-content:center;
+        gap:20px;
+        margin-top:20px;
+        color:#b9c5d4;
+        font-size:13px;
+        flex-wrap:wrap;
+      }
+
+      @media(max-width:420px) {
+        .ig-board { padding:22px 13px; }
+        .ig-card { min-height:125px; }
+        .ig-symbol { font-size:39px; }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
 
   const lab = intuitionLab;
   const total = lab.results.length;
   const correct = lab.results.filter(x => x.correct).length;
 
+  // SPIRIT SYSTEM 자체 디자인
+  const symbols = ["◎", "◇", "✧", "▤"];
+
+  const progress = `
+    <div class="ig-progress">
+      <div style="width:${total * 10}%"></div>
+    </div>
+  `;
+
+  // 최종 결과
   if (lab.finished) {
     output.innerHTML = `
-      <h2>훈련 완료</h2>
-      <p style="font-size:32px;font-weight:bold;">
-        ${correct} / 10
-      </p>
-      <p>실제 일치율: ${correct * 10}%</p>
-      <p>무작위 선택의 기대 일치율: 25%</p>
-      <p class="muted">
-        10회 결과만으로 특별한 능력을 판정할 수 없습니다.
-        이번 결과는 브라우저에만 임시 보관됩니다.
-      </p>
-      <button id="intuitionRestart" type="button">
-        새로운 10회 훈련
-      </button>
+      <div class="ig-board">
+        <div class="ig-kicker">SESSION COMPLETE</div>
+        <h2 class="ig-title">직관 훈련 완료</h2>
+
+        ${progress}
+
+        <div class="ig-result">${correct} / 10</div>
+
+        <p class="ig-description">
+          실제 일치율 ${correct * 10}%<br>
+          무작위 선택 기대 일치율 25%
+        </p>
+
+        <div class="ig-stats">
+          <span>총 수행 10회</span>
+          <span>일치 ${correct}회</span>
+          <span>불일치 ${10 - correct}회</span>
+        </div>
+
+        <p class="ig-description" style="margin-top:25px;">
+          이번 결과만으로 특별한 능력을 판정하지 않습니다.
+          반복 수행을 통해 자신의 선택 패턴을 관찰하십시오.
+        </p>
+
+        <button id="intuitionRestart"
+          class="ig-button" type="button">
+          ✦ 새로운 훈련 시작
+        </button>
+      </div>
     `;
 
     $("intuitionRestart").onclick = () => {
       intuitionLab = null;
       openIntuitionLab();
     };
+
     return;
   }
 
+  // 정답 공개
   if (lab.revealed) {
     const last = lab.results[total - 1];
 
     output.innerHTML = `
-      <h2>${last.correct ? "일치!" : "불일치"}</h2>
-      <p>나의 선택: ${last.choice + 1}번</p>
-      <p>실제 표적: ${last.target + 1}번</p>
-      <p>현재 기록: ${correct} / ${total}</p>
-      <button id="intuitionNext" type="button">
-        ${total >= 10 ? "최종 결과 확인" : "다음 훈련"}
-      </button>
+      <div class="ig-board">
+        <div class="ig-kicker">TARGET REVEALED</div>
+
+        <h2 class="ig-title">
+          ${last.correct ? "✦ 표적 일치" : "표적 불일치"}
+        </h2>
+
+        ${progress}
+
+        <div class="ig-grid">
+          <div class="ig-card" style="cursor:default;">
+            <div class="ig-number">MY CHOICE</div>
+            <div class="ig-symbol">${symbols[last.choice]}</div>
+          </div>
+
+          <div class="ig-card" style="cursor:default;">
+            <div class="ig-number">ACTUAL TARGET</div>
+            <div class="ig-symbol">${symbols[last.target]}</div>
+          </div>
+        </div>
+
+        <p class="ig-description">
+          현재 일치 기록 ${correct} / ${total}
+        </p>
+
+        <button id="intuitionNext"
+          class="ig-button" type="button">
+          ${total >= 10 ? "최종 결과 확인 →" : "다음 표적 확인 →"}
+        </button>
+      </div>
     `;
 
     $("intuitionNext").onclick = () => {
@@ -2181,39 +2380,48 @@ function renderIntuitionLab() {
         lab.target = intuitionNewTarget();
         lab.revealed = false;
       }
+
       renderIntuitionLab();
     };
+
     return;
   }
 
+  // 표적 선택
   output.innerHTML = `
-    <div style="text-align:center;padding:20px 0;">
-      <p class="muted">BLIND TRIAL ${total + 1} / 10</p>
-      <h2>숨겨진 표적을 선택하십시오</h2>
-      <p class="muted">
-        네 개 중 하나의 표적이 미리 결정되어 있습니다.
-        선택을 확정하면 실제 표적이 공개됩니다.
+    <div class="ig-board">
+      <div class="ig-kicker">INTUITION · BLIND SESSION</div>
+
+      <h2 class="ig-title">숨겨진 표적을 감지하십시오</h2>
+
+      <p class="ig-description">
+        마음을 가다듬고 가장 먼저 떠오르는
+        하나의 문양을 선택하십시오.
       </p>
 
-      <div style="
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:12px;
-        margin:24px 0;
-      ">
-        ${[0, 1, 2, 3].map(n => `
+      ${progress}
+
+      <div class="ig-kicker">
+        TRIAL ${String(total + 1).padStart(2,"0")} / 10
+      </div>
+
+      <div class="ig-grid">
+        ${symbols.map((symbol,n) => `
           <button type="button"
-            class="intuitionBlindChoice"
-            data-choice="${n}"
-            style="min-height:90px;font-size:25px;">
-            ${n + 1}
+            class="ig-card intuitionBlindChoice"
+            data-choice="${n}">
+            <span class="ig-symbol">${symbol}</span>
+            <span class="ig-number">
+              SYMBOL ${String(n + 1).padStart(2,"0")}
+            </span>
           </button>
         `).join("")}
       </div>
 
-      <p class="muted">
-        현재 일치 기록: ${correct} / ${total}
-      </p>
+      <div class="ig-stats">
+        <span>완료 ${total}/10</span>
+        <span>일치 ${correct}회</span>
+      </div>
     </div>
   `;
 
@@ -2236,6 +2444,7 @@ function renderIntuitionLab() {
       };
     });
 }
+
   
   async function loadQuests() {
     if (!state.profile) return;

@@ -2769,6 +2769,140 @@ entry.style.cssText = `
         cursor:pointer;
       }
 
+
+/* CORE 2.9 · ESP CARD REVEAL */
+
+.esp-hidden-card {
+  perspective:1000px;
+  border:0;
+  background:none;
+  box-shadow:none;
+  padding:0;
+}
+
+.esp-flip-inner {
+  position:relative;
+  width:145px;
+  height:195px;
+  transform-style:preserve-3d;
+}
+
+.esp-flip-inner.is-revealed {
+  animation:espFlip .85s ease forwards;
+}
+
+.esp-flip-face {
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  border:2px solid #d4bc80;
+  border-radius:15px;
+  background:linear-gradient(145deg,#263955,#101827);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+.esp-flip-back {
+  transform:rotateY(180deg);
+  font-size:65px;
+  color:#ead39c;
+}
+
+@keyframes espFlip {
+  from { transform:rotateY(0deg); }
+  to { transform:rotateY(180deg); }
+}
+
+.esp-reveal-effect {
+  position:relative;
+  padding:18px 10px;
+  margin:14px 0;
+  border-radius:14px;
+  animation:espEffectIn .55s ease both;
+}
+
+.esp-reveal-effect.match {
+  color:#f5d780;
+  background:radial-gradient(ellipse,rgba(235,192,75,.22),transparent 75%);
+  text-shadow:0 0 16px rgba(255,215,100,.65);
+}
+
+.esp-reveal-effect.miss {
+  color:#f0a5a5;
+  background:radial-gradient(ellipse,rgba(190,65,75,.18),transparent 75%);
+}
+
+.esp-reveal-effect.match::before,
+.esp-reveal-effect.match::after {
+  content:"✦";
+  position:absolute;
+  top:12px;
+  font-size:25px;
+  animation:espSpark 1.4s ease-in-out infinite alternate;
+}
+
+.esp-reveal-effect.match::before { left:10%; }
+.esp-reveal-effect.match::after {
+  right:10%;
+  animation-delay:.35s;
+}
+
+.esp-reveal-effect.miss::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  border:1px solid rgba(240,110,110,.45);
+  border-radius:14px;
+  animation:espMissPulse .65s ease-out;
+  pointer-events:none;
+}
+
+.esp-reveal-effect h2 {
+  margin:6px 0;
+}
+
+.esp-card.esp-picked {
+  border:2px solid #f5d780;
+  box-shadow:0 0 15px rgba(245,215,128,.25);
+  transform:translateY(-3px);
+}
+
+.esp-card:disabled {
+  opacity:1;
+}
+
+@keyframes espEffectIn {
+  from { opacity:0; transform:scale(.9); }
+  to { opacity:1; transform:scale(1); }
+}
+
+@keyframes espSpark {
+  from { opacity:.35; transform:scale(.7) rotate(-15deg); }
+  to { opacity:1; transform:scale(1.25) rotate(15deg); }
+}
+
+@keyframes espMissPulse {
+  from { opacity:1; transform:scale(.95); }
+  to { opacity:0; transform:scale(1.06); }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .esp-flip-inner.is-revealed {
+    animation:none;
+    transform:rotateY(180deg);
+  }
+  .esp-reveal-effect,
+  .esp-reveal-effect::before,
+  .esp-reveal-effect::after {
+    animation:none!important;
+  }
+}
+
+
       .esp-progress {
         height:7px;
         background:#303b52;

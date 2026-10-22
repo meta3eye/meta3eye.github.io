@@ -2815,6 +2815,8 @@ function renderEspLab() {
         <button class="esp-action" data-esp-start="50">
           심화 · 50회
         </button>
+${espRenderRecordSummary()}
+        
       </div>
     `;
 
@@ -2850,9 +2852,10 @@ function renderEspLab() {
     </div>
   `;
 
-  // 최종 결과
-  if (lab.finished) {
-    const rate = (correct / lab.maxTrials * 100).toFixed(1);
+ // 최종 결과
+if (lab.finished) {
+  const saved = espSaveCompletedSession(lab);
+  const rate = (correct / lab.maxTrials * 100).toFixed(1);
 
     output.innerHTML = `
       <div class="esp-board">
@@ -2875,12 +2878,27 @@ function renderEspLab() {
           판정하지 않습니다.
         </p>
 
-        <button class="esp-action" id="espRestart">
-          새로운 세션 시작
-        </button>
+        ${saved
+  ? espRenderRecordSummary()
+  : `<p class="esp-muted">
+       기록을 저장하지 못했습니다.
+       현재 세션이 유지되는 동안 다시 시도할 수 있습니다.
+     </p>
+     <button class="esp-action" id="espRetrySave">
+       기록 저장 다시 시도
+     </button>`
+}
+
+<button class="esp-action" id="espRestart">
+  새로운 세션 시작
+</button>
       </div>
     `;
 
+if (!saved) {
+  $("espRetrySave").onclick = renderEspLab;
+}
+  
     $("espRestart").onclick = () => {
       espLab = null;
       renderEspLab();

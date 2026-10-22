@@ -2823,13 +2823,15 @@ function renderEspLab() {
         button.onclick = () => {
           const maxTrials = Number(button.dataset.espStart);
 
-          espLab = {
-            maxTrials,
-            target: espRandomTarget(),
-            results: [],
-            revealed: false,
-            finished: false
-          };
+         espLab = {
+  sessionId: crypto.randomUUID(),
+  maxTrials,
+  target: espRandomTarget(),
+  results: [],
+  revealed: false,
+  finished: false,
+  saved: false
+};
 
           renderEspLab();
         };

@@ -2697,6 +2697,40 @@ entry.style.cssText = `
         margin:25px 0;
       }
 
+
+.esp-hidden-card {
+  width:145px;
+  height:195px;
+  margin:24px auto;
+  border:2px solid #d4bc80;
+  border-radius:15px;
+  background:
+    radial-gradient(circle at center,
+      rgba(150,120,200,.18),transparent 70%),
+    linear-gradient(145deg,#263955,#101827);
+  box-shadow:
+    0 0 25px rgba(212,188,128,.13),
+    inset 0 0 25px rgba(0,0,0,.25);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+}
+
+.esp-hidden-card .esp-question {
+  font-size:60px;
+  color:#e8d49b;
+  line-height:1;
+}
+
+.esp-hidden-card .esp-card-label {
+  font-size:10px;
+  letter-spacing:2px;
+  color:#c9b786;
+}
+
+
       .esp-card {
         min-width:0;
         min-height:115px;

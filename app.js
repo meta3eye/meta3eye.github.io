@@ -2454,6 +2454,117 @@ function renderIntuitionLab() {
 
 let espLab = null;
 
+/* CORE 2.7 · ESP LOCAL TRAINING RECORD */
+
+function espRecordKey() {
+  if (!state.user?.id) return null;
+  return `spirit_esp_records_v1_${state.user.id}`;
+}
+
+function espLoadRecords() {
+  const key = espRecordKey();
+  if (!key) return [];
+
+  try {
+    const records = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(records) ? records : [];
+  } catch (error) {
+    console.error("[ESP] Record load error:", error);
+    return [];
+  }
+}
+
+function espSaveCompletedSession(lab) {
+  const key = espRecordKey();
+
+  if (!key || !lab || !lab.finished) return false;
+  if (lab.saved) return true;
+
+  const records = espLoadRecords();
+  const correct = lab.results.filter(r => r.correct).length;
+
+  const record = {
+    id: lab.sessionId,
+    completed_at: new Date().toISOString(),
+    trials: lab.maxTrials,
+    correct,
+    rate: Number((correct / lab.maxTrials * 100).toFixed(1)),
+    results: lab.results.map(r => ({
+      choice: r.choice,
+      target: r.target,
+      correct: r.correct
+    }))
+  };
+
+  // 같은 세션의 중복 저장 방지
+  if (!records.some(r => r.id === record.id)) {
+    records.push(record);
+  }
+
+  try {
+    localStorage.setItem(key, JSON.stringify(records));
+    lab.saved = true;
+    return true;
+  } catch (error) {
+    console.error("[ESP] Record save error:", error);
+    return false;
+  }
+}
+
+function espRenderRecordSummary() {
+  const records = espLoadRecords();
+  const sessions = records.length;
+
+  const trials = records.reduce(
+    (sum, r) => sum + Number(r.trials || 0), 0
+  );
+
+  const correct = records.reduce(
+    (sum, r) => sum + Number(r.correct || 0), 0
+  );
+
+  const rate = trials
+    ? (correct / trials * 100).toFixed(1)
+    : "0.0";
+
+  return `
+    <div style="
+      border:1px solid #88754f;
+      border-radius:14px;
+      padding:18px;
+      margin-top:20px;
+      background:rgba(212,188,128,.05);
+    ">
+      <p class="esp-title">MY TRAINING RECORD</p>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:8px;
+        text-align:center;
+      ">
+        <div>
+          <strong>${sessions}</strong>
+          <p class="esp-muted">완료 세션</p>
+        </div>
+        <div>
+          <strong>${trials}</strong>
+          <p class="esp-muted">누적 시행</p>
+        </div>
+        <div>
+          <strong>${rate}%</strong>
+          <p class="esp-muted">누적 일치율</p>
+        </div>
+      </div>
+
+      <p class="esp-muted">
+        무작위 선택 기대 일치율 20%
+      </p>
+    </div>
+  `;
+}
+
+  
 const ESP_SYMBOLS = ["◯", "✚", "≋", "◇", "✦"];
 
 function espRandomTarget() {

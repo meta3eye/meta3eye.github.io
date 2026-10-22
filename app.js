@@ -2770,11 +2770,53 @@ entry.style.cssText = `
   }
 }
 
+
 function openEspLab() {
   installEspLab();
 
   show("dailyQuestRoom", false);
   show("espLabRoom", true);
+
+  // 진행 중인 훈련이 있으면 재입장 선택 화면 표시
+  if (espLab && !espLab.finished) {
+    const output = $("espLabContent");
+    const completed = espLab.results.length;
+
+    output.innerHTML = `
+      <div class="esp-board">
+        <p class="esp-title">SESSION PAUSED</p>
+        <h2>진행 중인 훈련이 있습니다</h2>
+
+        <p class="esp-muted">
+          ${espLab.maxTrials}회 훈련 중
+          ${completed}회를 진행했습니다.
+        </p>
+
+        <button class="esp-action" id="espResume">
+          ▶ 이어서 훈련하기
+        </button>
+
+        <button class="esp-action" id="espDiscard"
+          style="background:transparent;">
+          현재 훈련 포기하고 새로 시작하기
+        </button>
+      </div>
+    `;
+
+    $("espResume").onclick = renderEspLab;
+
+    $("espDiscard").onclick = () => {
+      if (!confirm(
+        "진행 중인 훈련을 포기하시겠습니까?\n" +
+        "완료하지 않은 기록은 저장되지 않습니다."
+      )) return;
+
+      espLab = null;
+      renderEspLab();
+    };
+
+    return;
+  }
 
   renderEspLab();
 }
@@ -2968,12 +3010,21 @@ if (!saved) {
   // 표적 선택 화면
   output.innerHTML = `
     <div class="esp-board">
-      <p class="esp-title">ESP · BLIND SESSION</p>
-      <h2>숨겨진 문양을 선택하십시오</h2>
+     
+<p class="esp-title">ESP · BLIND SESSION</p>
 
-      <p class="esp-muted">
-        첫인상을 관찰하고 하나의 문양을 선택하십시오.
-      </p>
+<div class="esp-hidden-card">
+  <div class="esp-question">?</div>
+  <div class="esp-card-label">HIDDEN TARGET</div>
+</div>
+
+<h2>이 카드에 숨겨진 문양은 무엇일까요?</h2>
+
+<p class="esp-muted">
+  마음에 가장 먼저 떠오르는 문양을<br>
+  아래 다섯 장의 카드 중에서 선택하십시오.
+</p>
+
 
       ${progress}
 

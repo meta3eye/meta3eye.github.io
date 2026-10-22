@@ -2479,6 +2479,15 @@ function installEspLab() {
     entry.id = "espLabEntry";
     entry.className = "panel";
 
+entry.style.cssText = `
+  border:1px solid #a78bfa;
+  border-radius:16px;
+  padding:22px;
+  margin:0 0 20px;
+  background:rgba(167,139,250,0.06);
+  box-shadow:0 0 18px rgba(167,139,250,0.08);
+`;
+    
     entry.innerHTML = `
       <div class="section-title">
         <h2>✦ ESP SYMBOL TRAINING</h2>

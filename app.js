@@ -2817,6 +2817,79 @@ entry.style.cssText = `
   to { transform:rotateY(180deg); }
 }
 
+
+/* CORE 3.0 · 카드 중앙 판정 애니메이션 */
+
+.esp-hidden-card {
+  position:relative;
+  overflow:visible;
+}
+
+.esp-judgement {
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:20;
+  width:120px;
+  height:120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  font-size:95px;
+  font-weight:700;
+  line-height:1;
+  pointer-events:none;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.25);
+  animation:espJudgementBurst 1.35s ease-out .65s both;
+}
+
+.esp-judgement.match {
+  color:#ffda67;
+  text-shadow:
+    0 0 18px #ffd35b,
+    0 0 42px rgba(255,200,55,.8);
+}
+
+.esp-judgement.miss {
+  color:#ff626b;
+  text-shadow:
+    0 0 18px #ff4655,
+    0 0 42px rgba(255,65,80,.7);
+}
+
+@keyframes espJudgementBurst {
+  0% {
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.25);
+  }
+
+  18% {
+    opacity:1;
+    transform:translate(-50%,-50%) scale(.85);
+  }
+
+  45% {
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1.35);
+  }
+
+  100% {
+    opacity:0;
+    transform:translate(-50%,-50%) scale(2.8);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .esp-judgement {
+    animation:none;
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
+}
+
+
 .esp-reveal-effect {
   position:relative;
   padding:18px 10px;
@@ -3147,12 +3220,20 @@ if (!saved) {
             <div class="esp-card-label">HIDDEN TARGET</div>
           </div>
 
-          <div class="esp-flip-face esp-flip-back">
-            ${last ? ESP_SYMBOLS[last.target] : ""}
-          </div>
+         
+<div class="esp-flip-face esp-flip-back">
+  ${last ? ESP_SYMBOLS[last.target] : ""}
+</div>
 
-        </div>
-      </div>
+</div>
+
+${lab.revealed ? `
+  <div class="esp-judgement ${last.correct ? "match" : "miss"}">
+    ${last.correct ? "◯" : "✕"}
+  </div>
+` : ""}
+
+</div>
 
       ${
         lab.revealed
@@ -3169,14 +3250,7 @@ if (!saved) {
                 ${last.correct
                   ? "표적이 일치했습니다!"
                   : "표적이 일치하지 않았습니다."}
-              </p>
-
-              <p class="esp-muted">
-                나의 선택: ${ESP_SYMBOLS[last.choice]}
-                &nbsp; · &nbsp;
-                실제 표적: ${ESP_SYMBOLS[last.target]}
-              </p>
-
+              </p>             
             </div>
           `
           : `

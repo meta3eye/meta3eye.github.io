@@ -3117,52 +3117,138 @@ if (!saved) {
     return;
   }
 
-  // 선택 후 표적 공개
-  if (lab.revealed) {
-    const last = lab.results[total - 1];
+ 
+  // CORE 2.9 · 카드 선택과 표적 공개 통합
 
-    output.innerHTML = `
-      <div class="esp-board">
-        <p class="esp-title">TARGET REVEALED</p>
-        <h2>${last.correct ? "✦ 표적 일치" : "표적 불일치"}</h2>
+  const last = lab.revealed
+    ? lab.results[total - 1]
+    : null;
 
-        ${progress}
+  const currentTrial = lab.revealed
+    ? total
+    : total + 1;
 
-        <div style="
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:15px;
-          margin:25px 0;
-        ">
-          <div>
-            <p class="esp-muted">MY CHOICE</p>
-            <div class="esp-result">
-              ${ESP_SYMBOLS[last.choice]}
-            </div>
+  output.innerHTML = `
+    <div class="esp-board">
+
+      <p class="esp-title">ESP · BLIND SESSION</p>
+
+      <p class="esp-title">
+        TRIAL ${currentTrial} / ${lab.maxTrials}
+      </p>
+
+      ${progress}
+
+      <div class="esp-hidden-card">
+        <div class="esp-flip-inner ${lab.revealed ? "is-revealed" : ""}">
+
+          <div class="esp-flip-face">
+            <div class="esp-question">?</div>
+            <div class="esp-card-label">HIDDEN TARGET</div>
           </div>
 
-          <div>
-            <p class="esp-muted">ACTUAL TARGET</p>
-            <div class="esp-result">
-              ${ESP_SYMBOLS[last.target]}
-            </div>
+          <div class="esp-flip-face esp-flip-back">
+            ${last ? ESP_SYMBOLS[last.target] : ""}
           </div>
+
         </div>
-
-        <p class="esp-muted">
-          현재 기록 ${correct} / ${total}
-        </p>
-
-        <button class="esp-action" id="espNext">
-          ${total >= lab.maxTrials
-            ? "최종 결과 확인 →"
-            : "다음 표적 →"}
-        </button>
       </div>
-    `;
 
+      ${
+        lab.revealed
+          ? `
+            <div class="esp-reveal-effect ${last.correct ? "match" : "miss"}">
+
+              <h2>
+                ${last.correct
+                  ? "✦ TARGET MATCH!"
+                  : "✕ TARGET MISS"}
+              </h2>
+
+              <p>
+                ${last.correct
+                  ? "표적이 일치했습니다!"
+                  : "표적이 일치하지 않았습니다."}
+              </p>
+
+              <p class="esp-muted">
+                나의 선택: ${ESP_SYMBOLS[last.choice]}
+                &nbsp; · &nbsp;
+                실제 표적: ${ESP_SYMBOLS[last.target]}
+              </p>
+
+            </div>
+          `
+          : `
+            <h2>이 카드에 숨겨진 문양은 무엇일까요?</h2>
+
+            <p class="esp-muted">
+              마음에 가장 먼저 떠오르는 문양을<br>
+              아래 다섯 장의 카드 중에서 선택하십시오.
+            </p>
+          `
+      }
+
+      <div class="esp-grid">
+        ${ESP_SYMBOLS.map((symbol, index) => `
+          <button
+            class="esp-card ${
+              last && last.choice === index ? "esp-picked" : ""
+            }"
+            type="button"
+            data-esp-choice="${index}"
+            ${lab.revealed ? "disabled" : ""}
+          >
+            ${symbol}
+          </button>
+        `).join("")}
+      </div>
+
+      <p class="esp-muted">
+        현재 일치 ${correct} / ${total}
+      </p>
+
+      ${
+        lab.revealed
+          ? `
+            <button class="esp-action" id="espNext">
+              ${total >= lab.maxTrials
+                ? "최종 결과 확인 →"
+                : "다음 표적 →"}
+            </button>
+          `
+          : ""
+      }
+
+    </div>
+  `;
+
+  // 다섯 문양 중 하나 선택
+  if (!lab.revealed) {
+    output.querySelectorAll("[data-esp-choice]")
+      .forEach(button => {
+        button.onclick = () => {
+          if (lab.revealed || lab.finished) return;
+
+          const choice = Number(button.dataset.espChoice);
+          const target = lab.target;
+
+          lab.results.push({
+            choice,
+            target,
+            correct: choice === target
+          });
+
+          lab.revealed = true;
+          renderEspLab();
+        };
+      });
+  }
+
+  // 다음 표적으로 이동
+  if (lab.revealed) {
     $("espNext").onclick = () => {
-      if (total >= lab.maxTrials) {
+      if (lab.results.length >= lab.maxTrials) {
         lab.finished = true;
       } else {
         lab.target = espRandomTarget();
@@ -3171,70 +3257,9 @@ if (!saved) {
 
       renderEspLab();
     };
-
-    return;
   }
-
-  // 표적 선택 화면
-  output.innerHTML = `
-    <div class="esp-board">
-     
-<p class="esp-title">ESP · BLIND SESSION</p>
-
-<div class="esp-hidden-card">
-  <div class="esp-question">?</div>
-  <div class="esp-card-label">HIDDEN TARGET</div>
-</div>
-
-<h2>이 카드에 숨겨진 문양은 무엇일까요?</h2>
-
-<p class="esp-muted">
-  마음에 가장 먼저 떠오르는 문양을<br>
-  아래 다섯 장의 카드 중에서 선택하십시오.
-</p>
-
-
-      ${progress}
-
-      <p class="esp-title">
-        TRIAL ${total + 1} / ${lab.maxTrials}
-      </p>
-
-      <div class="esp-grid">
-        ${ESP_SYMBOLS.map((symbol, index) => `
-          <button class="esp-card"
-            type="button"
-            data-esp-choice="${index}">
-            ${symbol}
-          </button>
-        `).join("")}
-      </div>
-
-      <p class="esp-muted">
-        현재 일치 ${correct}회
-      </p>
-    </div>
-  `;
-
-  output.querySelectorAll("[data-esp-choice]")
-    .forEach(button => {
-      button.onclick = () => {
-        if (lab.revealed || lab.finished) return;
-
-        const choice = Number(button.dataset.espChoice);
-        const target = lab.target;
-
-        lab.results.push({
-          choice,
-          target,
-          correct: choice === target
-        });
-
-        lab.revealed = true;
-        renderEspLab();
-      };
-    });
 }
+
 
   
   async function loadQuests() {

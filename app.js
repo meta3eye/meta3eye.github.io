@@ -2696,7 +2696,17 @@ entry.style.cssText = `
         gap:8px;
         margin:25px 0;
       }
-
+ .esp-card {
+        min-width:0;
+        min-height:115px;
+        border:1px solid #a18b5f;
+        border-radius:12px;
+        background:linear-gradient(145deg,#263955,#111d30);
+        color:#ead39c;
+        font-size:35px;
+        cursor:pointer;
+        transition:transform .18s,border-color .18s;
+      }
 
 .esp-hidden-card {
   width:145px;
@@ -2731,17 +2741,7 @@ entry.style.cssText = `
 }
 
 
-      .esp-card {
-        min-width:0;
-        min-height:115px;
-        border:1px solid #a18b5f;
-        border-radius:12px;
-        background:linear-gradient(145deg,#263955,#111d30);
-        color:#ead39c;
-        font-size:35px;
-        cursor:pointer;
-        transition:transform .18s,border-color .18s;
-      }
+     
 
       .esp-card:hover {
         transform:translateY(-4px);

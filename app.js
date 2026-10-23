@@ -2707,6 +2707,17 @@ entry.style.cssText = `
 
   document.body.appendChild(room);
 
+  const motionSelect = $("spiritMotionSelect");
+
+  if (motionSelect) {
+    motionSelect.value = getSpiritMotionPreference();
+
+    motionSelect.addEventListener("change", () => {
+      setSpiritMotion(motionSelect.value);
+    });
+  }
+
+  
   $("espLabClose").onclick = () => {
     show("espLabRoom", false);
     show("dailyQuestRoom", true);

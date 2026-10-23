@@ -2687,6 +2687,20 @@ entry.style.cssText = `
         ← 훈련실로 돌아가기
       </button>
 
+
+<div class="esp-motion-settings">
+  <label for="spiritMotionSelect">
+    ✦ VISUAL EFFECT SETTINGS
+  </label>
+
+  <select id="spiritMotionSelect">
+    <option value="system">SYSTEM · Windows 설정 따르기</option>
+    <option value="full">FULL · 환상적인 효과 전체</option>
+    <option value="light">LIGHT · 부드러운 효과</option>
+    <option value="off">OFF · 움직임 없이 표시</option>
+  </select>
+</div>
+
       <div id="espLabContent"></div>
     </div>
   `;

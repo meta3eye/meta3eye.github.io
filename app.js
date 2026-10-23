@@ -3204,6 +3204,171 @@ entry.style.cssText = `
 }
 
 
+/* =========================================
+   CORE 3.4 · USER CONTROLLED VISUAL EFFECTS
+========================================= */
+
+/* 설정 메뉴 디자인 */
+
+.esp-motion-settings {
+  margin:18px 0 22px;
+  padding:15px;
+  border:1px solid rgba(212,188,128,.45);
+  border-radius:12px;
+  background:rgba(212,188,128,.045);
+}
+
+.esp-motion-settings label {
+  display:block;
+  margin-bottom:10px;
+  color:#e8d49b;
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:1px;
+}
+
+.esp-motion-settings select {
+  width:100%;
+  padding:12px;
+  border:1px solid #76694b;
+  border-radius:8px;
+  background:#172337;
+  color:#f0e6ca;
+  font-size:14px;
+}
+
+/* FULL
+   Windows 움직임 감소 설정과 관계없이
+   기존 CORE 3.2 효과를 재생한다.
+*/
+
+html[data-spirit-motion="full"]
+.esp-arcane-card.is-revealed {
+  animation:arcaneCardGlow 1.8s ease forwards !important;
+}
+
+html[data-spirit-motion="full"]
+.esp-arcane-card.is-revealed .esp-arcane-question {
+  animation:arcaneQuestionOut .65s ease forwards !important;
+}
+
+html[data-spirit-motion="full"]
+.esp-arcane-card.is-revealed .esp-arcane-target {
+  animation:arcaneTargetIn 1.35s ease .35s forwards !important;
+}
+
+html[data-spirit-motion="full"]
+.esp-hidden-card .esp-judgement {
+  animation:arcaneBurst 1.7s cubic-bezier(.18,.65,.25,1) .85s both !important;
+}
+
+html[data-spirit-motion="full"]
+.esp-hidden-card .esp-judgement::after {
+  animation:arcaneRing 1.5s ease-out .2s both !important;
+}
+
+/* LIGHT
+   크기 변화 없이 투명도만 부드럽게 변경한다.
+*/
+
+html[data-spirit-motion="light"]
+.esp-arcane-card.is-revealed,
+html[data-spirit-motion="light"]
+.esp-arcane-card.is-revealed .esp-arcane-question,
+html[data-spirit-motion="light"]
+.esp-arcane-card.is-revealed .esp-arcane-target,
+html[data-spirit-motion="light"]
+.esp-hidden-card .esp-judgement,
+html[data-spirit-motion="light"]
+.esp-hidden-card .esp-judgement::after {
+  animation:none !important;
+}
+
+html[data-spirit-motion="light"]
+.esp-arcane-card.is-revealed .esp-arcane-question {
+  opacity:0;
+  transition:opacity .5s;
+}
+
+html[data-spirit-motion="light"]
+.esp-arcane-card.is-revealed .esp-arcane-target {
+  opacity:1;
+  transform:scale(1);
+  filter:none;
+  animation:spiritLightReveal .8s ease both !important;
+}
+
+html[data-spirit-motion="light"]
+.esp-hidden-card .esp-judgement {
+  opacity:0;
+  animation:spiritLightVerdict 1.5s ease .35s both !important;
+  transform:translate(-50%,-50%) scale(1);
+}
+
+html[data-spirit-motion="light"]
+.esp-hidden-card .esp-judgement::after {
+  display:none;
+}
+
+@keyframes spiritLightReveal {
+  from { opacity:0; }
+  to { opacity:1; }
+}
+
+@keyframes spiritLightVerdict {
+  0% { opacity:0; }
+  30% { opacity:1; }
+  65% { opacity:1; }
+  100% { opacity:0; }
+}
+
+/* OFF
+   움직임을 없애고 정답을 즉시 표시한다.
+*/
+
+html[data-spirit-motion="off"]
+.esp-arcane-card.is-revealed,
+html[data-spirit-motion="off"]
+.esp-arcane-card.is-revealed .esp-arcane-question,
+html[data-spirit-motion="off"]
+.esp-arcane-card.is-revealed .esp-arcane-target,
+html[data-spirit-motion="off"]
+.esp-hidden-card .esp-judgement,
+html[data-spirit-motion="off"]
+.esp-hidden-card .esp-judgement::after {
+  animation:none !important;
+  transition:none !important;
+}
+
+html[data-spirit-motion="off"]
+.esp-arcane-card.is-revealed .esp-arcane-question {
+  opacity:0;
+}
+
+html[data-spirit-motion="off"]
+.esp-arcane-card.is-revealed .esp-arcane-target {
+  opacity:1;
+  transform:scale(1);
+  filter:none;
+}
+
+html[data-spirit-motion="off"]
+.esp-hidden-card .esp-judgement {
+  opacity:0;
+}
+
+html[data-spirit-motion="off"]
+.esp-hidden-card .esp-judgement::after {
+  display:none;
+}
+
+/* LIGHT / OFF에서도 판정 색상 유지 */
+
+html[data-spirit-motion="light"] .esp-message-slot,
+html[data-spirit-motion="off"] .esp-message-slot {
+  animation:none !important;
+}
+
       .esp-progress {
         height:7px;
         background:#303b52;

@@ -3483,19 +3483,6 @@ if (!saved) {
     };
   }
 }
-
-
-## 3. 수정 결과
-
-이번 수정의 핵심은 `esp-message-slot`과 `esp-next-slot`이다. 선택 전후에 동일한 공간을 차지하므로 글자가 바뀌어도 다섯 카드와 다음 버튼이 아래로 밀리지 않는다.
-
-판정 애니메이션은 카드 뒤집기가 시작된 뒤 0.75초 후에 나타나며, 최대 3.2배로 확대된다. 즉, 카드 바깥까지 퍼지면서 사라진다.
-
-기존 `ESP_SYMBOLS`, `espRandomTarget()`, `espSaveCompletedSession()`, 난이도 선택, 세션 재개 및 최종 결과 처리는 수정하지 않는다.
-
-**수정 후에는 브라우저에서 `Ctrl + Shift + R`로 새로고침하고 테스트해라.** 움직임 감소 설정이 켜져 있다면 애니메이션 대신 정적 판정 기호가 표시된다.
-
-
   
   async function loadQuests() {
     if (!state.profile) return;

@@ -2969,6 +2969,159 @@ entry.style.cssText = `
 }
 
 
+/* CORE 3.2 · ARCANE REVEAL */
+
+.esp-hidden-card .esp-arcane-card {
+  position:relative;
+  width:145px;
+  height:195px;
+  overflow:visible;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #d4bc80;
+  border-radius:15px;
+  background:
+    radial-gradient(circle,rgba(116,87,170,.25),transparent 75%),
+    linear-gradient(145deg,#263955,#101827);
+  box-shadow:inset 0 0 30px rgba(0,0,0,.3);
+}
+
+.esp-arcane-question {
+  font-size:65px;
+  color:#ead39c;
+}
+
+.esp-arcane-target {
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:76px;
+  color:#ffe4a0;
+  opacity:0;
+  transform:scale(.55);
+}
+
+.esp-arcane-card.is-revealed .esp-arcane-question {
+  animation:arcaneQuestionOut .65s ease forwards;
+}
+
+.esp-arcane-card.is-revealed .esp-arcane-target {
+  animation:arcaneTargetIn 1.35s ease .35s forwards;
+}
+
+.esp-arcane-card.is-revealed {
+  animation:arcaneCardGlow 1.8s ease forwards;
+}
+
+/* 카드 바깥으로 확장되는 판정 효과 */
+
+.esp-hidden-card .esp-judgement {
+  z-index:50;
+  animation:arcaneBurst 1.7s cubic-bezier(.18,.65,.25,1) .85s both;
+}
+
+.esp-hidden-card .esp-judgement::after {
+  content:"";
+  position:absolute;
+  width:125px;
+  height:125px;
+  border:3px solid currentColor;
+  border-radius:50%;
+  box-shadow:0 0 28px currentColor;
+  animation:arcaneRing 1.5s ease-out .2s both;
+}
+
+@keyframes arcaneQuestionOut {
+  to {
+    opacity:0;
+    transform:scale(.5);
+    filter:blur(12px);
+  }
+}
+
+@keyframes arcaneTargetIn {
+  0% {
+    opacity:0;
+    transform:scale(.55);
+    filter:blur(18px);
+  }
+  65% {
+    opacity:1;
+    filter:blur(2px);
+  }
+  100% {
+    opacity:1;
+    transform:scale(1);
+    filter:blur(0);
+    text-shadow:0 0 24px rgba(255,218,110,.65);
+  }
+}
+
+@keyframes arcaneCardGlow {
+  50% {
+    box-shadow:0 0 42px rgba(212,188,128,.55);
+  }
+  100% {
+    box-shadow:0 0 12px rgba(212,188,128,.2);
+  }
+}
+
+@keyframes arcaneBurst {
+  0% {
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.15);
+  }
+  20% {
+    opacity:1;
+    transform:translate(-50%,-50%) scale(.9);
+  }
+  45% {
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1.5);
+  }
+  100% {
+    opacity:0;
+    transform:translate(-50%,-50%) scale(3.5);
+  }
+}
+
+@keyframes arcaneRing {
+  from {
+    opacity:.9;
+    transform:scale(.4);
+  }
+  to {
+    opacity:0;
+    transform:scale(2.5);
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .esp-arcane-card.is-revealed,
+  .esp-arcane-card.is-revealed .esp-arcane-question,
+  .esp-arcane-card.is-revealed .esp-arcane-target,
+  .esp-hidden-card .esp-judgement,
+  .esp-hidden-card .esp-judgement::after {
+    animation:none;
+  }
+
+  .esp-arcane-card.is-revealed .esp-arcane-question {
+    opacity:0;
+  }
+
+  .esp-arcane-card.is-revealed .esp-arcane-target {
+    opacity:1;
+    transform:scale(1);
+  }
+
+  .esp-hidden-card .esp-judgement {
+    opacity:0;
+  }
+}
+
 
       .esp-progress {
         height:7px;

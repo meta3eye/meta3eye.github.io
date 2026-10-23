@@ -3360,16 +3360,14 @@ if (!saved) {
 
       ${progress}
 
+      
       <div class="esp-hidden-card">
 
-        <div class="esp-flip-inner ${lab.revealed ? "is-revealed" : ""}">
+        <div class="esp-arcane-card ${lab.revealed ? "is-revealed" : ""}">
 
-          <div class="esp-flip-face">
-            <div class="esp-question">?</div>
-            <div class="esp-card-label">HIDDEN TARGET</div>
-          </div>
+          <div class="esp-arcane-question">?</div>
 
-          <div class="esp-flip-face esp-flip-back">
+          <div class="esp-arcane-target">
             ${last ? ESP_SYMBOLS[last.target] : ""}
           </div>
 
@@ -3382,6 +3380,8 @@ if (!saved) {
         ` : ""}
 
       </div>
+
+
 
       <div class="esp-message-slot ${
         lab.revealed

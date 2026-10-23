@@ -10,6 +10,62 @@
 
   const $ = id => document.getElementById(id);
 
+
+/* CORE 3.4 · VISUAL EFFECT SETTINGS */
+
+const SPIRIT_MOTION_KEY = "spirit_visual_effect_v1";
+
+const spiritMotionQuery =
+  window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function getSpiritMotionPreference() {
+  try {
+    const saved = localStorage.getItem(SPIRIT_MOTION_KEY);
+    return ["system", "full", "light", "off"].includes(saved)
+      ? saved
+      : "system";
+  } catch (error) {
+    return "system";
+  }
+}
+
+function applySpiritMotion() {
+  const preference = getSpiritMotionPreference();
+
+  const effectiveMode =
+    preference === "system"
+      ? (spiritMotionQuery.matches ? "off" : "full")
+      : preference;
+
+  document.documentElement.dataset.spiritMotion = effectiveMode;
+
+  const selector = $("spiritMotionSelect");
+  if (selector) selector.value = preference;
+}
+
+function setSpiritMotion(preference) {
+  if (!["system", "full", "light", "off"].includes(preference)) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(SPIRIT_MOTION_KEY, preference);
+  } catch (error) {
+    console.warn("시각효과 설정을 저장하지 못했습니다.", error);
+  }
+
+  applySpiritMotion();
+}
+
+applySpiritMotion();
+
+if (spiritMotionQuery.addEventListener) {
+  spiritMotionQuery.addEventListener("change", applySpiritMotion);
+} else if (spiritMotionQuery.addListener) {
+  spiritMotionQuery.addListener(applySpiritMotion);
+}
+
+  
   const state = {
     user: null,
     profile: null,

@@ -2818,124 +2818,112 @@ entry.style.cssText = `
 }
 
 
-/* CORE 3.0 · 카드 중앙 판정 애니메이션 */
+
+/* CORE 3.1 · FIXED LAYOUT & JUDGEMENT BURST */
 
 .esp-hidden-card {
   position:relative;
-  overflow:visible;
+  overflow:visible !important;
+  isolation:isolate;
+}
+
+.esp-flip-inner {
+  position:relative;
+  z-index:1;
 }
 
 .esp-judgement {
   position:absolute;
   left:50%;
   top:50%;
-  z-index:20;
-  width:120px;
-  height:120px;
+  z-index:30;
+  width:145px;
+  height:145px;
   display:flex;
-  align-items:center;
   justify-content:center;
-  border-radius:50%;
-  font-size:95px;
-  font-weight:700;
-  line-height:1;
+  align-items:center;
   pointer-events:none;
+  font-size:125px;
+  font-weight:800;
+  line-height:1;
   opacity:0;
-  transform:translate(-50%,-50%) scale(.25);
-  animation:espJudgementBurst 1.35s ease-out .65s both;
+  transform:translate(-50%,-50%) scale(.2);
+  animation:espJudgementBurst 1.5s ease-out .75s forwards;
+  will-change:transform,opacity;
 }
 
 .esp-judgement.match {
-  color:#ffda67;
+  color:#ffdc69;
   text-shadow:
-    0 0 18px #ffd35b,
-    0 0 42px rgba(255,200,55,.8);
+    0 0 15px #ffcf45,
+    0 0 35px rgba(255,210,65,.8);
 }
 
 .esp-judgement.miss {
-  color:#ff626b;
+  color:#ff5968;
   text-shadow:
-    0 0 18px #ff4655,
-    0 0 42px rgba(255,65,80,.7);
+    0 0 15px #ff344a,
+    0 0 35px rgba(255,60,80,.75);
 }
 
 @keyframes espJudgementBurst {
   0% {
     opacity:0;
-    transform:translate(-50%,-50%) scale(.25);
+    transform:translate(-50%,-50%) scale(.2);
   }
-
-  18% {
+  15% {
     opacity:1;
-    transform:translate(-50%,-50%) scale(.85);
+    transform:translate(-50%,-50%) scale(.8);
   }
-
-  45% {
+  40% {
     opacity:1;
-    transform:translate(-50%,-50%) scale(1.35);
+    transform:translate(-50%,-50%) scale(1.5);
   }
-
   100% {
     opacity:0;
-    transform:translate(-50%,-50%) scale(2.8);
+    transform:translate(-50%,-50%) scale(3.2);
   }
 }
 
-@media (prefers-reduced-motion:reduce) {
-  .esp-judgement {
-    animation:none;
-    opacity:1;
-    transform:translate(-50%,-50%) scale(1);
-  }
-}
-
-
-.esp-reveal-effect {
-  position:relative;
-  padding:18px 10px;
+/* 선택 전후 같은 공간을 사용 */
+.esp-message-slot {
+  height:112px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
   margin:14px 0;
+  border:1px solid rgba(212,188,128,.35);
   border-radius:14px;
-  animation:espEffectIn .55s ease both;
+  background:rgba(212,188,128,.045);
 }
 
-.esp-reveal-effect.match {
+.esp-message-slot h2 {
+  margin:0 0 8px;
+  font-size:clamp(17px,4vw,22px);
+  line-height:1.35;
+}
+
+.esp-message-slot p {
+  margin:0;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.esp-message-slot.match {
   color:#f5d780;
-  background:radial-gradient(ellipse,rgba(235,192,75,.22),transparent 75%);
-  text-shadow:0 0 16px rgba(255,215,100,.65);
+  border-color:rgba(245,215,128,.6);
 }
 
-.esp-reveal-effect.miss {
+.esp-message-slot.miss {
   color:#f0a5a5;
-  background:radial-gradient(ellipse,rgba(190,65,75,.18),transparent 75%);
+  border-color:rgba(240,110,110,.5);
 }
 
-.esp-reveal-effect.match::before,
-.esp-reveal-effect.match::after {
-  content:"✦";
-  position:absolute;
-  top:12px;
-  font-size:25px;
-  animation:espSpark 1.4s ease-in-out infinite alternate;
-}
-
-.esp-reveal-effect.match::before { left:10%; }
-.esp-reveal-effect.match::after {
-  right:10%;
-  animation-delay:.35s;
-}
-
-.esp-reveal-effect.miss::before {
-  content:"";
-  position:absolute;
-  inset:0;
-  border:1px solid rgba(240,110,110,.45);
-  border-radius:14px;
-  animation:espMissPulse .65s ease-out;
-  pointer-events:none;
-}
-
-.esp-reveal-effect h2 {
-  margin:6px 0;
+.esp-message-slot .esp-muted {
+  color:#abb8ca;
 }
 
 .esp-card.esp-picked {
@@ -2948,32 +2936,38 @@ entry.style.cssText = `
   opacity:1;
 }
 
-@keyframes espEffectIn {
-  from { opacity:0; transform:scale(.9); }
-  to { opacity:1; transform:scale(1); }
+.esp-next-slot {
+  min-height:72px;
 }
 
-@keyframes espSpark {
-  from { opacity:.35; transform:scale(.7) rotate(-15deg); }
-  to { opacity:1; transform:scale(1.25) rotate(15deg); }
+.esp-next-slot .esp-action {
+  margin-top:0;
 }
 
-@keyframes espMissPulse {
-  from { opacity:1; transform:scale(.95); }
-  to { opacity:0; transform:scale(1.06); }
+.esp-next-slot .esp-action.esp-waiting {
+  visibility:hidden;
+  pointer-events:none;
 }
 
-@media (prefers-reduced-motion:reduce) {
+@media(max-width:500px) {
+  .esp-message-slot {
+    height:120px;
+  }
+}
+
+/* 움직임 감소 설정에서는 정적 판정 표시 */
+@media(prefers-reduced-motion:reduce) {
+  .esp-judgement {
+    animation:none;
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
   .esp-flip-inner.is-revealed {
     animation:none;
     transform:rotateY(180deg);
   }
-  .esp-reveal-effect,
-  .esp-reveal-effect::before,
-  .esp-reveal-effect::after {
-    animation:none!important;
-  }
 }
+
 
 
       .esp-progress {
@@ -3191,7 +3185,8 @@ if (!saved) {
   }
 
  
-  // CORE 2.9 · 카드 선택과 표적 공개 통합
+  
+  // CORE 3.1 · 고정형 카드 선택 및 판정 화면
 
   const last = lab.revealed
     ? lab.results[total - 1]
@@ -3213,6 +3208,7 @@ if (!saved) {
       ${progress}
 
       <div class="esp-hidden-card">
+
         <div class="esp-flip-inner ${lab.revealed ? "is-revealed" : ""}">
 
           <div class="esp-flip-face">
@@ -3220,48 +3216,48 @@ if (!saved) {
             <div class="esp-card-label">HIDDEN TARGET</div>
           </div>
 
-         
-<div class="esp-flip-face esp-flip-back">
-  ${last ? ESP_SYMBOLS[last.target] : ""}
-</div>
+          <div class="esp-flip-face esp-flip-back">
+            ${last ? ESP_SYMBOLS[last.target] : ""}
+          </div>
 
-</div>
+        </div>
 
-${lab.revealed ? `
-  <div class="esp-judgement ${last.correct ? "match" : "miss"}">
-    ${last.correct ? "◯" : "✕"}
-  </div>
-` : ""}
+        ${lab.revealed ? `
+          <div class="esp-judgement ${last.correct ? "match" : "miss"}">
+            ${last.correct ? "◯" : "✕"}
+          </div>
+        ` : ""}
 
-</div>
+      </div>
 
-      ${
+      <div class="esp-message-slot ${
         lab.revealed
-          ? `
-            <div class="esp-reveal-effect ${last.correct ? "match" : "miss"}">
+          ? (last.correct ? "match" : "miss")
+          : ""
+      }">
 
-              <h2>
-                ${last.correct
-                  ? "✦ TARGET MATCH!"
-                  : "✕ TARGET MISS"}
-              </h2>
+        ${lab.revealed ? `
+          <h2>
+            ${last.correct
+              ? "✦ TARGET MATCH!"
+              : "✕ TARGET MISS"}
+          </h2>
 
-              <p>
-                ${last.correct
-                  ? "표적이 일치했습니다!"
-                  : "표적이 일치하지 않았습니다."}
-              </p>             
-            </div>
-          `
-          : `
-            <h2>이 카드에 숨겨진 문양은 무엇일까요?</h2>
+          <p>
+            ${last.correct
+              ? "표적이 일치했습니다!"
+              : "표적이 일치하지 않았습니다."}
+          </p>
+        ` : `
+          <h2>이 카드에 숨겨진 문양은 무엇일까요?</h2>
 
-            <p class="esp-muted">
-              마음에 가장 먼저 떠오르는 문양을<br>
-              아래 다섯 장의 카드 중에서 선택하십시오.
-            </p>
-          `
-      }
+          <p class="esp-muted">
+            마음에 가장 먼저 떠오르는 문양을<br>
+            아래 다섯 장의 카드 중에서 선택하십시오.
+          </p>
+        `}
+
+      </div>
 
       <div class="esp-grid">
         ${ESP_SYMBOLS.map((symbol, index) => `
@@ -3282,17 +3278,18 @@ ${lab.revealed ? `
         현재 일치 ${correct} / ${total}
       </p>
 
-      ${
-        lab.revealed
-          ? `
-            <button class="esp-action" id="espNext">
-              ${total >= lab.maxTrials
-                ? "최종 결과 확인 →"
-                : "다음 표적 →"}
-            </button>
-          `
-          : ""
-      }
+      <div class="esp-next-slot">
+        <button
+          class="esp-action ${lab.revealed ? "" : "esp-waiting"}"
+          id="espNext"
+          type="button"
+          ${lab.revealed ? "" : "disabled"}
+        >
+          ${total >= lab.maxTrials
+            ? "최종 결과 확인 →"
+            : "다음 표적 →"}
+        </button>
+      </div>
 
     </div>
   `;
@@ -3319,7 +3316,7 @@ ${lab.revealed ? `
       });
   }
 
-  // 다음 표적으로 이동
+  // 다음 표적 또는 최종 결과
   if (lab.revealed) {
     $("espNext").onclick = () => {
       if (lab.results.length >= lab.maxTrials) {
@@ -3333,6 +3330,17 @@ ${lab.revealed ? `
     };
   }
 }
+
+
+## 3. 수정 결과
+
+이번 수정의 핵심은 `esp-message-slot`과 `esp-next-slot`이다. 선택 전후에 동일한 공간을 차지하므로 글자가 바뀌어도 다섯 카드와 다음 버튼이 아래로 밀리지 않는다.
+
+판정 애니메이션은 카드 뒤집기가 시작된 뒤 0.75초 후에 나타나며, 최대 3.2배로 확대된다. 즉, 카드 바깥까지 퍼지면서 사라진다.
+
+기존 `ESP_SYMBOLS`, `espRandomTarget()`, `espSaveCompletedSession()`, 난이도 선택, 세션 재개 및 최종 결과 처리는 수정하지 않는다.
+
+**수정 후에는 브라우저에서 `Ctrl + Shift + R`로 새로고침하고 테스트해라.** 움직임 감소 설정이 켜져 있다면 애니메이션 대신 정적 판정 기호가 표시된다.
 
 
   

@@ -2567,58 +2567,148 @@ function espSaveCompletedSession(lab) {
   }
 }
 
+
 function espRenderRecordSummary() {
-  const records = espLoadRecords();
+  const symbols = ["◯", "✚", "≋", "◇", "✦"];
+
+  const records = espLoadRecords()
+    .filter(r =>
+      r &&
+      Array.isArray(r.results) &&
+      Number(r.trials) > 0 &&
+      r.results.length === Number(r.trials)
+    )
+    .sort((a, b) =>
+      new Date(a.completed_at).getTime() -
+      new Date(b.completed_at).getTime()
+    );
+
   const sessions = records.length;
+  const results = records.flatMap(r => r.results);
 
-  const trials = records.reduce(
-    (sum, r) => sum + Number(r.trials || 0), 0
-  );
+  const trials = results.length;
+  const correct = results.filter(r => r.correct === true).length;
 
-  const correct = records.reduce(
-    (sum, r) => sum + Number(r.correct || 0), 0
-  );
+  const percent = (a, b) =>
+    b > 0 ? (a / b * 100).toFixed(1) : "—";
 
-  const rate = trials
-    ? (correct / trials * 100).toFixed(1)
-    : "0.0";
+  const rate = percent(correct, trials);
+
+  const symbolRows = symbols.map((symbol, index) => {
+    const attempts = results.filter(r => Number(r.target) === index);
+    const hits = attempts.filter(r => r.correct === true).length;
+
+    return {
+      symbol,
+      trials: attempts.length,
+      hits,
+      rate: percent(hits, attempts.length)
+    };
+  });
+
+  const recent = records.slice(-10);
+
+  const trend = recent.map((record, index) => {
+    const count = record.results.length;
+    const hits = record.results.filter(r => r.correct === true).length;
+
+    return {
+      label: index + 1,
+      rate: count ? hits / count * 100 : 0,
+      count,
+      hits
+    };
+  });
+
+  const average = trend.length
+    ? trend.reduce((sum, r) => sum + r.rate, 0) / trend.length
+    : 0;
+
+  const variance = trend.length
+    ? trend.reduce(
+        (sum, r) => sum + Math.pow(r.rate - average, 2),
+        0
+      ) / trend.length
+    : 0;
+
+  const deviation = Math.sqrt(variance);
+
+  const maxBar = 100;
+
+  const symbolHtml = symbolRows.map(row => {
+    const width = row.trials ? Number(row.rate) : 0;
+
+    return `
+      <div class="esp-analysis-symbol">
+        <span>${row.symbol}</span>
+        <div class="esp-analysis-track">
+          <div style="
+            width:${Math.min(maxBar, width)}%;
+            height:100%;
+            border-radius:8px;
+            background:#d4bc80;
+          "></div>
+        </div>
+        <span>${row.rate}${row.trials ? "%" : ""}</span>
+        <small>${row.hits}/${row.trials}</small>
+      </div>
+    `;
+  }).join("");
+
+  const trendHtml = trend.length
+    ? trend.map(item => `
+        <div class="esp-analysis-trend-item">
+          <span>${item.label}</span>
+          <div class="esp-analysis-trend-track">
+            <div style="
+              height:${item.rate}%;
+              background:#d4bc80;
+              border-radius:5px 5px 0 0;
+            "></div>
+          </div>
+          <small>${item.rate.toFixed(0)}%</small>
+        </div>
+      `).join("")
+    : `<p class="esp-muted">완료된 훈련 기록이 없습니다.</p>`;
+
+  const consistency = sessions < 10
+    ? "분석 대기 · 완료 세션 10회 이상 필요"
+    : `최근 10회 세션 정답률 표준편차 ${deviation.toFixed(1)}%p`;
 
   return `
-    <div style="
-      border:1px solid #88754f;
-      border-radius:14px;
-      padding:18px;
-      margin-top:20px;
-      background:rgba(212,188,128,.05);
-    ">
-      <p class="esp-title">MY TRAINING RECORD</p>
+    <section class="esp-analysis">
+      <h3>✦ ESP ANALYSIS</h3>
+      <p class="esp-muted">CORE 3.5 · TRAINING RECORD ANALYSIS</p>
 
-      <div style="
-        display:grid;
-        grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:8px;
-        text-align:center;
-      ">
-        <div>
-          <strong>${sessions}</strong>
-          <p class="esp-muted">완료 세션</p>
-        </div>
-        <div>
-          <strong>${trials}</strong>
-          <p class="esp-muted">누적 시행</p>
-        </div>
-        <div>
-          <strong>${rate}%</strong>
-          <p class="esp-muted">누적 일치율</p>
-        </div>
+      <div class="esp-analysis-stats">
+        <div><strong>${sessions}</strong><small>완료 세션</small></div>
+        <div><strong>${trials}</strong><small>누적 시행</small></div>
+        <div><strong>${rate}${trials ? "%" : ""}</strong><small>전체 정답률</small></div>
       </div>
 
       <p class="esp-muted">
-        무작위 선택 기대 일치율 20%
+        무작위 선택 기대 정답률: 20%
       </p>
-    </div>
+
+      <h4>SYMBOL ANALYSIS</h4>
+      ${symbolHtml}
+
+      <h4>RECENT 10 SESSIONS</h4>
+      <div class="esp-analysis-trend">
+        ${trendHtml}
+      </div>
+
+      <h4>CONSISTENCY</h4>
+      <p class="esp-muted">${consistency}</p>
+
+      <p class="esp-muted" style="margin-top:16px">
+        본 분석은 훈련 기록의 통계적 요약입니다.
+        정답률만으로 초감각 능력이나 능력 향상을 판정하지 않습니다.
+      </p>
+    </section>
   `;
 }
+
 
   
 const ESP_SYMBOLS = ["◯", "✚", "≋", "◇", "✦"];
@@ -3354,6 +3444,107 @@ html[data-spirit-motion="light"] .esp-message-slot,
 html[data-spirit-motion="off"] .esp-message-slot {
   animation:none !important;
 }
+
+
+/* CORE 3.5 · ESP ANALYSIS */
+
+.esp-analysis {
+  margin-top:22px;
+  padding:20px;
+  border:1px solid rgba(212,188,128,.5);
+  border-radius:14px;
+  background:rgba(212,188,128,.045);
+  color:#eadbb8;
+}
+
+.esp-analysis h3 {
+  margin:0 0 8px;
+  color:#f0d895;
+  letter-spacing:1px;
+}
+
+.esp-analysis h4 {
+  margin:24px 0 14px;
+  color:#d4bc80;
+  font-size:12px;
+  letter-spacing:1px;
+}
+
+.esp-analysis-stats {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:18px 0;
+  text-align:center;
+}
+
+.esp-analysis-stats > div {
+  padding:14px 5px;
+  border:1px solid rgba(212,188,128,.25);
+  border-radius:9px;
+}
+
+.esp-analysis-stats strong {
+  display:block;
+  font-size:21px;
+}
+
+.esp-analysis-stats small {
+  display:block;
+  margin-top:6px;
+  font-size:11px;
+}
+
+.esp-analysis-symbol {
+  display:grid;
+  grid-template-columns:25px minmax(0,1fr) 52px 43px;
+  align-items:center;
+  gap:8px;
+  margin:12px 0;
+  font-size:13px;
+}
+
+.esp-analysis-track {
+  height:9px;
+  overflow:hidden;
+  border-radius:8px;
+  background:rgba(212,188,128,.13);
+}
+
+.esp-analysis-trend {
+  display:flex;
+  align-items:flex-end;
+  gap:7px;
+  min-height:115px;
+  padding:12px 0;
+}
+
+.esp-analysis-trend-item {
+  display:flex;
+  flex:1;
+  min-width:0;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  font-size:10px;
+}
+
+.esp-analysis-trend-track {
+  display:flex;
+  width:100%;
+  height:76px;
+  align-items:flex-end;
+  background:rgba(212,188,128,.10);
+}
+
+.esp-analysis-trend-track > div {
+  width:100%;
+}
+
+.esp-analysis-trend-item small {
+  font-size:10px;
+}
+
 
       .esp-progress {
         height:7px;

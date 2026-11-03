@@ -1918,82 +1918,7 @@ function installDailyQuestRoom() {
 
   document.body.appendChild(room);
 
-// CORE 2.4 · 직관 블라인드 훈련실
-
-if (!$("intuitionLabRoom")) {
-  const intuitionRoom = document.createElement("section");
-
-  intuitionRoom.id = "intuitionLabRoom";
-  intuitionRoom.className = "hidden";
-
-  intuitionRoom.innerHTML = `
-    <div style="max-width:760px;margin:auto;">
-      <button id="intuitionLabClose"
-        type="button" class="secondary">
-        ← 훈련실로 돌아가기
-      </button>
-
-      <div style="margin-top:30px;">
-        <p style="color:#a78bfa;letter-spacing:2px;">
-          SPIRIT SYSTEM · INTUITION LAB
-        </p>
-
-        <div id="intuitionLabContent"></div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(intuitionRoom);
-
-  $("intuitionLabClose").onclick = closeIntuitionLab;
-
-  const style = document.createElement("style");
-  style.textContent = `
-    #intuitionLabRoom:not(.hidden) {
-      position:fixed;
-      inset:0;
-      z-index:12000;
-      display:block;
-      overflow-y:auto;
-      background:#0b1119;
-      padding:28px 16px 70px;
-      box-sizing:border-box;
-    }
-
-    #intuitionLabRoom.hidden {
-      display:none !important;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-// 기존 DAILY QUEST 화면에 입장 버튼 추가
-if (!$("intuitionLabEntry")) {
-  const entry = document.createElement("div");
-  entry.id = "intuitionLabEntry";
-
-  entry.style.cssText = `
-    border:1px solid #a78bfa;
-    border-radius:14px;
-    padding:20px;
-    margin:0 0 20px;
-  `;
-
-  entry.innerHTML = `
-    <h3>✧ 직관 블라인드 훈련</h3>
-    <p class="muted">
-      숨겨진 표적을 예측하고 결과를 확인하는 10회 훈련
-    </p>
-    <button id="intuitionLabOpen"
-      type="button" style="width:100%;padding:15px;">
-      직관 훈련 시작 →
-    </button>
-  `;
-
-  $("dailyQuestContent").before(entry);
-
-  $("intuitionLabOpen").onclick = openIntuitionLab;
-}
+// CORE 3.7 · 직관 블라인드 훈련은 ESP 훈련실로 통합
   
   // 기존 퀘스트 목록을 복제하지 않고 그대로 이동
   $("dailyQuestContent").appendChild(originalPanel);
@@ -2143,364 +2068,11 @@ function returnToDailyQuestRoom() {
   if (room) room.scrollTop = 0;
 }
 
-// CORE 2.4 · INTUITION BLIND TRAINING
-// 기존 EXP 및 승급 시스템과 독립적으로 작동한다.
-
-let intuitionLab = null;
-
-function intuitionNewTarget() {
-  // 0~3에 편향이 생기지 않도록 균등한 난수 사용
-  const values = new Uint32Array(1);
-  const limit = Math.floor(4294967296 / 4) * 4;
-  let n;
-
-  do {
-    crypto.getRandomValues(values);
-    n = values[0];
-  } while (n >= limit);
-
-  return n % 4;
-}
-
-function openIntuitionLab() {
-  const room = $("intuitionLabRoom");
-  if (!room) return;
-
-  if (!intuitionLab || intuitionLab.finished) {
-    intuitionLab = {
-      target: intuitionNewTarget(),
-      results: [],
-      revealed: false,
-      finished: false
-    };
-  }
-
-  show("dailyQuestRoom", false);
-  show("intuitionLabRoom", true);
-
-  renderIntuitionLab();
-}
-
-function closeIntuitionLab() {
-  show("intuitionLabRoom", false);
-  show("dailyQuestRoom", true);
-}
-
-
-function renderIntuitionLab() {
-  const output = $("intuitionLabContent");
-  if (!output || !intuitionLab) return;
-
-  // 디자인은 최초 한 번만 설치
-  if (!$("intuitionGameStyle")) {
-    const style = document.createElement("style");
-    style.id = "intuitionGameStyle";
-
-    style.textContent = `
-      #intuitionLabContent {
-        color:#e9e5da;
-        font-family:inherit;
-      }
-
-      .ig-board {
-        padding:28px 20px;
-        border:1px solid #76694b;
-        border-radius:22px;
-        background:
-          radial-gradient(circle at 50% 0%,
-            rgba(114,93,164,.24),transparent 65%),
-          linear-gradient(160deg,#14243a,#090f1b);
-        text-align:center;
-        box-shadow:0 18px 45px rgba(0,0,0,.25);
-      }
-
-      .ig-kicker {
-        color:#cbb783;
-        font-size:12px;
-        letter-spacing:3px;
-        margin-bottom:12px;
-      }
-
-      .ig-title {
-        color:#f0e6ca;
-        font-size:25px;
-        margin:12px 0;
-      }
-
-      .ig-description {
-        color:#abb7c8;
-        line-height:1.8;
-        font-size:14px;
-      }
-
-      .ig-progress {
-        height:7px;
-        background:#26354b;
-        border-radius:20px;
-        overflow:hidden;
-        margin:22px 0;
-      }
-
-      .ig-progress > div {
-        height:100%;
-        background:linear-gradient(90deg,#8570b7,#d4bc80);
-        transition:width .25s;
-      }
-
-      .ig-grid {
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:14px;
-        margin:24px 0;
-      }
-
-      .ig-card {
-        position:relative;
-        min-height:155px;
-        padding:18px 8px;
-        border:1px solid #8a7954;
-        border-radius:15px;
-        background:linear-gradient(145deg,#233752,#101b2d);
-        color:#ead9ac;
-        cursor:pointer;
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-        align-items:center;
-        gap:15px;
-        transition:transform .18s,border-color .18s,
-          box-shadow .18s;
-      }
-
-      .ig-card:hover {
-        transform:translateY(-4px);
-        border-color:#e2c98c;
-        box-shadow:0 0 24px rgba(203,183,131,.18);
-      }
-
-      .ig-card:focus-visible {
-        outline:3px solid #e2c98c;
-        outline-offset:3px;
-      }
-
-      .ig-symbol {
-        font-size:49px;
-        line-height:1;
-        font-weight:300;
-      }
-
-      .ig-number {
-        font-size:11px;
-        letter-spacing:2px;
-        opacity:.75;
-      }
-
-      .ig-result {
-        font-size:45px;
-        font-weight:bold;
-        color:#e2c98c;
-        margin:20px 0;
-      }
-
-      .ig-button {
-        width:100%;
-        padding:17px;
-        margin-top:20px;
-        border:1px solid #d4bc80;
-        border-radius:12px;
-        background:#594c77;
-        color:white;
-        font-weight:bold;
-        cursor:pointer;
-      }
-
-      .ig-button:hover {
-        background:#71618f;
-      }
-
-      .ig-stats {
-        display:flex;
-        justify-content:center;
-        gap:20px;
-        margin-top:20px;
-        color:#b9c5d4;
-        font-size:13px;
-        flex-wrap:wrap;
-      }
-
-      @media(max-width:420px) {
-        .ig-board { padding:22px 13px; }
-        .ig-card { min-height:125px; }
-        .ig-symbol { font-size:39px; }
-      }
-    `;
-
-    document.head.appendChild(style);
-  }
-
-  const lab = intuitionLab;
-  const total = lab.results.length;
-  const correct = lab.results.filter(x => x.correct).length;
-
-  // SPIRIT SYSTEM 자체 디자인
-  const symbols = ["◎", "◇", "✧", "▤"];
-
-  const progress = `
-    <div class="ig-progress">
-      <div style="width:${total * 10}%"></div>
-    </div>
-  `;
-
-  // 최종 결과
-  if (lab.finished) {
-    output.innerHTML = `
-      <div class="ig-board">
-        <div class="ig-kicker">SESSION COMPLETE</div>
-        <h2 class="ig-title">직관 훈련 완료</h2>
-
-        ${progress}
-
-        <div class="ig-result">${correct} / 10</div>
-
-        <p class="ig-description">
-          실제 일치율 ${correct * 10}%<br>
-          무작위 선택 기대 일치율 25%
-        </p>
-
-        <div class="ig-stats">
-          <span>총 수행 10회</span>
-          <span>일치 ${correct}회</span>
-          <span>불일치 ${10 - correct}회</span>
-        </div>
-
-        <p class="ig-description" style="margin-top:25px;">
-          이번 결과만으로 특별한 능력을 판정하지 않습니다.
-          반복 수행을 통해 자신의 선택 패턴을 관찰하십시오.
-        </p>
-
-        <button id="intuitionRestart"
-          class="ig-button" type="button">
-          ✦ 새로운 훈련 시작
-        </button>
-      </div>
-    `;
-
-    $("intuitionRestart").onclick = () => {
-      intuitionLab = null;
-      openIntuitionLab();
-    };
-
-    return;
-  }
-
-  // 정답 공개
-  if (lab.revealed) {
-    const last = lab.results[total - 1];
-
-    output.innerHTML = `
-      <div class="ig-board">
-        <div class="ig-kicker">TARGET REVEALED</div>
-
-        <h2 class="ig-title">
-          ${last.correct ? "✦ 표적 일치" : "표적 불일치"}
-        </h2>
-
-        ${progress}
-
-        <div class="ig-grid">
-          <div class="ig-card" style="cursor:default;">
-            <div class="ig-number">MY CHOICE</div>
-            <div class="ig-symbol">${symbols[last.choice]}</div>
-          </div>
-
-          <div class="ig-card" style="cursor:default;">
-            <div class="ig-number">ACTUAL TARGET</div>
-            <div class="ig-symbol">${symbols[last.target]}</div>
-          </div>
-        </div>
-
-        <p class="ig-description">
-          현재 일치 기록 ${correct} / ${total}
-        </p>
-
-        <button id="intuitionNext"
-          class="ig-button" type="button">
-          ${total >= 10 ? "최종 결과 확인 →" : "다음 표적 확인 →"}
-        </button>
-      </div>
-    `;
-
-    $("intuitionNext").onclick = () => {
-      if (total >= 10) {
-        lab.finished = true;
-      } else {
-        lab.target = intuitionNewTarget();
-        lab.revealed = false;
-      }
-
-      renderIntuitionLab();
-    };
-
-    return;
-  }
-
-  // 표적 선택
-  output.innerHTML = `
-    <div class="ig-board">
-      <div class="ig-kicker">INTUITION · BLIND SESSION</div>
-
-      <h2 class="ig-title">숨겨진 표적을 감지하십시오</h2>
-
-      <p class="ig-description">
-        마음을 가다듬고 가장 먼저 떠오르는
-        하나의 문양을 선택하십시오.
-      </p>
-
-      ${progress}
-
-      <div class="ig-kicker">
-        TRIAL ${String(total + 1).padStart(2,"0")} / 10
-      </div>
-
-      <div class="ig-grid">
-        ${symbols.map((symbol,n) => `
-          <button type="button"
-            class="ig-card intuitionBlindChoice"
-            data-choice="${n}">
-            <span class="ig-symbol">${symbol}</span>
-            <span class="ig-number">
-              SYMBOL ${String(n + 1).padStart(2,"0")}
-            </span>
-          </button>
-        `).join("")}
-      </div>
-
-      <div class="ig-stats">
-        <span>완료 ${total}/10</span>
-        <span>일치 ${correct}회</span>
-      </div>
-    </div>
-  `;
-
-  output.querySelectorAll(".intuitionBlindChoice")
-    .forEach(button => {
-      button.onclick = () => {
-        if (lab.revealed || lab.finished) return;
-
-        const choice = Number(button.dataset.choice);
-        const target = lab.target;
-
-        lab.results.push({
-          choice,
-          target,
-          correct: choice === target
-        });
-
-        lab.revealed = true;
-        renderIntuitionLab();
-      };
-    });
-}
+/* =========================================
+   CORE 3.7 · BLIND TARGET TRAINING
+   직관 블라인드 훈련과 ESP 심볼 훈련을 통합
+   단일 훈련 기록 및 분석 체계 사용
+========================================= */
 
 
 /* =========================================
@@ -2511,6 +2083,12 @@ function renderIntuitionLab() {
 let espLab = null;
 
 /* CORE 2.7 · ESP LOCAL TRAINING RECORD */
+
+/* CORE 3.6 · ESP LOCAL + CLOUD TRAINING RECORDS */
+
+let espCloudSyncStatus = "계정 동기화 대기";
+let espCloudSyncPromise = null;
+let espCloudSyncAgain = false;
 
 function espRecordKey() {
   if (!state.user?.id) return null;
@@ -2530,21 +2108,18 @@ function espLoadRecords() {
   }
 }
 
-let espCloudSyncStatus = "계정 동기화 대기";
-let espCloudSyncPromise = null;
-let espCloudSyncAgain = false;
-
 function espNormalizeRecord(record) {
-  const id = String(record?.id || record?.session_id || "");
   const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-  if (!uuidPattern.test(id)) return null;
+  if (!record || !uuidPattern.test(String(record.id || ""))) {
+    return null;
+  }
 
-  const trials = Number(record?.trials);
+  const trials = Number(record.trials);
 
   if (![10, 25, 50].includes(trials)) return null;
-  if (!Array.isArray(record?.results)) return null;
+  if (!Array.isArray(record.results)) return null;
   if (record.results.length !== trials) return null;
 
   const results = record.results.map(item => {
@@ -2568,14 +2143,14 @@ function espNormalizeRecord(record) {
 
   if (results.some(item => item === null)) return null;
 
-  const completedAt = new Date(record?.completed_at);
+  const completedAt = new Date(record.completed_at || "");
 
   if (Number.isNaN(completedAt.getTime())) return null;
 
   const correct = results.filter(item => item.correct).length;
 
   return {
-    id,
+    id: String(record.id),
     completed_at: completedAt.toISOString(),
     trials,
     correct,
@@ -2584,11 +2159,24 @@ function espNormalizeRecord(record) {
   };
 }
 
+function espWriteLocalRecords(records) {
+  const key = espRecordKey();
+
+  if (!key) return false;
+
+  try {
+    localStorage.setItem(key, JSON.stringify(records));
+    return true;
+  } catch (error) {
+    console.error("[ESP] Record save error:", error);
+    return false;
+  }
+}
+
 async function espPerformCloudSync() {
   const userId = state.user?.id;
-  const localKey = espRecordKey();
 
-  if (!userId || !localKey) {
+  if (!userId) {
     espCloudSyncStatus = "로그인 후 계정 동기화 가능";
     return false;
   }
@@ -2597,90 +2185,93 @@ async function espPerformCloudSync() {
     .map(espNormalizeRecord)
     .filter(Boolean);
 
-  const { data: cloudRows, error: loadError } = await client
-    .from("esp_sessions")
-    .select("session_id, completed_at, trials, correct, rate, results")
-    .eq("user_id", userId)
-    .order("completed_at", { ascending: true });
+  try {
+    const {
+      data: cloudRows,
+      error: selectError
+    } = await client
+      .from("esp_sessions")
+      .select("session_id, completed_at, trials, correct, rate, results")
+      .eq("user_id", userId)
+      .order("completed_at", { ascending: true });
 
-  if (loadError) {
-    espCloudSyncStatus = "로컬 기록 보존 · 서버 연결 확인 필요";
-    console.warn("[ESP] Cloud record load failed:", loadError);
-    return false;
-  }
+    if (selectError) throw selectError;
 
-  const cloudRecords = (cloudRows || [])
-    .map(row => espNormalizeRecord(row))
-    .filter(Boolean);
+    const cloudRecords = (cloudRows || [])
+      .map(row => espNormalizeRecord({
+        id: row.session_id,
+        completed_at: row.completed_at,
+        trials: row.trials,
+        correct: row.correct,
+        rate: row.rate,
+        results: row.results
+      }))
+      .filter(Boolean);
 
-  // 서버 기록을 기준으로 병합하고,
-  // 로컬에만 있는 기록을 추가한다.
-  const mergedById = new Map();
+    // 로컬과 서버 기록을 세션 ID 기준으로 병합
+    const merged = new Map();
 
-  cloudRecords.forEach(record => {
-    mergedById.set(record.id, record);
-  });
+    localRecords.forEach(record => {
+      merged.set(record.id, record);
+    });
 
-  localRecords.forEach(record => {
-    if (!mergedById.has(record.id)) {
-      mergedById.set(record.id, record);
-    }
-  });
+    cloudRecords.forEach(record => {
+      merged.set(record.id, record);
+    });
 
-  const merged = Array.from(mergedById.values())
-    .sort((a, b) =>
-      new Date(a.completed_at) - new Date(b.completed_at)
+    const mergedRecords = Array.from(merged.values()).sort(
+      (a, b) =>
+        new Date(a.completed_at) - new Date(b.completed_at)
     );
 
-  try {
-    localStorage.setItem(localKey, JSON.stringify(merged));
-  } catch (error) {
-    espCloudSyncStatus =
-      "서버 조회 완료 · 브라우저 저장공간 확인 필요";
+    // 병합된 기록을 로컬에 먼저 저장
+    if (!espWriteLocalRecords(mergedRecords)) {
+      throw new Error("로컬 저장 공간에 기록을 저장하지 못했습니다.");
+    }
 
-    console.error("[ESP] Local merge save failed:", error);
+    // 서버에 없는 로컬 기록만 업로드
+    const cloudIds = new Set(
+      cloudRecords.map(record => record.id)
+    );
+
+    const missingRows = localRecords
+      .filter(record => !cloudIds.has(record.id))
+      .map(record => ({
+        user_id: userId,
+        session_id: record.id,
+        completed_at: record.completed_at,
+        trials: record.trials,
+        correct: record.correct,
+        rate: record.rate,
+        results: record.results
+      }));
+
+    if (missingRows.length) {
+      const {
+        error: insertError
+      } = await client
+        .from("esp_sessions")
+        .upsert(missingRows, {
+          onConflict: "user_id,session_id",
+          ignoreDuplicates: true
+        });
+
+      if (insertError) throw insertError;
+    }
+
+    espCloudSyncStatus =
+      `계정 동기화 완료 · ${mergedRecords.length}개 세션`;
+
+    return true;
+
+  } catch (error) {
+    console.error("[ESP] Cloud sync error:", error);
+
+    espCloudSyncStatus =
+      "로컬 기록 보존 · 서버 연결 확인 필요";
+
     return false;
   }
-
-  const cloudIds = new Set(
-    cloudRecords.map(record => record.id)
-  );
-
-  const pending = merged.filter(
-    record => !cloudIds.has(record.id)
-  );
-
-  if (pending.length) {
-    const rows = pending.map(record => ({
-      user_id: userId,
-      session_id: record.id,
-      completed_at: record.completed_at,
-      trials: record.trials,
-      correct: record.correct,
-      rate: record.rate,
-      results: record.results
-    }));
-
-    const { error: uploadError } = await client
-      .from("esp_sessions")
-      .upsert(rows, {
-        onConflict: "user_id,session_id",
-        ignoreDuplicates: true
-      });
-
-    if (uploadError) {
-      espCloudSyncStatus =
-        "로컬 기록 보존 · 서버 업로드 재시도 필요";
-
-      console.warn("[ESP] Cloud record upload failed:", uploadError);
-      return false;
-    }
-  }
-
-  espCloudSyncStatus =
-    `계정 동기화 완료 · ${merged.length}개 세션`;
-
-  return true;
 }
 
 function espSyncRecordsWithCloud() {
@@ -2690,18 +2281,15 @@ function espSyncRecordsWithCloud() {
   }
 
   espCloudSyncPromise = (async () => {
+    let result = false;
+
     do {
       espCloudSyncAgain = false;
-
-      try {
-        await espPerformCloudSync();
-      } catch (error) {
-        espCloudSyncStatus =
-          "로컬 기록 보존 · 서버 연결 확인 필요";
-
-        console.warn("[ESP] Cloud sync exception:", error);
-      }
+      result = await espPerformCloudSync();
     } while (espCloudSyncAgain);
+
+    return result;
+
   })().finally(() => {
     espCloudSyncPromise = null;
   });
@@ -2715,45 +2303,45 @@ function espSaveCompletedSession(lab) {
   if (!key || !lab || !lab.finished) return false;
   if (lab.saved) return true;
 
-  const records = espLoadRecords();
-  const correct = lab.results.filter(r => r.correct).length;
+  const correct = lab.results.filter(
+    result => result.correct
+  ).length;
 
-  const record = {
+  const record = espNormalizeRecord({
     id: lab.sessionId,
     completed_at: new Date().toISOString(),
     trials: lab.maxTrials,
     correct,
-    rate: Number((correct / lab.maxTrials * 100).toFixed(1)),
-    results: lab.results.map(r => ({
-      choice: r.choice,
-      target: r.target,
-      correct: r.correct
-    }))
-  };
+    rate: Number(
+      (correct / lab.maxTrials * 100).toFixed(1)
+    ),
+    results: lab.results
+  });
 
-  if (!records.some(r => r.id === record.id)) {
+  if (!record) {
+    console.error("[ESP] Completed session failed validation.");
+    return false;
+  }
+
+  const records = espLoadRecords();
+
+  if (!records.some(item => item.id === record.id)) {
     records.push(record);
   }
 
-  try {
-    // 서버 연결과 무관하게 로컬에 먼저 저장한다.
-    localStorage.setItem(key, JSON.stringify(records));
-    lab.saved = true;
+  if (!espWriteLocalRecords(records)) return false;
 
-    // 서버 동기화는 백그라운드에서 진행한다.
-    void espSyncRecordsWithCloud().then(() => {
-      if (espLab === lab && lab.finished) {
-        renderEspLab();
-      }
-    });
+  lab.saved = true;
+  espCloudSyncStatus = "서버에 기록 동기화 중…";
 
-    return true;
-  } catch (error) {
-    console.error("[ESP] Record save error:", error);
-    return false;
-  }
+  void espSyncRecordsWithCloud().then(() => {
+    if (espLab === lab && lab.finished) {
+      renderEspLab();
+    }
+  });
+
+  return true;
 }
-
 
 function espRenderRecordSummary() {
   const symbols = ["◯", "✚", "≋", "◇", "✦"];

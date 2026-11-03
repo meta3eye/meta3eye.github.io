@@ -2530,6 +2530,185 @@ function espLoadRecords() {
   }
 }
 
+let espCloudSyncStatus = "계정 동기화 대기";
+let espCloudSyncPromise = null;
+let espCloudSyncAgain = false;
+
+function espNormalizeRecord(record) {
+  const id = String(record?.id || record?.session_id || "");
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!uuidPattern.test(id)) return null;
+
+  const trials = Number(record?.trials);
+
+  if (![10, 25, 50].includes(trials)) return null;
+  if (!Array.isArray(record?.results)) return null;
+  if (record.results.length !== trials) return null;
+
+  const results = record.results.map(item => {
+    const choice = Number(item?.choice);
+    const target = Number(item?.target);
+
+    if (!Number.isInteger(choice) || choice < 0 || choice > 4) {
+      return null;
+    }
+
+    if (!Number.isInteger(target) || target < 0 || target > 4) {
+      return null;
+    }
+
+    return {
+      choice,
+      target,
+      correct: choice === target
+    };
+  });
+
+  if (results.some(item => item === null)) return null;
+
+  const completedAt = new Date(record?.completed_at);
+
+  if (Number.isNaN(completedAt.getTime())) return null;
+
+  const correct = results.filter(item => item.correct).length;
+
+  return {
+    id,
+    completed_at: completedAt.toISOString(),
+    trials,
+    correct,
+    rate: Number((correct / trials * 100).toFixed(1)),
+    results
+  };
+}
+
+async function espPerformCloudSync() {
+  const userId = state.user?.id;
+  const localKey = espRecordKey();
+
+  if (!userId || !localKey) {
+    espCloudSyncStatus = "로그인 후 계정 동기화 가능";
+    return false;
+  }
+
+  const localRecords = espLoadRecords()
+    .map(espNormalizeRecord)
+    .filter(Boolean);
+
+  const { data: cloudRows, error: loadError } = await client
+    .from("esp_sessions")
+    .select("session_id, completed_at, trials, correct, rate, results")
+    .eq("user_id", userId)
+    .order("completed_at", { ascending: true });
+
+  if (loadError) {
+    espCloudSyncStatus = "로컬 기록 보존 · 서버 연결 확인 필요";
+    console.warn("[ESP] Cloud record load failed:", loadError);
+    return false;
+  }
+
+  const cloudRecords = (cloudRows || [])
+    .map(row => espNormalizeRecord(row))
+    .filter(Boolean);
+
+  // 서버 기록을 기준으로 병합하고,
+  // 로컬에만 있는 기록을 추가한다.
+  const mergedById = new Map();
+
+  cloudRecords.forEach(record => {
+    mergedById.set(record.id, record);
+  });
+
+  localRecords.forEach(record => {
+    if (!mergedById.has(record.id)) {
+      mergedById.set(record.id, record);
+    }
+  });
+
+  const merged = Array.from(mergedById.values())
+    .sort((a, b) =>
+      new Date(a.completed_at) - new Date(b.completed_at)
+    );
+
+  try {
+    localStorage.setItem(localKey, JSON.stringify(merged));
+  } catch (error) {
+    espCloudSyncStatus =
+      "서버 조회 완료 · 브라우저 저장공간 확인 필요";
+
+    console.error("[ESP] Local merge save failed:", error);
+    return false;
+  }
+
+  const cloudIds = new Set(
+    cloudRecords.map(record => record.id)
+  );
+
+  const pending = merged.filter(
+    record => !cloudIds.has(record.id)
+  );
+
+  if (pending.length) {
+    const rows = pending.map(record => ({
+      user_id: userId,
+      session_id: record.id,
+      completed_at: record.completed_at,
+      trials: record.trials,
+      correct: record.correct,
+      rate: record.rate,
+      results: record.results
+    }));
+
+    const { error: uploadError } = await client
+      .from("esp_sessions")
+      .upsert(rows, {
+        onConflict: "user_id,session_id",
+        ignoreDuplicates: true
+      });
+
+    if (uploadError) {
+      espCloudSyncStatus =
+        "로컬 기록 보존 · 서버 업로드 재시도 필요";
+
+      console.warn("[ESP] Cloud record upload failed:", uploadError);
+      return false;
+    }
+  }
+
+  espCloudSyncStatus =
+    `계정 동기화 완료 · ${merged.length}개 세션`;
+
+  return true;
+}
+
+function espSyncRecordsWithCloud() {
+  if (espCloudSyncPromise) {
+    espCloudSyncAgain = true;
+    return espCloudSyncPromise;
+  }
+
+  espCloudSyncPromise = (async () => {
+    do {
+      espCloudSyncAgain = false;
+
+      try {
+        await espPerformCloudSync();
+      } catch (error) {
+        espCloudSyncStatus =
+          "로컬 기록 보존 · 서버 연결 확인 필요";
+
+        console.warn("[ESP] Cloud sync exception:", error);
+      }
+    } while (espCloudSyncAgain);
+  })().finally(() => {
+    espCloudSyncPromise = null;
+  });
+
+  return espCloudSyncPromise;
+}
+
 function espSaveCompletedSession(lab) {
   const key = espRecordKey();
 
@@ -2552,14 +2731,22 @@ function espSaveCompletedSession(lab) {
     }))
   };
 
-  // 같은 세션의 중복 저장 방지
   if (!records.some(r => r.id === record.id)) {
     records.push(record);
   }
 
   try {
+    // 서버 연결과 무관하게 로컬에 먼저 저장한다.
     localStorage.setItem(key, JSON.stringify(records));
     lab.saved = true;
+
+    // 서버 동기화는 백그라운드에서 진행한다.
+    void espSyncRecordsWithCloud().then(() => {
+      if (espLab === lab && lab.finished) {
+        renderEspLab();
+      }
+    });
+
     return true;
   } catch (error) {
     console.error("[ESP] Record save error:", error);
@@ -2679,6 +2866,7 @@ function espRenderRecordSummary() {
     <section class="esp-analysis">
       <h3>✦ ESP ANALYSIS</h3>
       <p class="esp-muted">CORE 3.5 · TRAINING RECORD ANALYSIS</p>
+<p class="esp-muted">☁ ${espCloudSyncStatus}</p>
 
       <div class="esp-analysis-stats">
         <div><strong>${sessions}</strong><small>완료 세션</small></div>
@@ -3588,48 +3776,59 @@ function openEspLab() {
   show("dailyQuestRoom", false);
   show("espLabRoom", true);
 
-  // 진행 중인 훈련이 있으면 재입장 선택 화면 표시
-  if (espLab && !espLab.finished) {
-    const output = $("espLabContent");
-    const completed = espLab.results.length;
+  // 먼저 로컬 기록으로 화면을 즉시 표시한다.
+  if (!espLab || espLab.finished) {
+    renderEspLab();
 
-    output.innerHTML = `
-      <div class="esp-board">
-        <p class="esp-title">SESSION PAUSED</p>
-        <h2>진행 중인 훈련이 있습니다</h2>
-
-        <p class="esp-muted">
-          ${espLab.maxTrials}회 훈련 중
-          ${completed}회를 진행했습니다.
-        </p>
-
-        <button class="esp-action" id="espResume">
-          ▶ 이어서 훈련하기
-        </button>
-
-        <button class="esp-action" id="espDiscard"
-          style="background:transparent;">
-          현재 훈련 포기하고 새로 시작하기
-        </button>
-      </div>
-    `;
-
-    $("espResume").onclick = renderEspLab;
-
-    $("espDiscard").onclick = () => {
-      if (!confirm(
-        "진행 중인 훈련을 포기하시겠습니까?\n" +
-        "완료하지 않은 기록은 저장되지 않습니다."
-      )) return;
-
-      espLab = null;
-      renderEspLab();
-    };
+    // 서버 기록을 병합한 뒤 분석 화면을 갱신한다.
+    void espSyncRecordsWithCloud().then(() => {
+      if (!espLab || espLab.finished) {
+        renderEspLab();
+      }
+    });
 
     return;
   }
 
-  renderEspLab();
+  // 진행 중인 훈련이 있으면 기존 세션 재개 화면을 유지한다.
+  const output = $("espLabContent");
+  const completed = espLab.results.length;
+
+  output.innerHTML = `
+    <div class="esp-board">
+      <p class="esp-title">SESSION PAUSED</p>
+      <h2>진행 중인 훈련이 있습니다</h2>
+
+      <p class="esp-muted">
+        ${espLab.maxTrials}회 훈련 중
+        ${completed}회를 진행했습니다.
+      </p>
+
+      <button class="esp-action" id="espResume">
+        ▶ 이어서 훈련하기
+      </button>
+
+      <button class="esp-action" id="espDiscard"
+        style="background:transparent;">
+        현재 훈련 포기하고 새로 시작하기
+      </button>
+    </div>
+  `;
+
+  $("espResume").onclick = renderEspLab;
+
+  $("espDiscard").onclick = () => {
+    if (!confirm(
+      "진행 중인 훈련을 포기하시겠습니까?\n" +
+      "완료하지 않은 기록은 저장되지 않습니다."
+    )) return;
+
+    espLab = null;
+    renderEspLab();
+  };
+
+  // 진행 중인 세션은 그대로 두고 기록만 동기화한다.
+  void espSyncRecordsWithCloud();
 }
 
 function renderEspLab() {

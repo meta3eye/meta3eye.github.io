@@ -1896,11 +1896,11 @@ function installDailyQuestRoom() {
       </p>
     </div>
 
-    <div style="border:1px solid #526b87;border-radius:12px;padding:16px;">
+    <div style="border:1px solid #a78bfa;border-radius:12px;padding:16px;">
       <div style="font-size:25px;margin-bottom:8px;">✧</div>
-      <strong>직관 훈련</strong>
+      <strong>블라인드 표적 훈련</strong>
       <p class="muted">
-        사전 선택 · 결과 확인 · 반복 검증
+        사전 선택 · 정답 공개 · 누적 기록 분석
       </p>
     </div>
 
@@ -2070,14 +2070,9 @@ function returnToDailyQuestRoom() {
 
 /* =========================================
    CORE 3.7 · BLIND TARGET TRAINING
-   직관 블라인드 훈련과 ESP 심볼 훈련을 통합
-   단일 훈련 기록 및 분석 체계 사용
-========================================= */
-
-
-/* =========================================
-   SPIRIT CORE 2.6 · ESP SYMBOL TRAINING
-   기존 직관 블라인드 훈련과 독립
+   기존 직관 블라인드 훈련과 ESP 심볼 훈련 통합
+   5개 심볼 · 10/25/50회 세션
+   단일 훈련 기록 및 분석 체계
 ========================================= */
 
 let espLab = null;
@@ -2452,8 +2447,8 @@ function espRenderRecordSummary() {
 
   return `
     <section class="esp-analysis">
-      <h3>✦ ESP ANALYSIS</h3>
-      <p class="esp-muted">CORE 3.5 · TRAINING RECORD ANALYSIS</p>
+      <h3>✦ BLIND TARGET ANALYSIS</h3>
+      <p class="esp-muted">CORE 3.7 · TRAINING RECORD ANALYSIS</p>
 <p class="esp-muted">☁ ${espCloudSyncStatus}</p>
 
       <div class="esp-analysis-stats">
@@ -2523,16 +2518,17 @@ entry.style.cssText = `
     
     entry.innerHTML = `
       <div class="section-title">
-        <h2>✦ ESP SYMBOL TRAINING</h2>
+        <h2>✦ BLIND TARGET TRAINING</h2>
         <span class="muted">5 SYMBOLS</span>
       </div>
 
       <p class="muted">
-        다섯 문양 중 숨겨진 표적을 예측하는 직관 훈련
+        다섯 문양 중 숨겨진 표적을 사전에 선택하고
+        결과를 확인하는 블라인드 표적 훈련
       </p>
 
       <button id="espLabOpen" type="button">
-        ESP 훈련 입장 →
+        블라인드 표적 훈련 입장 →
       </button>
     `;
 
@@ -3427,11 +3423,12 @@ function renderEspLab() {
   if (!espLab) {
     output.innerHTML = `
       <div class="esp-board">
-        <p class="esp-title">SPIRIT SYSTEM</p>
-        <h2>ESP SYMBOL TRAINING</h2>
+            <p class="esp-title">SPIRIT SYSTEM</p>
+        <h2>BLIND TARGET TRAINING</h2>
 
         <p class="esp-muted">
-          다섯 문양 중 숨겨진 표적을 예측하십시오.<br>
+          다섯 문양 중 숨겨진 표적을 선택 전에 예측하십시오.<br>
+          정답은 선택을 확정한 뒤 공개됩니다.<br>
           훈련 단계를 선택하면 세션이 시작됩니다.
         </p>
 
@@ -3500,7 +3497,7 @@ if (lab.finished) {
     output.innerHTML = `
       <div class="esp-board">
         <p class="esp-title">SESSION COMPLETE</p>
-        <h2>ESP 훈련 완료</h2>
+        <h2>블라인드 표적 훈련 완료</h2>
 
         ${progress}
 
